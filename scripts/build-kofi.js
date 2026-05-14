@@ -17,17 +17,48 @@ const root = path.resolve(here, '..');
 const src = 'https://storage.ko-fi.com/cdn/kofi6.png?v=6';
 const dst = path.join(root, 'src', 'kofi-asset.ts');
 
+// The real Ko-fi PNG produces a file roughly 11 KB after base64-encoding plus
+// the TS wrapper. Anything under this threshold is either the previous
+// 1×1 transparent fallback or the inline-SVG approximation that ships when
+// the build ran without network access. In either case we want to attempt
+// a refetch so the toolbar shows the official button - but if the refetch
+// itself fails (offline build, sandboxed CI, etc.) we keep the placeholder
+// so the build doesn't error.
+const PLACEHOLDER_THRESHOLD_BYTES = 4_000;
+let hasPlaceholder = false;
+
 try {
-	await stat(dst);
-	console.log('kofi-asset.ts already present - skipping (delete to refetch).');
-	process.exit(0);
+	const info = await stat(dst);
+	if (info.size >= PLACEHOLDER_THRESHOLD_BYTES) {
+		console.log('kofi-asset.ts already present - skipping (delete to refetch).');
+		process.exit(0);
+	}
+	hasPlaceholder = true;
+	console.log(`kofi-asset.ts is a ${info.size}-byte placeholder - refetching real artwork...`);
 } catch {
-	/* fall through to download */
+	/* no existing file - fall through to download */
 }
 
 console.log(`fetching ${src} ...`);
-const res = await fetch(src);
+let res;
+try {
+	res = await fetch(src);
+} catch (err) {
+	if (hasPlaceholder) {
+		// Network is unreachable but we already have an SVG approximation on
+		// disk. Keep it; the next build that has network access will replace
+		// it with the real PNG.
+		console.warn(`Ko-fi asset fetch failed (${err.code ?? err.message}); keeping existing placeholder.`);
+		process.exit(0);
+	}
+	console.error(`Ko-fi asset fetch failed: ${err.code ?? err.message}`);
+	process.exit(1);
+}
 if (!res.ok) {
+	if (hasPlaceholder) {
+		console.warn(`Ko-fi asset fetch returned HTTP ${res.status}; keeping existing placeholder.`);
+		process.exit(0);
+	}
 	console.error(`Ko-fi asset fetch failed: HTTP ${res.status}`);
 	process.exit(1);
 }
