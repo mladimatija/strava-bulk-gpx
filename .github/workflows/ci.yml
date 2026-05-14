@@ -64,7 +64,7 @@ jobs:
       - run: npm ci
       - run: npm run build
       - name: Upload dist artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: extension-dist
           path: dist
@@ -90,7 +90,7 @@ jobs:
         run: xvfb-run --auto-servernum npm test
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: playwright-report
