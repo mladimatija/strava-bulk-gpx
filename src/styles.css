@@ -1,0 +1,200 @@
+/* All injected UI is namespaced under `.sbgx-…` to avoid colliding with
+   Strava's own class names. Strava's design language is white-on-light with
+   the orange accent (#FC4C02); we follow that so the toolbar feels native. */
+
+.sbgx-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	padding: 10px 14px;
+	margin: 12px 0;
+	background: #ffffff;
+	border: 1px solid #e0e3e8;
+	border-radius: 6px;
+	font-family: maison-neue, Helvetica, Arial, sans-serif;
+	font-size: 13px;
+	color: #2d3239;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.sbgx-tool {
+	margin-bottom: 0;
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+
+.sbgx-select-all input {
+	margin: 0 !important;
+	cursor: pointer;
+}
+
+.sbgx-count {
+	color: #6d7177;
+	font-variant-numeric: tabular-nums;
+}
+
+/* Format select - sits between the Select-all checkbox and the bulk button.
+   Native <select> styled minimally so it fits the toolbar's line-height. */
+.sbgx-format-wrap span {
+	color: #6d7177;
+}
+.sbgx-format {
+	font: inherit;
+	color: #2d3239;
+	background: #ffffff;
+	border: 1px solid #d4d7dc;
+	border-radius: 4px;
+	padding: 3px 6px;
+	cursor: pointer;
+}
+.sbgx-format:hover {
+	border-color: #b0b6bf;
+}
+.sbgx-format:focus-visible {
+	outline: 2px solid #fc4c02;
+	outline-offset: 1px;
+	border-color: #fc4c02;
+}
+
+.sbgx-status {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	color: #6d7177;
+	font-style: italic;
+	min-width: 0;
+	max-width: 360px;
+}
+.sbgx-status-text {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.sbgx-status[data-kind='ok'] {
+	color: #1e8e3e;
+	font-style: normal;
+}
+.sbgx-status[data-kind='warn'] {
+	color: #b06a00;
+	font-style: normal;
+}
+.sbgx-status[data-kind='err'] {
+	color: #d93025;
+	font-style: normal;
+}
+
+/* Inline progress spinner - visible only while a bulk download is running.
+   Border ring with a coloured top edge that rotates; uses Strava's orange so
+   it ties to the primary action button visually. */
+.sbgx-spinner {
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	flex: none;
+	border: 2px solid #d4d7dc;
+	border-top-color: #fc4c02;
+	border-radius: 50%;
+	animation: sbgx-spin 0.7s linear infinite;
+}
+.sbgx-spinner[hidden] {
+	display: none;
+}
+@keyframes sbgx-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.sbgx-spacer {
+	flex: 1;
+}
+
+.sbgx-btn {
+	appearance: none;
+	border: 1px solid transparent;
+	border-radius: 4px;
+	padding: 6px 12px;
+	font: inherit;
+	cursor: pointer;
+	background: #f3f4f5;
+	color: #2d3239;
+	transition: background-color 80ms ease;
+}
+.sbgx-btn:hover:not(:disabled) {
+	background: #e7e9eb;
+}
+.sbgx-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.sbgx-btn-primary {
+	background: #fc4c02;
+	color: #ffffff;
+	border-color: #e04500;
+	font-weight: 600;
+}
+.sbgx-btn-primary:hover:not(:disabled) {
+	background: #e04500;
+}
+
+/* Secondary action button. Sits next to .sbgx-btn-primary in the toolbar
+   (currently the "Merge selected into one GPX" button) - looks like an
+   outlined cousin of the primary so it reads as related-but-quieter. */
+.sbgx-btn-secondary {
+	background: #ffffff;
+	color: #fc4c02;
+	border-color: #fc4c02;
+	font-weight: 600;
+}
+.sbgx-btn-secondary:hover:not(:disabled) {
+	background: #fff1eb;
+}
+
+.sbgx-btn-row {
+	padding: 3px 8px;
+	font-size: 12px;
+	line-height: 1;
+}
+
+/* Ko-fi widget - uses the official kofi6.png asset (bundled as a data URL via
+   scripts/build-kofi.js). The image already carries Ko-fi's brand styling,
+   so we just need to render it cleanly. */
+.sbgx-kofi {
+	display: inline-block;
+	line-height: 0;
+	transition:
+		opacity 80ms ease,
+		transform 80ms ease;
+	text-decoration: none;
+}
+.sbgx-kofi:hover,
+.sbgx-kofi:focus-visible {
+	opacity: 0.9;
+	transform: translateY(-1px);
+}
+.sbgx-kofi img {
+	display: block;
+	height: 32px;
+	width: auto;
+	border: 0;
+}
+
+/* Row cells injected into Strava's existing table. */
+.sbgx-cell {
+	padding: 4px 6px;
+	vertical-align: middle;
+	white-space: nowrap;
+}
+.sbgx-cell-check {
+	width: 28px;
+}
+.sbgx-cell-dl {
+	width: 56px;
+	text-align: right;
+}
+.sbgx-row-cb {
+	margin: 0;
+	cursor: pointer;
+}

@@ -1,0 +1,62 @@
+name: Bug report
+description: Something broke - toolbar not appearing, download failing, GPX content wrong, etc.
+title: '[Bug]: '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please give us enough detail to reproduce it.
+  - type: input
+    id: chrome-version
+    attributes:
+      label: Chrome / Chromium version
+      description: 'chrome://settings/help - e.g. "Version 138.0.7204.96 (Official Build) (arm64)"'
+      placeholder: e.g. Chrome 138 / Brave 1.71 / Edge 138
+    validations:
+      required: true
+  - type: input
+    id: extension-version
+    attributes:
+      label: Extension version
+      description: 'chrome://extensions → Strava Bulk GPX Export → version'
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: e.g. macOS 15.4, Windows 11, Ubuntu 24.04
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: What did you do?
+      placeholder: |
+        1. Open https://www.strava.com/athlete/training
+        2. Filter by …
+        3. Click Download selected
+        4. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: What happened instead? Include error messages, screenshots, or DevTools console output if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Other extensions installed that touch Strava, DevTools network tab snippets, anything that might help.

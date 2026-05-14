@@ -1,0 +1,21 @@
+# Build output and dependencies.
+node_modules/
+dist/
+.vite/
+coverage/
+
+# Generated artifacts.
+icons/icon-*.png
+src/kofi-asset.ts
+
+# Lockfile and binary-ish assets.
+package-lock.json
+*.zip
+*.gpx
+*.svg
+
+# Playwright outputs and fixture HTML (don't reformat raw HTML)
+test-results/
+playwright-report/
+playwright/.cache/
+tests/fixtures/*.html

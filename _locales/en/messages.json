@@ -1,0 +1,125 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export",
+		"description": "Extension name shown in chrome://extensions and the Chrome Web Store listing."
+	},
+	"extensionDescription": {
+		"message": "Bulk export from Strava's My Activities - GPX, TCX, original files, or one merged GPX. Runs locally in your browser.",
+		"description": "Short blurb shown in the Chrome Web Store listing. Stay under 132 characters."
+	},
+	"selectAllVisible": {
+		"message": "Select all visible",
+		"description": "Label for the checkbox that toggles all GPS-bearing rows on the current page."
+	},
+	"downloadSelected": {
+		"message": "Download selected",
+		"description": "Primary action button. Disabled until at least one row is checked."
+	},
+	"selectedCount": {
+		"message": "$COUNT$ selected",
+		"description": "Status text showing how many rows are currently selected.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "3" }
+		}
+	},
+	"gpxButton": {
+		"message": "GPX",
+		"description": "Label on the per-row download button. GPX is a file-format acronym - usually kept as-is in translations."
+	},
+	"gpxButtonTitle": {
+		"message": "Download GPX for this activity",
+		"description": "Tooltip on the per-row download button."
+	},
+	"preparingDownloads": {
+		"message": "Preparing $COUNT$ downloads…",
+		"description": "Brief status shown immediately after the user clicks Download selected.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "5" }
+		}
+	},
+	"downloadingProgress": {
+		"message": "Downloading $COMPLETED$ / $TOTAL$…",
+		"description": "Progress shown while a bulk download is in flight. COMPLETED is how many files are done; TOTAL is the full batch size.",
+		"placeholders": {
+			"completed": { "content": "$1", "example": "3" },
+			"total": { "content": "$2", "example": "5" }
+		}
+	},
+	"buildingZip": {
+		"message": "Building zip…",
+		"description": "Final stage of a multi-file bulk download - files are fetched, now JSZip is assembling them."
+	},
+	"savedActivities": {
+		"message": "Saved $COUNT$ activities.",
+		"description": "Terminal success message. Shown after a fully successful bulk run.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "5" }
+		}
+	},
+	"savedWithSkips": {
+		"message": "Saved $OK$, skipped $FAILED$ ($REASON$)",
+		"description": "Terminal partial-success message. REASON is the first failure reason verbatim (e.g. 'HTTP 404'). REASON may stay in English.",
+		"placeholders": {
+			"ok": { "content": "$1", "example": "3" },
+			"failed": { "content": "$2", "example": "2" },
+			"reason": { "content": "$3", "example": "HTTP 404" }
+		}
+	},
+	"downloadFailed": {
+		"message": "Failed: $REASON$",
+		"description": "Terminal error message when an entire bulk run fails.",
+		"placeholders": {
+			"reason": { "content": "$1", "example": "Network error" }
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "Couldn't download $ID$: $MESSAGE$",
+		"description": "Alert shown when a single per-row GPX download fails.",
+		"placeholders": {
+			"id": { "content": "$1", "example": "12345" },
+			"message": { "content": "$2", "example": "Network error" }
+		}
+	},
+	"koFiTitle": {
+		"message": "Buy Me a Coffee at ko-fi.com",
+		"description": "Hover tooltip on the Ko-fi support button in the toolbar. Keep 'Ko-fi' as a proper noun."
+	},
+	"formatLabel": {
+		"message": "Format:",
+		"description": "Label preceding the export-format dropdown in the toolbar."
+	},
+	"formatTcx": {
+		"message": "TCX",
+		"description": "Label for the TCX option in the format dropdown. TCX is a file-format acronym; usually kept as-is."
+	},
+	"formatOriginal": {
+		"message": "Original",
+		"description": "Label for the 'original upload file' option in the dropdown (typically .fit from Garmin/Wahoo, sometimes .gpx/.tcx)."
+	},
+	"rowButtonTitle": {
+		"message": "Download $FORMAT$ for this activity",
+		"description": "Tooltip on the per-row download button. FORMAT is the localized name of the currently selected format (GPX/TCX/Original).",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" }
+		}
+	},
+	"mergeSelected": {
+		"message": "Merge selected into one GPX",
+		"description": "Toolbar button next to 'Download selected'. Fetches every selected activity's GPX and emits a single combined .gpx file (one <trk> per activity). Visible only when the format dropdown is set to GPX, since TCX and Original can't be merged the same way."
+	},
+	"mergingGpx": {
+		"message": "Merging into one GPX…",
+		"description": "Status shown while the merge step is running (after all individual GPX files have been fetched)."
+	},
+	"savedMerged": {
+		"message": "Saved merged GPX with $COUNT$ activities.",
+		"description": "Terminal success message after a merge run. COUNT is how many activities were successfully merged into the output file.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "5" }
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "Merging is only available in GPX mode",
+		"description": "Tooltip on the Merge button when the format dropdown is set to TCX or Original. Explains why the button is disabled (TCX/Original files aren't trivially concatenable into a single document)."
+	}
+}

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <rect width="128" height="128" rx="22" fill="#fc4c02"/>
+  <!-- Downward arrow signifying export -->
+  <path d="M64 22 v50 M40 56 l24 24 l24 -24"
+        fill="none" stroke="#ffffff" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Tray suggesting "to file" -->
+  <path d="M28 92 h72 v14 h-72 z"
+        fill="#ffffff"/>
+</svg>

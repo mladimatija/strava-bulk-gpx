@@ -1,0 +1,141 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export"
+	},
+	"extensionDescription": {
+		"message": "Massenexport aus Stravas Meine Aktivitäten - GPX, TCX, Originaldateien oder eine zusammengeführte GPX. Läuft lokal im Browser."
+	},
+	"selectAllVisible": {
+		"message": "Alle sichtbaren auswählen"
+	},
+	"downloadSelected": {
+		"message": "Auswahl herunterladen"
+	},
+	"selectedCount": {
+		"message": "$COUNT$ ausgewählt",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"gpxButton": {
+		"message": "GPX"
+	},
+	"gpxButtonTitle": {
+		"message": "GPX für diese Aktivität herunterladen"
+	},
+	"preparingDownloads": {
+		"message": "$COUNT$ Downloads werden vorbereitet …",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"downloadingProgress": {
+		"message": "Lade $COMPLETED$ / $TOTAL$ …",
+		"placeholders": {
+			"completed": {
+				"content": "$1",
+				"example": "3"
+			},
+			"total": {
+				"content": "$2",
+				"example": "5"
+			}
+		}
+	},
+	"buildingZip": {
+		"message": "ZIP wird erstellt …"
+	},
+	"savedActivities": {
+		"message": "$COUNT$ Aktivitäten gespeichert.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"savedWithSkips": {
+		"message": "$OK$ gespeichert, $FAILED$ übersprungen ($REASON$)",
+		"placeholders": {
+			"ok": {
+				"content": "$1",
+				"example": "3"
+			},
+			"failed": {
+				"content": "$2",
+				"example": "2"
+			},
+			"reason": {
+				"content": "$3",
+				"example": "HTTP 404"
+			}
+		}
+	},
+	"downloadFailed": {
+		"message": "Fehlgeschlagen: $REASON$",
+		"placeholders": {
+			"reason": {
+				"content": "$1",
+				"example": "Netzwerkfehler"
+			}
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "Download von $ID$ fehlgeschlagen: $MESSAGE$",
+		"placeholders": {
+			"id": {
+				"content": "$1",
+				"example": "12345"
+			},
+			"message": {
+				"content": "$2",
+				"example": "Netzwerkfehler"
+			}
+		}
+	},
+	"koFiTitle": {
+		"message": "Spendiere mir einen Kaffee auf ko-fi.com"
+	},
+	"formatLabel": {
+		"message": "Format:"
+	},
+	"formatTcx": {
+		"message": "TCX"
+	},
+	"formatOriginal": {
+		"message": "Original"
+	},
+	"rowButtonTitle": {
+		"message": "$FORMAT$ für diese Aktivität herunterladen",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeSelected": {
+		"message": "Auswahl in eine GPX zusammenführen"
+	},
+	"mergingGpx": {
+		"message": "Zu einer GPX zusammenführen…"
+	},
+	"savedMerged": {
+		"message": "Zusammengeführte GPX mit $COUNT$ Aktivitäten gespeichert.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "Zusammenführen ist nur im GPX-Modus verfügbar"
+	}
+}

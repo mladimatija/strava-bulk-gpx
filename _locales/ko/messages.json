@@ -1,0 +1,141 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export"
+	},
+	"extensionDescription": {
+		"message": "Strava의 내 활동에서 일괄 내보내기 - GPX, TCX, 원본 파일 또는 병합된 GPX. 브라우저에서 로컬로 실행됩니다."
+	},
+	"selectAllVisible": {
+		"message": "보이는 항목 모두 선택"
+	},
+	"downloadSelected": {
+		"message": "선택 항목 다운로드"
+	},
+	"selectedCount": {
+		"message": "$COUNT$개 선택됨",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"gpxButton": {
+		"message": "GPX"
+	},
+	"gpxButtonTitle": {
+		"message": "이 활동의 GPX 다운로드"
+	},
+	"preparingDownloads": {
+		"message": "$COUNT$개 다운로드 준비 중…",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"downloadingProgress": {
+		"message": "다운로드 중 $COMPLETED$ / $TOTAL$…",
+		"placeholders": {
+			"completed": {
+				"content": "$1",
+				"example": "3"
+			},
+			"total": {
+				"content": "$2",
+				"example": "5"
+			}
+		}
+	},
+	"buildingZip": {
+		"message": "ZIP 생성 중…"
+	},
+	"savedActivities": {
+		"message": "$COUNT$개 활동을 저장했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"savedWithSkips": {
+		"message": "$OK$개 저장, $FAILED$개 건너뜀 ($REASON$)",
+		"placeholders": {
+			"ok": {
+				"content": "$1",
+				"example": "3"
+			},
+			"failed": {
+				"content": "$2",
+				"example": "2"
+			},
+			"reason": {
+				"content": "$3",
+				"example": "HTTP 404"
+			}
+		}
+	},
+	"downloadFailed": {
+		"message": "실패: $REASON$",
+		"placeholders": {
+			"reason": {
+				"content": "$1",
+				"example": "네트워크 오류"
+			}
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "$ID$ 다운로드 실패: $MESSAGE$",
+		"placeholders": {
+			"id": {
+				"content": "$1",
+				"example": "12345"
+			},
+			"message": {
+				"content": "$2",
+				"example": "네트워크 오류"
+			}
+		}
+	},
+	"koFiTitle": {
+		"message": "ko-fi.com에서 커피 한 잔 사주기"
+	},
+	"formatLabel": {
+		"message": "형식:"
+	},
+	"formatTcx": {
+		"message": "TCX"
+	},
+	"formatOriginal": {
+		"message": "원본"
+	},
+	"rowButtonTitle": {
+		"message": "이 활동의 $FORMAT$ 다운로드",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeSelected": {
+		"message": "선택 항목을 하나의 GPX로 병합"
+	},
+	"mergingGpx": {
+		"message": "하나의 GPX로 병합 중…"
+	},
+	"savedMerged": {
+		"message": "$COUNT$개 활동을 병합한 GPX를 저장했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "병합은 GPX 모드에서만 사용할 수 있습니다"
+	}
+}

@@ -1,0 +1,28 @@
+version: 2
+# Dependabot used to apply `labels: [dependencies, npm]` /
+# [dependencies, github-actions] here, but Dependabot rejects the whole config
+# when labels referenced in it don't already exist in the repo. To get bumps
+# flowing on day-one of a fresh repo, no labels are applied. Add them later
+# in the GitHub UI (Repository → Labels) if you want — and once they exist,
+# you can re-introduce a `labels:` line on each update block.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+      timezone: Europe/Zagreb
+    open-pull-requests-limit: 5
+    groups:
+      # Group all non-major bumps into one PR per week to cut noise.
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '08:00'
+      timezone: Europe/Zagreb

@@ -1,0 +1,141 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export"
+	},
+	"extensionDescription": {
+		"message": "Hromadný export ze stránky Moje aktivity ve Stravě - GPX, TCX, originály nebo jeden sloučený GPX. Lokálně v prohlížeči."
+	},
+	"selectAllVisible": {
+		"message": "Vybrat vše viditelné"
+	},
+	"downloadSelected": {
+		"message": "Stáhnout vybrané"
+	},
+	"selectedCount": {
+		"message": "Vybráno: $COUNT$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"gpxButton": {
+		"message": "GPX"
+	},
+	"gpxButtonTitle": {
+		"message": "Stáhnout GPX pro tuto aktivitu"
+	},
+	"preparingDownloads": {
+		"message": "Připravuji $COUNT$ stahování…",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"downloadingProgress": {
+		"message": "Stahování $COMPLETED$ / $TOTAL$…",
+		"placeholders": {
+			"completed": {
+				"content": "$1",
+				"example": "3"
+			},
+			"total": {
+				"content": "$2",
+				"example": "5"
+			}
+		}
+	},
+	"buildingZip": {
+		"message": "Vytvářím ZIP…"
+	},
+	"savedActivities": {
+		"message": "Uloženo $COUNT$ aktivit.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"savedWithSkips": {
+		"message": "Uloženo $OK$, přeskočeno $FAILED$ ($REASON$)",
+		"placeholders": {
+			"ok": {
+				"content": "$1",
+				"example": "3"
+			},
+			"failed": {
+				"content": "$2",
+				"example": "2"
+			},
+			"reason": {
+				"content": "$3",
+				"example": "HTTP 404"
+			}
+		}
+	},
+	"downloadFailed": {
+		"message": "Selhalo: $REASON$",
+		"placeholders": {
+			"reason": {
+				"content": "$1",
+				"example": "Chyba sítě"
+			}
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "Nelze stáhnout $ID$: $MESSAGE$",
+		"placeholders": {
+			"id": {
+				"content": "$1",
+				"example": "12345"
+			},
+			"message": {
+				"content": "$2",
+				"example": "Chyba sítě"
+			}
+		}
+	},
+	"koFiTitle": {
+		"message": "Pošlete mi kávu na ko-fi.com"
+	},
+	"formatLabel": {
+		"message": "Formát:"
+	},
+	"formatTcx": {
+		"message": "TCX"
+	},
+	"formatOriginal": {
+		"message": "Originál"
+	},
+	"rowButtonTitle": {
+		"message": "Stáhnout $FORMAT$ pro tuto aktivitu",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeSelected": {
+		"message": "Sloučit vybrané do jednoho GPX"
+	},
+	"mergingGpx": {
+		"message": "Slučování do jednoho GPX…"
+	},
+	"savedMerged": {
+		"message": "Uložen sloučený GPX s $COUNT$ aktivitami.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "Slučování je dostupné pouze v režimu GPX"
+	}
+}
