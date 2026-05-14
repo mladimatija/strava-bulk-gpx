@@ -1,0 +1,141 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export"
+	},
+	"extensionDescription": {
+		"message": "Bulk-export vanuit Strava's Mijn activiteiten - GPX, TCX, originele bestanden of één samengevoegde GPX. Lokaal in je browser."
+	},
+	"selectAllVisible": {
+		"message": "Alle zichtbare selecteren"
+	},
+	"downloadSelected": {
+		"message": "Selectie downloaden"
+	},
+	"selectedCount": {
+		"message": "$COUNT$ geselecteerd",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"gpxButton": {
+		"message": "GPX"
+	},
+	"gpxButtonTitle": {
+		"message": "GPX voor deze activiteit downloaden"
+	},
+	"preparingDownloads": {
+		"message": "$COUNT$ downloads voorbereiden…",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"downloadingProgress": {
+		"message": "Downloaden $COMPLETED$ / $TOTAL$…",
+		"placeholders": {
+			"completed": {
+				"content": "$1",
+				"example": "3"
+			},
+			"total": {
+				"content": "$2",
+				"example": "5"
+			}
+		}
+	},
+	"buildingZip": {
+		"message": "ZIP maken…"
+	},
+	"savedActivities": {
+		"message": "$COUNT$ activiteiten opgeslagen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"savedWithSkips": {
+		"message": "$OK$ opgeslagen, $FAILED$ overgeslagen ($REASON$)",
+		"placeholders": {
+			"ok": {
+				"content": "$1",
+				"example": "3"
+			},
+			"failed": {
+				"content": "$2",
+				"example": "2"
+			},
+			"reason": {
+				"content": "$3",
+				"example": "HTTP 404"
+			}
+		}
+	},
+	"downloadFailed": {
+		"message": "Mislukt: $REASON$",
+		"placeholders": {
+			"reason": {
+				"content": "$1",
+				"example": "Netwerkfout"
+			}
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "$ID$ kon niet worden gedownload: $MESSAGE$",
+		"placeholders": {
+			"id": {
+				"content": "$1",
+				"example": "12345"
+			},
+			"message": {
+				"content": "$2",
+				"example": "Netwerkfout"
+			}
+		}
+	},
+	"koFiTitle": {
+		"message": "Trakteer me op een koffie op ko-fi.com"
+	},
+	"formatLabel": {
+		"message": "Formaat:"
+	},
+	"formatTcx": {
+		"message": "TCX"
+	},
+	"formatOriginal": {
+		"message": "Origineel"
+	},
+	"rowButtonTitle": {
+		"message": "$FORMAT$ voor deze activiteit downloaden",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeSelected": {
+		"message": "Geselecteerde activiteiten samenvoegen tot één GPX"
+	},
+	"mergingGpx": {
+		"message": "Samenvoegen tot één GPX…"
+	},
+	"savedMerged": {
+		"message": "Samengevoegde GPX met $COUNT$ activiteiten opgeslagen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "Samenvoegen is alleen beschikbaar in GPX-modus"
+	}
+}

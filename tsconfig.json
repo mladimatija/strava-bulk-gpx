@@ -1,0 +1,38 @@
+{
+	"compilerOptions": {
+		/* Target Chrome's MV3 floor (Chrome 102+, supports ES2022 natively). */
+		"target": "ES2022",
+		"lib": ["ES2023", "DOM", "DOM.Iterable"],
+
+		/* Module system: ESM everywhere, bundler-style resolution so we don't have
+       to write file extensions in imports and so Vite handles the actual resolve. */
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"moduleDetection": "force",
+		"allowImportingTsExtensions": true,
+		"resolveJsonModule": true,
+
+		/* Modern import/export hygiene: require explicit `import type` for types,
+       and treat each file as its own module so esbuild/Vite can transpile in
+       isolation without cross-file type info. */
+		"verbatimModuleSyntax": true,
+		"isolatedModules": true,
+
+		/* Vite owns the build; tsc is only used for type-checking. */
+		"noEmit": true,
+
+		/* Strict mode plus a few extras worth turning on by default. */
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"noImplicitOverride": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"types": ["chrome", "node"]
+	},
+	"include": ["src/**/*.ts", "vite.config.ts", "tests/**/*.ts", "playwright.config.ts"],
+	"exclude": ["node_modules", "dist", "test-results", "playwright-report"]
+}

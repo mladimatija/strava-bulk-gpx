@@ -1,0 +1,141 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export"
+	},
+	"extensionDescription": {
+		"message": "Массовый экспорт из «Моих тренировок» Strava - GPX, TCX, оригиналы или объединённый GPX. Работает локально в браузере."
+	},
+	"selectAllVisible": {
+		"message": "Выбрать все видимые"
+	},
+	"downloadSelected": {
+		"message": "Скачать выбранные"
+	},
+	"selectedCount": {
+		"message": "Выбрано: $COUNT$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"gpxButton": {
+		"message": "GPX"
+	},
+	"gpxButtonTitle": {
+		"message": "Скачать GPX для этой тренировки"
+	},
+	"preparingDownloads": {
+		"message": "Подготовка $COUNT$ загрузок…",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"downloadingProgress": {
+		"message": "Загрузка $COMPLETED$ / $TOTAL$…",
+		"placeholders": {
+			"completed": {
+				"content": "$1",
+				"example": "3"
+			},
+			"total": {
+				"content": "$2",
+				"example": "5"
+			}
+		}
+	},
+	"buildingZip": {
+		"message": "Создание ZIP…"
+	},
+	"savedActivities": {
+		"message": "Сохранено тренировок: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"savedWithSkips": {
+		"message": "Сохранено $OK$, пропущено $FAILED$ ($REASON$)",
+		"placeholders": {
+			"ok": {
+				"content": "$1",
+				"example": "3"
+			},
+			"failed": {
+				"content": "$2",
+				"example": "2"
+			},
+			"reason": {
+				"content": "$3",
+				"example": "HTTP 404"
+			}
+		}
+	},
+	"downloadFailed": {
+		"message": "Ошибка: $REASON$",
+		"placeholders": {
+			"reason": {
+				"content": "$1",
+				"example": "Ошибка сети"
+			}
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "Не удалось скачать $ID$: $MESSAGE$",
+		"placeholders": {
+			"id": {
+				"content": "$1",
+				"example": "12345"
+			},
+			"message": {
+				"content": "$2",
+				"example": "Ошибка сети"
+			}
+		}
+	},
+	"koFiTitle": {
+		"message": "Угостите кофе на ko-fi.com"
+	},
+	"formatLabel": {
+		"message": "Формат:"
+	},
+	"formatTcx": {
+		"message": "TCX"
+	},
+	"formatOriginal": {
+		"message": "Оригинал"
+	},
+	"rowButtonTitle": {
+		"message": "Скачать $FORMAT$ для этой тренировки",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeSelected": {
+		"message": "Объединить выбранные в один GPX"
+	},
+	"mergingGpx": {
+		"message": "Объединение в один GPX…"
+	},
+	"savedMerged": {
+		"message": "Сохранён объединённый GPX с $COUNT$ тренировками.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "Объединение доступно только в режиме GPX"
+	}
+}

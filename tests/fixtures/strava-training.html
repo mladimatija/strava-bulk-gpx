@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>My Activities | Strava</title>
+		<style>
+			/* Minimal styles to approximate Strava's My Activities layout so the
+		   extension's toolbar and row injections look realistic in screenshots. */
+			body {
+				font-family:
+					-apple-system,
+					BlinkMacSystemFont,
+					'Helvetica Neue',
+					Arial,
+					sans-serif;
+				color: #1c1f26;
+				background: #fff;
+				margin: 0;
+				padding: 40px 56px;
+			}
+			h1 {
+				font-size: 28px;
+				font-weight: 800;
+				margin: 0 0 28px;
+			}
+			table {
+				width: 100%;
+				border-collapse: collapse;
+				font-size: 14px;
+			}
+			thead th {
+				text-align: left;
+				font-weight: 600;
+				padding: 14px 12px;
+				background: #f6f8fa;
+				border-bottom: 1px solid #e3e6eb;
+			}
+			tbody td {
+				padding: 18px 12px;
+				border-bottom: 1px solid #eef1f4;
+				vertical-align: middle;
+			}
+			td.num {
+				white-space: nowrap;
+			}
+			a {
+				color: #fc4c02;
+				text-decoration: none;
+				font-weight: 600;
+			}
+			a:hover {
+				text-decoration: underline;
+			}
+			.row-actions a {
+				color: #5a6068;
+				font-weight: 500;
+				margin: 0 8px;
+				font-size: 13px;
+			}
+		</style>
+	</head>
+	<body>
+		<h1>3,184 Activities</h1>
+		<table>
+			<thead>
+				<tr>
+					<th>Sport</th>
+					<th>Date</th>
+					<th>Title</th>
+					<th class="num">Time</th>
+					<th class="num">Distance</th>
+					<th class="num">Elevation</th>
+					<th class="num">Relative Effort</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<!-- GPS-bearing activities -->
+				<tr>
+					<td>Trail Run</td>
+					<td>Sat, 09/05/2026</td>
+					<td><a href="/activities/9000000001">Traversa v19 feat. Ex Acini Novi Šćapi</a></td>
+					<td class="num">5:32:41</td>
+					<td class="num">48.11 km</td>
+					<td class="num">1,889 m</td>
+					<td class="num">109</td>
+					<td class="row-actions"><a href="#">Edit</a><a href="#">Share</a></td>
+				</tr>
+				<tr>
+					<td>Trail Run</td>
+					<td>Fri, 08/05/2026</td>
+					<td><a href="/activities/9000000002">Lunch Trail Run</a></td>
+					<td class="num">1:14:39</td>
+					<td class="num">10.35 km</td>
+					<td class="num">587 m</td>
+					<td class="num">18</td>
+					<td class="row-actions"><a href="#">Edit</a><a href="#">Share</a></td>
+				</tr>
+				<tr>
+					<td>Run</td>
+					<td>Wed, 06/05/2026</td>
+					<td><a href="/activities/9000000003">Morning Run</a></td>
+					<td class="num">46:22</td>
+					<td class="num">10.07 km</td>
+					<td class="num">59 m</td>
+					<td class="num">13</td>
+					<td class="row-actions"><a href="#">Edit</a><a href="#">Share</a></td>
+				</tr>
+				<!-- Indoor / no-GPS activities - should NOT get checkbox or GPX button -->
+				<tr>
+					<td>Workout</td>
+					<td>Tue, 12/05/2026</td>
+					<td><a href="/activities/9000000004">Evening Workout</a></td>
+					<td class="num">27:01</td>
+					<td class="num">0 km</td>
+					<td class="num">0 m</td>
+					<td class="num">2</td>
+					<td class="row-actions"><a href="#">Edit</a><a href="#">Share</a></td>
+				</tr>
+				<tr>
+					<td>Weight Training</td>
+					<td>Tue, 12/05/2026</td>
+					<td><a href="/activities/9000000005">Afternoon Weight Training</a></td>
+					<td class="num">1:33:29</td>
+					<td class="num">0 km</td>
+					<td class="num">0 m</td>
+					<td class="num">10</td>
+					<td class="row-actions"><a href="#">Edit</a><a href="#">Share</a></td>
+				</tr>
+			</tbody>
+		</table>
+	</body>
+</html>

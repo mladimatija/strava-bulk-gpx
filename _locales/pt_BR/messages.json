@@ -1,0 +1,141 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export"
+	},
+	"extensionDescription": {
+		"message": "Exportação em lote de Minhas atividades do Strava - GPX, TCX, arquivos originais ou um GPX combinado. Local, no seu navegador."
+	},
+	"selectAllVisible": {
+		"message": "Selecionar todos visíveis"
+	},
+	"downloadSelected": {
+		"message": "Baixar selecionados"
+	},
+	"selectedCount": {
+		"message": "$COUNT$ selecionado(s)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"gpxButton": {
+		"message": "GPX"
+	},
+	"gpxButtonTitle": {
+		"message": "Baixar GPX desta atividade"
+	},
+	"preparingDownloads": {
+		"message": "Preparando $COUNT$ downloads…",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"downloadingProgress": {
+		"message": "Baixando $COMPLETED$ / $TOTAL$…",
+		"placeholders": {
+			"completed": {
+				"content": "$1",
+				"example": "3"
+			},
+			"total": {
+				"content": "$2",
+				"example": "5"
+			}
+		}
+	},
+	"buildingZip": {
+		"message": "Criando ZIP…"
+	},
+	"savedActivities": {
+		"message": "$COUNT$ atividades salvas.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"savedWithSkips": {
+		"message": "$OK$ salvas, $FAILED$ ignoradas ($REASON$)",
+		"placeholders": {
+			"ok": {
+				"content": "$1",
+				"example": "3"
+			},
+			"failed": {
+				"content": "$2",
+				"example": "2"
+			},
+			"reason": {
+				"content": "$3",
+				"example": "HTTP 404"
+			}
+		}
+	},
+	"downloadFailed": {
+		"message": "Falha: $REASON$",
+		"placeholders": {
+			"reason": {
+				"content": "$1",
+				"example": "Erro de rede"
+			}
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "Não foi possível baixar $ID$: $MESSAGE$",
+		"placeholders": {
+			"id": {
+				"content": "$1",
+				"example": "12345"
+			},
+			"message": {
+				"content": "$2",
+				"example": "Erro de rede"
+			}
+		}
+	},
+	"koFiTitle": {
+		"message": "Pague-me um café no ko-fi.com"
+	},
+	"formatLabel": {
+		"message": "Formato:"
+	},
+	"formatTcx": {
+		"message": "TCX"
+	},
+	"formatOriginal": {
+		"message": "Original"
+	},
+	"rowButtonTitle": {
+		"message": "Baixar $FORMAT$ desta atividade",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeSelected": {
+		"message": "Combinar selecionados em um GPX"
+	},
+	"mergingGpx": {
+		"message": "Combinando em um GPX…"
+	},
+	"savedMerged": {
+		"message": "GPX combinado salvo com $COUNT$ atividades.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "A combinação está disponível apenas no modo GPX"
+	}
+}

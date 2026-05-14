@@ -1,0 +1,36 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Build and package
+        run: npm run package
+      - name: Compute SHA-256 of the artifact
+        # Pinning the zip's hash to the release notes lets users verify a
+        # downloaded zip matches what CI produced from this tag (e.g., when
+        # comparing the Chrome Web Store build to the source release).
+        run: |
+          sha256sum strava-bulk-gpx.zip > strava-bulk-gpx.zip.sha256
+          echo "SHA256: $(cat strava-bulk-gpx.zip.sha256)"
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            strava-bulk-gpx.zip
+            strava-bulk-gpx.zip.sha256

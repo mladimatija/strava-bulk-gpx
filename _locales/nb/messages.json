@@ -1,0 +1,141 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export"
+	},
+	"extensionDescription": {
+		"message": "Masseeksport fra Stravas Mine aktiviteter - GPX, TCX, originalfiler eller én sammenslått GPX. Kjører lokalt i nettleseren."
+	},
+	"selectAllVisible": {
+		"message": "Velg alle synlige"
+	},
+	"downloadSelected": {
+		"message": "Last ned valgte"
+	},
+	"selectedCount": {
+		"message": "$COUNT$ valgt",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"gpxButton": {
+		"message": "GPX"
+	},
+	"gpxButtonTitle": {
+		"message": "Last ned GPX for denne aktiviteten"
+	},
+	"preparingDownloads": {
+		"message": "Forbereder $COUNT$ nedlastinger…",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"downloadingProgress": {
+		"message": "Laster ned $COMPLETED$ / $TOTAL$…",
+		"placeholders": {
+			"completed": {
+				"content": "$1",
+				"example": "3"
+			},
+			"total": {
+				"content": "$2",
+				"example": "5"
+			}
+		}
+	},
+	"buildingZip": {
+		"message": "Lager ZIP…"
+	},
+	"savedActivities": {
+		"message": "$COUNT$ aktiviteter lagret.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"savedWithSkips": {
+		"message": "$OK$ lagret, $FAILED$ hoppet over ($REASON$)",
+		"placeholders": {
+			"ok": {
+				"content": "$1",
+				"example": "3"
+			},
+			"failed": {
+				"content": "$2",
+				"example": "2"
+			},
+			"reason": {
+				"content": "$3",
+				"example": "HTTP 404"
+			}
+		}
+	},
+	"downloadFailed": {
+		"message": "Feil: $REASON$",
+		"placeholders": {
+			"reason": {
+				"content": "$1",
+				"example": "Nettverksfeil"
+			}
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "Kunne ikke laste ned $ID$: $MESSAGE$",
+		"placeholders": {
+			"id": {
+				"content": "$1",
+				"example": "12345"
+			},
+			"message": {
+				"content": "$2",
+				"example": "Nettverksfeil"
+			}
+		}
+	},
+	"koFiTitle": {
+		"message": "Spander en kaffe på ko-fi.com"
+	},
+	"formatLabel": {
+		"message": "Format:"
+	},
+	"formatTcx": {
+		"message": "TCX"
+	},
+	"formatOriginal": {
+		"message": "Original"
+	},
+	"rowButtonTitle": {
+		"message": "Last ned $FORMAT$ for denne aktiviteten",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeSelected": {
+		"message": "Slå sammen valgte til én GPX"
+	},
+	"mergingGpx": {
+		"message": "Slår sammen til én GPX…"
+	},
+	"savedMerged": {
+		"message": "Lagret sammenslått GPX med $COUNT$ aktiviteter.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "Sammenslåing er bare tilgjengelig i GPX-modus"
+	}
+}

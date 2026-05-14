@@ -1,0 +1,141 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export"
+	},
+	"extensionDescription": {
+		"message": "Strava の「マイアクティビティ」から一括エクスポート - GPX、TCX、オリジナルファイル、または統合 GPX。ブラウザー内で動作します。"
+	},
+	"selectAllVisible": {
+		"message": "表示中をすべて選択"
+	},
+	"downloadSelected": {
+		"message": "選択をダウンロード"
+	},
+	"selectedCount": {
+		"message": "$COUNT$件選択中",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"gpxButton": {
+		"message": "GPX"
+	},
+	"gpxButtonTitle": {
+		"message": "このアクティビティのGPXをダウンロード"
+	},
+	"preparingDownloads": {
+		"message": "$COUNT$件のダウンロードを準備中…",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"downloadingProgress": {
+		"message": "ダウンロード中 $COMPLETED$ / $TOTAL$…",
+		"placeholders": {
+			"completed": {
+				"content": "$1",
+				"example": "3"
+			},
+			"total": {
+				"content": "$2",
+				"example": "5"
+			}
+		}
+	},
+	"buildingZip": {
+		"message": "ZIPを作成中…"
+	},
+	"savedActivities": {
+		"message": "$COUNT$件のアクティビティを保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"savedWithSkips": {
+		"message": "$OK$件保存、$FAILED$件スキップ ($REASON$)",
+		"placeholders": {
+			"ok": {
+				"content": "$1",
+				"example": "3"
+			},
+			"failed": {
+				"content": "$2",
+				"example": "2"
+			},
+			"reason": {
+				"content": "$3",
+				"example": "HTTP 404"
+			}
+		}
+	},
+	"downloadFailed": {
+		"message": "失敗: $REASON$",
+		"placeholders": {
+			"reason": {
+				"content": "$1",
+				"example": "ネットワークエラー"
+			}
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "$ID$をダウンロードできませんでした: $MESSAGE$",
+		"placeholders": {
+			"id": {
+				"content": "$1",
+				"example": "12345"
+			},
+			"message": {
+				"content": "$2",
+				"example": "ネットワークエラー"
+			}
+		}
+	},
+	"koFiTitle": {
+		"message": "ko-fi.comでコーヒーをおごる"
+	},
+	"formatLabel": {
+		"message": "形式:"
+	},
+	"formatTcx": {
+		"message": "TCX"
+	},
+	"formatOriginal": {
+		"message": "オリジナル"
+	},
+	"rowButtonTitle": {
+		"message": "このアクティビティの$FORMAT$をダウンロード",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeSelected": {
+		"message": "選択項目を 1 つの GPX に統合"
+	},
+	"mergingGpx": {
+		"message": "1 つの GPX に統合中…"
+	},
+	"savedMerged": {
+		"message": "$COUNT$ 件のアクティビティを統合した GPX を保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "統合は GPX モードでのみ利用できます"
+	}
+}

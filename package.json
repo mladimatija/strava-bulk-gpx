@@ -1,0 +1,65 @@
+{
+	"name": "strava-bulk-gpx",
+	"version": "1.0.0",
+	"private": true,
+	"description": "Chrome extension that adds bulk export (GPX, TCX, original, or merged GPX) to Strava's My Activities page.",
+	"type": "module",
+	"scripts": {
+		"postinstall": "simple-git-hooks",
+		"clean": "node scripts/clean.js",
+		"type-check": "tsc --noEmit",
+		"lint": "eslint .",
+		"lint:fix": "eslint . --fix",
+		"format": "prettier --write .",
+		"format:check": "prettier --check .",
+		"check": "npm run lint && npm run format:check && npm run type-check",
+		"predev": "node scripts/clean.js && node scripts/build-icons.js && node scripts/build-kofi.js",
+		"dev": "vite",
+		"prebuild": "node scripts/clean.js && node scripts/build-icons.js && node scripts/build-kofi.js && npm run type-check",
+		"build": "vite build",
+		"icons": "node scripts/build-icons.js",
+		"kofi": "node scripts/build-kofi.js",
+		"promo": "node scripts/build-promo.js",
+		"package": "npm run build && cd dist && zip -r ../strava-bulk-gpx.zip .",
+		"pretest": "npm run build",
+		"test": "playwright test --project=e2e",
+		"pretest:screenshots": "npm run build",
+		"test:screenshots": "playwright test --project=screenshots --update-snapshots",
+		"test:install": "playwright install --with-deps chromium"
+	},
+	"engines": {
+		"node": ">=24"
+	},
+	"devDependencies": {
+		"@crxjs/vite-plugin": "^2.4.0",
+		"@eslint/js": "^10.0.1",
+		"@playwright/test": "^1.60.0",
+		"@types/chrome": "^0.1.42",
+		"@types/node": "^25.7.0",
+		"eslint": "^10.3.0",
+		"eslint-config-prettier": "^10.1.8",
+		"globals": "^17.6.0",
+		"lint-staged": "^17.0.4",
+		"prettier": "^3.8.3",
+		"sharp": "^0.34.5",
+		"simple-git-hooks": "^2.13.1",
+		"typescript": "^6.0.3",
+		"typescript-eslint": "^8.59.3",
+		"vite": "^8.0.12"
+	},
+	"dependencies": {
+		"jszip": "^3.10.1"
+	},
+	"simple-git-hooks": {
+		"pre-commit": "npx lint-staged"
+	},
+	"lint-staged": {
+		"*.{ts,js,mjs,cjs}": [
+			"eslint --fix",
+			"prettier --write"
+		],
+		"*.{json,md,css,html,yml,yaml}": [
+			"prettier --write"
+		]
+	}
+}

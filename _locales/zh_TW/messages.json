@@ -1,0 +1,141 @@
+{
+	"extensionName": {
+		"message": "Strava Bulk GPX Export"
+	},
+	"extensionDescription": {
+		"message": "從 Strava「我的活動」批次匯出 - GPX、TCX、原始檔案或合併後的單一 GPX。完全在您的瀏覽器中執行。"
+	},
+	"selectAllVisible": {
+		"message": "全選可見"
+	},
+	"downloadSelected": {
+		"message": "下載所選"
+	},
+	"selectedCount": {
+		"message": "已選擇 $COUNT$ 項",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"gpxButton": {
+		"message": "GPX"
+	},
+	"gpxButtonTitle": {
+		"message": "下載此活動的 GPX"
+	},
+	"preparingDownloads": {
+		"message": "準備下載 $COUNT$ 項…",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"downloadingProgress": {
+		"message": "下載中 $COMPLETED$ / $TOTAL$…",
+		"placeholders": {
+			"completed": {
+				"content": "$1",
+				"example": "3"
+			},
+			"total": {
+				"content": "$2",
+				"example": "5"
+			}
+		}
+	},
+	"buildingZip": {
+		"message": "正在建立 ZIP…"
+	},
+	"savedActivities": {
+		"message": "已儲存 $COUNT$ 項活動。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"savedWithSkips": {
+		"message": "已儲存 $OK$ 項,跳過 $FAILED$ 項 ($REASON$)",
+		"placeholders": {
+			"ok": {
+				"content": "$1",
+				"example": "3"
+			},
+			"failed": {
+				"content": "$2",
+				"example": "2"
+			},
+			"reason": {
+				"content": "$3",
+				"example": "HTTP 404"
+			}
+		}
+	},
+	"downloadFailed": {
+		"message": "失敗: $REASON$",
+		"placeholders": {
+			"reason": {
+				"content": "$1",
+				"example": "網路錯誤"
+			}
+		}
+	},
+	"rowDownloadFailed": {
+		"message": "無法下載 $ID$: $MESSAGE$",
+		"placeholders": {
+			"id": {
+				"content": "$1",
+				"example": "12345"
+			},
+			"message": {
+				"content": "$2",
+				"example": "網路錯誤"
+			}
+		}
+	},
+	"koFiTitle": {
+		"message": "在 ko-fi.com 請我喝杯咖啡"
+	},
+	"formatLabel": {
+		"message": "格式:"
+	},
+	"formatTcx": {
+		"message": "TCX"
+	},
+	"formatOriginal": {
+		"message": "原始檔案"
+	},
+	"rowButtonTitle": {
+		"message": "下載此活動的 $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeSelected": {
+		"message": "合併所選為一個 GPX"
+	},
+	"mergingGpx": {
+		"message": "正在合併為一個 GPX…"
+	},
+	"savedMerged": {
+		"message": "已儲存合併的 GPX，包含 $COUNT$ 項活動。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"mergeOnlyGpx": {
+		"message": "合併僅在 GPX 模式下可用"
+	}
+}
