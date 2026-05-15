@@ -8,6 +8,8 @@ This directory follows Chrome's [extension i18n](https://developer.chrome.com/do
 
 The extension ships translations for every language [Strava itself supports](https://support.strava.com/hc/en-us/articles/216917337-Supported-Languages-on-Strava). Chrome picks the right one automatically based on the user's browser language; missing keys fall back to English (`default_locale`).
 
+If `chrome.i18n.getMessage` is unavailable at runtime for any reason (a known edge case with MV3 content scripts loaded via dynamic import), the typed `t()` helper in `src/i18n.ts` falls back to a baked-in English copy of every string, so the toolbar still renders rather than throwing.
+
 | Code    | Language                                   | Reviewed by a native speaker? |
 | ------- | ------------------------------------------ | ----------------------------- |
 | `en`    | English (default)                          | ✅ source of truth            |
