@@ -1,6 +1,6 @@
 {
 	"name": "strava-bulk-gpx",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"private": true,
 	"description": "Chrome extension that adds bulk export (GPX, TCX, original, or merged GPX) to Strava's My Activities page.",
 	"type": "module",
