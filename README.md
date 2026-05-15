@@ -74,7 +74,7 @@ These are the same URLs the _Export GPX / TCX / Original_ links use on individua
 
 ### From the Chrome Web Store
 
-Coming soon. Once published the listing will live at `<URL>`.
+https://chromewebstore.google.com/detail/strava-bulk-gpx-export/nabkcpkedegngoebodobopcojpahgbba
 
 ### From source (developer mode)
 
