@@ -35,18 +35,18 @@
 		"@crxjs/vite-plugin": "^2.4.0",
 		"@eslint/js": "^10.0.1",
 		"@playwright/test": "^1.60.0",
-		"@types/chrome": "^0.1.42",
-		"@types/node": "^25.8.0",
-		"eslint": "^10.4.0",
+		"@types/chrome": "^0.1.43",
+		"@types/node": "^25.9.2",
+		"eslint": "^10.4.1",
 		"eslint-config-prettier": "^10.1.8",
 		"globals": "^17.6.0",
-		"lint-staged": "^17.0.5",
+		"lint-staged": "^17.0.7",
 		"prettier": "^3.8.3",
 		"sharp": "^0.34.5",
 		"simple-git-hooks": "^2.13.1",
 		"typescript": "^6.0.3",
-		"typescript-eslint": "^8.59.3",
-		"vite": "^8.0.13"
+		"typescript-eslint": "^8.60.1",
+		"vite": "^8.0.16"
 	},
 	"dependencies": {
 		"jszip": "^3.10.1"
