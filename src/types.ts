@@ -40,9 +40,7 @@ export interface BulkResult {
  *     single output document.
  */
 export type ProgressEvent =
-	| { stage: 'downloading'; completed: number; total: number }
-	| { stage: 'zipping' }
-	| { stage: 'merging' };
+	{ stage: 'downloading'; completed: number; total: number } | { stage: 'zipping' } | { stage: 'merging' };
 
 export type ProgressCallback = (event: ProgressEvent) => void;
 
