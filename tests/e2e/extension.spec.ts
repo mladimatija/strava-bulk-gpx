@@ -146,6 +146,15 @@ test.describe('Strava Bulk GPX extension', () => {
 		await expect(select.locator('option[value="original"]')).toHaveText('Original');
 	});
 
+	test('remembers the selected format across page loads', async ({ extensionPage }) => {
+		const select = extensionPage.locator('select[data-role="format"]');
+		await select.selectOption('original');
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(select).toHaveValue('original');
+		await expect(extensionPage.locator('.sbgx-btn-row').first()).toHaveText('Original');
+	});
+
 	test('changing format updates per-row button labels live', async ({ extensionPage }) => {
 		const firstRowBtn = extensionPage.locator('.sbgx-btn-row').first();
 		await expect(firstRowBtn).toHaveText('GPX');
