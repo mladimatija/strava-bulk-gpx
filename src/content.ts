@@ -48,6 +48,30 @@ const STATE: State = {
 	format: 'gpx',
 };
 
+const FORMAT_STORAGE_KEY = 'exportFormat';
+
+/** Narrow an untrusted stored value to a known format, defaulting to gpx. */
+function parseFormat(value: unknown): ExportFormat {
+	return value === 'tcx' || value === 'original' ? value : 'gpx';
+}
+
+/** Restore the last-used export format; storage failures fall back to gpx. */
+async function loadFormat(): Promise<void> {
+	try {
+		const stored = await chrome.storage.local.get(FORMAT_STORAGE_KEY);
+		STATE.format = parseFormat(stored[FORMAT_STORAGE_KEY]);
+	} catch {
+		// Keep the default - a broken storage area shouldn't block exports.
+	}
+}
+
+/** Persist the chosen format for the next page load (best-effort). */
+function saveFormat(format: ExportFormat): void {
+	chrome.storage.local.set({ [FORMAT_STORAGE_KEY]: format }).catch((err: unknown) => {
+		console.warn('Could not save export format', err);
+	});
+}
+
 /** Human-readable label for a format, from the i18n bundle. */
 function formatLabel(format: ExportFormat): string {
 	if (format === 'gpx') return t('gpxButton');
@@ -223,7 +247,8 @@ function buildToolbar(): HTMLDivElement {
 		// Tolerate unexpected values defensively; if someone hacks the DOM in
 		// devtools we still fall back to gpx rather than crashing later.
 		const next = formatSelect.value;
-		STATE.format = next === 'tcx' || next === 'original' ? next : 'gpx';
+		STATE.format = parseFormat(next);
+		saveFormat(STATE.format);
 		refreshRowButtons();
 		// renderToolbarCounts re-derives the merge button's disabled/title
 		// state from STATE.format, so it has to run on every format change.
@@ -445,7 +470,10 @@ function tick(): void {
 	renderToolbarCounts();
 }
 
-function start(): void {
+async function start(): Promise<void> {
+	// Load the saved format first so the toolbar and row buttons render with
+	// it from the start instead of flashing GPX.
+	await loadFormat();
 	tick();
 	// Strava's React reflows the table on every search / sort / pagination.
 	// A single observer on the body handles all of it; the injection helpers
@@ -458,7 +486,7 @@ function start(): void {
 }
 
 if (document.readyState === 'loading') {
-	document.addEventListener('DOMContentLoaded', start, { once: true });
+	document.addEventListener('DOMContentLoaded', () => void start(), { once: true });
 } else {
-	start();
+	void start();
 }

@@ -11,12 +11,13 @@ When you visit `https://www.strava.com/athlete/training`, the extension is allow
 - Read and modify the DOM of that page (to add download buttons and a toolbar).
 - Make requests to other URLs on `strava.com` (specifically `/activities/<id>/export_gpx`) **using your existing logged-in browser session**. This is the same URL Strava's own "Export GPX" link on each activity page targets.
 - Save files to your computer via the browser's `downloads` API (so the GPX or zip file lands in your Downloads folder).
+- Store your last-used export format (`GPX`, `TCX` or `Original`) in the browser's local extension storage via the `storage` permission, so it is pre-selected next time. This one value stays on your machine and is never transmitted.
 
 That's the entire permission surface. The extension does not request access to your cookies as a permission, your browsing history, your other tabs, or any non-Strava domain.
 
 ## What we collect, store, or transmit
 
-**Nothing.** This extension has no backend, no analytics, no telemetry, no error reporting service, no remote configuration. Every line of code runs locally in your browser. The only network requests it makes are to `www.strava.com`, and they only happen when you click a download button.
+**Nothing about you.** The only thing saved is the export-format preference described above, locally. This extension has no backend, no analytics, no telemetry, no error reporting service, no remote configuration. Every line of code runs locally in your browser. The only network requests it makes are to `www.strava.com`, and they only happen when you click a download button.
 
 Your Strava session cookie, your activity data, your GPX files, your selections - none of it leaves your machine. We never see it because there is no "we" on the server side.
 

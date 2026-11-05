@@ -5,6 +5,7 @@
 	"description": "__MSG_extensionDescription__",
 	"default_locale": "en",
 	"homepage_url": "https://github.com/mladimatija/strava-bulk-gpx",
+	"permissions": ["storage"],
 	"content_scripts": [
 		{
 			"matches": ["https://www.strava.com/athlete/training*"],

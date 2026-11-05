@@ -2,6 +2,14 @@
 
 All notable changes will be documented here. Format loosely follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions are SemVer.
 
+## [Unreleased]
+
+## [1.1.0] - 2026-11-05
+
+### Added
+
+- **Remembers the export format.** The last-selected format (`GPX` / `TCX` / `Original`) is restored on the next page load. Stored locally via `chrome.storage.local` (new `storage` permission; see `PRIVACY.md`). Closes #20.
+
 ## [1.0.0] - 2026-05-14
 
 Initial public release.
