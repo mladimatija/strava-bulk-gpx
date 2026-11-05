@@ -25,16 +25,7 @@ const syncedManifest = {
 export default defineConfig({
 	plugins: [crx({ manifest: syncedManifest })],
 	build: {
-		// Sourcemaps are intentionally OFF in production builds.
-		//
-		// @crxjs/vite-plugin wraps content scripts in `(function(){…})()` for
-		// browser compatibility, and under Vite 8 / Rolldown it emits the
-		// closing `})()` on the same line as Rolldown's
-		// `//# sourceMappingURL=…` comment. Single-line comments swallow the
-		// rest of the line, so the IIFE never closes, and the bundle fails to
-		// parse at load time. Disabling sourcemap removes the comment and
-		// sidesteps the bug. Re-enable once upstream is patched.
-		sourcemap: false,
+		sourcemap: true,
 		// NOTE: do not set `rolldownOptions` (or `rollupOptions`) here.
 		// The CRX plugin already defines its own `rollupOptions` block with
 		// content-script input mapping and asset routing; setting either key
