@@ -4,6 +4,8 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-05
+
 ### Added
 
 - **Remembers the export format.** The last-selected format (`GPX` / `TCX` / `Original`) is restored on the next page load. Stored locally via `chrome.storage.local` (new `storage` permission; see `PRIVACY.md`). Closes #20.
