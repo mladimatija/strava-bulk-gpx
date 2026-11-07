@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "Łączenie dostępne tylko w trybie GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "Zaznaczono: $COUNT$ (poza tą stroną: $HIDDEN$)",
 		"placeholders": {
@@ -216,5 +213,158 @@
 	},
 	"csvFile": {
 		"message": "Plik"
+	},
+	"exportTcx": {
+		"message": "Eksportuj TCX"
+	},
+	"selectNew": {
+		"message": "Zaznacz nowe"
+	},
+	"selectNewTitle": {
+		"message": "Zaznacz aktywności na tej stronie, których jeszcze nie wyeksportowano jako $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Wyeksportowano jako $FORMAT$ dnia $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Więcej opcji"
+	},
+	"historyHeading": {
+		"message": "Historia eksportu"
+	},
+	"historyImport": {
+		"message": "Oznacz aktywności z pliku CSV jako wyeksportowane ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "Oznaczono jako wyeksportowane: $COUNT$ aktywności ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "W tym pliku nie znaleziono identyfikatorów aktywności."
+	},
+	"historyForget": {
+		"message": "Zapomnij historię eksportu"
+	},
+	"historyForgetConfirm": {
+		"message": "Kliknij ponownie, aby potwierdzić"
+	},
+	"historyForgotten": {
+		"message": "Historia eksportu wyczyszczona."
+	},
+	"mergeModeLabel": {
+		"message": "Łącz GPX w"
+	},
+	"mergeModeTracks": {
+		"message": "Osobne ślady (do map)"
+	},
+	"mergeModeSingle": {
+		"message": "Jedną aktywność (do ponownego przesłania)"
+	},
+	"joinSelected": {
+		"message": "Połącz zaznaczone w jedną aktywność"
+	},
+	"joinTitle": {
+		"message": "Jeden ślad z każdą aktywnością jako segmentem, w kolejności czasowej - do przesłania na Stravę jako jedna aktywność. Najpierw usuń oryginały, inaczej Strava może go odrzucić jako duplikat."
+	},
+	"mergeSelectedTcx": {
+		"message": "Połącz zaznaczone w jeden TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Jedna aktywność z każdą zaznaczoną aktywnością jako okrążeniem, w kolejności czasowej."
+	},
+	"mergeNotOriginal": {
+		"message": "Łączenie działa w trybie GPX i TCX, nie dla plików oryginalnych"
+	},
+	"mergingTcx": {
+		"message": "Łączenie w jeden TCX…"
+	},
+	"savedJoined": {
+		"message": "Zapisano jedną aktywność połączoną z aktywności: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Zapisano połączony TCX z aktywnościami: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Nie można połączyć aktywności nakładających się w czasie: $FIRST$ i $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
+	},
+	"trimLabel": {
+		"message": "Ukryj początek/koniec (tylko GPX)"
+	},
+	"trimOff": {
+		"message": "Wyłączone"
+	},
+	"trimTitle": {
+		"message": "Przed zapisem usuwa punkty śladu blisko początku i końca każdej aktywności, aby udostępniane pliki nie pokazywały, skąd startujesz. Przycięte pliki kończą się na _trimmed i nie są już identyczne z eksportem ze Stravy. Resetuje się po przeładowaniu strony."
+	},
+	"trimChip": {
+		"message": "Ukrywanie $RADIUS$ na początku i końcu",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Wyłącz"
+	},
+	"trimOnlyGpx": {
+		"message": "Dostępne tylko w trybie GPX"
+	},
+	"trimAllHidden": {
+		"message": "cały ślad mieści się w ukrytej odległości"
 	}
 }

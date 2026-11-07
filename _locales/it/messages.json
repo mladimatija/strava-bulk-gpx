@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "L'unione è disponibile solo in modalità GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ selezionati ($HIDDEN$ non in questa pagina)",
 		"placeholders": {
@@ -216,5 +213,158 @@
 	},
 	"csvFile": {
 		"message": "File"
+	},
+	"exportTcx": {
+		"message": "Esporta TCX"
+	},
+	"selectNew": {
+		"message": "Seleziona nuove"
+	},
+	"selectNewTitle": {
+		"message": "Seleziona le attività di questa pagina non ancora esportate come $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Esportata come $FORMAT$ il $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Altre opzioni"
+	},
+	"historyHeading": {
+		"message": "Cronologia esportazioni"
+	},
+	"historyImport": {
+		"message": "Segna le attività di un CSV come esportate ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$ attività segnate come esportate ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "Nessun ID attività trovato in quel file."
+	},
+	"historyForget": {
+		"message": "Dimentica cronologia esportazioni"
+	},
+	"historyForgetConfirm": {
+		"message": "Fai di nuovo clic per confermare"
+	},
+	"historyForgotten": {
+		"message": "Cronologia esportazioni cancellata."
+	},
+	"mergeModeLabel": {
+		"message": "Unisci GPX in"
+	},
+	"mergeModeTracks": {
+		"message": "Tracce separate (per le mappe)"
+	},
+	"mergeModeSingle": {
+		"message": "Un'unica attività (da ricaricare)"
+	},
+	"joinSelected": {
+		"message": "Unisci i selezionati in un'attività"
+	},
+	"joinTitle": {
+		"message": "Una traccia con ogni attività come segmento, in ordine cronologico, da caricare su Strava come un'unica attività. Elimina prima le originali, altrimenti Strava potrebbe rifiutarla come duplicato."
+	},
+	"mergeSelectedTcx": {
+		"message": "Unisci i selezionati in un TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Un'attività con ogni attività selezionata come giro, in ordine cronologico."
+	},
+	"mergeNotOriginal": {
+		"message": "L'unione funziona in modalità GPX e TCX, non con i file originali"
+	},
+	"mergingTcx": {
+		"message": "Unione in un TCX…"
+	},
+	"savedJoined": {
+		"message": "Salvata un'attività unita da $COUNT$ attività.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "TCX unito salvato con $COUNT$ attività.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Impossibile unire attività che si sovrappongono nel tempo: $FIRST$ e $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
+	},
+	"trimLabel": {
+		"message": "Nascondi inizio/fine (solo GPX)"
+	},
+	"trimOff": {
+		"message": "Disattivato"
+	},
+	"trimTitle": {
+		"message": "Rimuove i punti vicini all'inizio e alla fine di ogni attività prima di salvare, così i file che condividi non mostrano da dove parti. I file ritagliati finiscono con _trimmed e non sono più identici all'esportazione di Strava. Si azzera ricaricando la pagina."
+	},
+	"trimChip": {
+		"message": "Nascosti $RADIUS$ all'inizio e alla fine",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Disattiva"
+	},
+	"trimOnlyGpx": {
+		"message": "Disponibile solo in modalità GPX"
+	},
+	"trimAllHidden": {
+		"message": "l'intera traccia è entro la distanza nascosta"
 	}
 }

@@ -12,6 +12,11 @@
 			"js": ["src/content.ts"],
 			"css": ["src/styles.css"],
 			"run_at": "document_idle"
+		},
+		{
+			"matches": ["https://www.strava.com/activities/*"],
+			"js": ["src/activity-page.ts"],
+			"run_at": "document_idle"
 		}
 	],
 	"action": {

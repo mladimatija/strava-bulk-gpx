@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "統合は GPX モードでのみ利用できます"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$件選択中 (このページ以外に$HIDDEN$件)",
 		"placeholders": {
@@ -216,5 +213,158 @@
 	},
 	"csvFile": {
 		"message": "ファイル"
+	},
+	"exportTcx": {
+		"message": "TCX をエクスポート"
+	},
+	"selectNew": {
+		"message": "新規を選択"
+	},
+	"selectNewTitle": {
+		"message": "このページで、まだ $FORMAT$ としてエクスポートしていないアクティビティを選択",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "$DATE$ に $FORMAT$ としてエクスポート済み",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "その他のオプション"
+	},
+	"historyHeading": {
+		"message": "エクスポート履歴"
+	},
+	"historyImport": {
+		"message": "CSV のアクティビティをエクスポート済みにする ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$件のアクティビティをエクスポート済みにしました ($FORMAT$)。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "そのファイルにアクティビティ ID が見つかりません。"
+	},
+	"historyForget": {
+		"message": "エクスポート履歴を消去"
+	},
+	"historyForgetConfirm": {
+		"message": "もう一度クリックして確定"
+	},
+	"historyForgotten": {
+		"message": "エクスポート履歴を消去しました。"
+	},
+	"mergeModeLabel": {
+		"message": "GPX の統合方法"
+	},
+	"mergeModeTracks": {
+		"message": "別々のトラック (地図用)"
+	},
+	"mergeModeSingle": {
+		"message": "1 つのアクティビティ (再アップロード用)"
+	},
+	"joinSelected": {
+		"message": "選択を 1 つのアクティビティに結合"
+	},
+	"joinTitle": {
+		"message": "各アクティビティをセグメントとして時系列順に並べた 1 本のトラック。Strava に 1 つのアクティビティとしてアップロードするためのものです。重複として拒否されないよう、先に元のアクティビティを削除してください。"
+	},
+	"mergeSelectedTcx": {
+		"message": "選択項目を 1 つの TCX に統合"
+	},
+	"mergeTcxTitle": {
+		"message": "選択した各アクティビティを 1 ラップとして時系列順に並べた 1 つのアクティビティ。"
+	},
+	"mergeNotOriginal": {
+		"message": "統合は GPX と TCX モードで使えます。オリジナルファイルは統合できません"
+	},
+	"mergingTcx": {
+		"message": "1 つの TCX に統合中…"
+	},
+	"savedJoined": {
+		"message": "$COUNT$件のアクティビティを結合した 1 つのアクティビティを保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "$COUNT$件のアクティビティを統合した TCX を保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "時間が重なるアクティビティは結合できません: $FIRST$ と $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
+	},
+	"trimLabel": {
+		"message": "開始/終了地点を隠す (GPX のみ)"
+	},
+	"trimOff": {
+		"message": "オフ"
+	},
+	"trimTitle": {
+		"message": "保存前に各アクティビティの開始・終了地点付近のトラックポイントを削除し、共有するファイルから出発地点が分からないようにします。トリミングしたファイル名は _trimmed で終わり、Strava のエクスポートとは同一ではなくなります。ページを再読み込みするとオフに戻ります。"
+	},
+	"trimChip": {
+		"message": "開始・終了の $RADIUS$ を非表示",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "オフにする"
+	},
+	"trimOnlyGpx": {
+		"message": "GPX モードでのみ使用できます"
+	},
+	"trimAllHidden": {
+		"message": "トラック全体が非表示の範囲内です"
 	}
 }

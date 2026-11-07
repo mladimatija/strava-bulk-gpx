@@ -18,6 +18,14 @@
 	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
+/* Strava's own stylesheets set `display` on some elements we hide with the
+   `hidden` attribute (a file input rendered as "Choose File" in the ⋯ menu
+   on the real page), and author styles beat the browser's [hidden] rule. */
+.sbgx-toolbar [hidden],
+.sbgx-cell [hidden] {
+	display: none !important;
+}
+
 .sbgx-tool {
 	margin-bottom: 0;
 	display: inline-flex;
@@ -173,6 +181,74 @@
 	color: #e04500;
 }
 
+/* Shown while Hide start/end applies: files are being modified, so say so
+   where it can't be missed. The ✕ turns it off. */
+.sbgx-trim-chip {
+	gap: 4px;
+	padding: 2px 4px 2px 8px;
+	border-radius: 10px;
+	background: #fff4e5;
+	color: #b06a00;
+	font-weight: 600;
+}
+.sbgx-trim-chip[hidden] {
+	display: none;
+}
+.sbgx-trim-off {
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+/* "⋯" menu for rarely used actions (export history). A <details> keeps it
+   dependency-free: the summary is the button, the panel drops down below. */
+.sbgx-more {
+	position: relative;
+}
+.sbgx-more > summary {
+	list-style: none;
+	user-select: none;
+}
+.sbgx-more > summary::-webkit-details-marker {
+	display: none;
+}
+.sbgx-menu {
+	position: absolute;
+	top: calc(100% + 4px);
+	/* Opens leftwards from the button: the "⋯" sits mid-toolbar, and a
+	   rightward panel would spill past the toolbar's edge. */
+	right: 0;
+	/* Above Strava's own row controls - its Share drop-downs are
+	   z-index: 30 in the same stacking context. */
+	z-index: 1000;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 6px;
+	min-width: 260px;
+	padding: 10px 12px;
+	background: #ffffff;
+	border: 1px solid #e0e3e8;
+	border-radius: 6px;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.sbgx-menu .sbgx-btn {
+	text-align: left;
+}
+.sbgx-menu-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-bottom: 4px;
+}
+.sbgx-menu-heading {
+	color: #6d7177;
+	font-size: 12px;
+	font-weight: 600;
+}
+
 /* Failure list after a partly failed run - its own full-width line under the
    controls (the toolbar wraps), with the Retry button and an expandable list
    naming each failed activity. */
@@ -225,7 +301,8 @@
 	border: 0;
 }
 
-/* Row cells injected into Strava's existing table. */
+/* Cells injected into Strava's existing table - into every body row, and
+   matching ones into the header row so the columns stay aligned. */
 .sbgx-cell {
 	padding: 4px 6px;
 	vertical-align: middle;
@@ -235,8 +312,18 @@
 	width: 28px;
 }
 .sbgx-cell-dl {
-	width: 56px;
+	/* Room for the ✓ plus the widest label ("Original"); Strava's table is
+	   table-layout: fixed, so this sets the column width. */
+	width: 96px;
 	text-align: right;
+}
+/* ✓ beside the row button: this activity was already exported in the
+   current format (tooltip says when). */
+.sbgx-done {
+	margin-right: 6px;
+	color: #1e8e3e;
+	font-weight: 600;
+	cursor: default;
 }
 .sbgx-row-cb {
 	margin: 0;

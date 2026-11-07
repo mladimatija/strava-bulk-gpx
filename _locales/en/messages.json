@@ -105,7 +105,7 @@
 	},
 	"mergeSelected": {
 		"message": "Merge selected into one GPX",
-		"description": "Toolbar button next to 'Download selected'. Fetches every selected activity's GPX and emits a single combined .gpx file (one <trk> per activity). Visible only when the format dropdown is set to GPX, since TCX and Original can't be merged the same way."
+		"description": "Merge button label in GPX mode (separate-tracks setting): fetches every selected activity's GPX and saves one combined .gpx with one <trk> per activity."
 	},
 	"mergingGpx": {
 		"message": "Merging into one GPX…",
@@ -117,10 +117,6 @@
 		"placeholders": {
 			"count": { "content": "$1", "example": "5" }
 		}
-	},
-	"mergeOnlyGpx": {
-		"message": "Merging is only available in GPX mode",
-		"description": "Tooltip on the Merge button when the format dropdown is set to TCX or Original. Explains why the button is disabled (TCX/Original files aren't trivially concatenable into a single document)."
 	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ selected ($HIDDEN$ not on this page)",
@@ -202,5 +198,156 @@
 	"csvFile": {
 		"message": "File",
 		"description": "Column header in the CSV inside a bulk zip: the activity's file name within the zip."
+	},
+	"exportTcx": {
+		"message": "Export TCX",
+		"description": "Item added to the '…' menu on an activity page, after Strava's own 'Export GPX'. Used only when Strava's own item text doesn't contain 'GPX' (otherwise Strava's wording is reused with GPX swapped for TCX)."
+	},
+	"selectNew": {
+		"message": "Select new",
+		"description": "Link-style toolbar button next to 'Select all visible'. Selects the rows on this page whose activity hasn't been exported in the current format yet."
+	},
+	"selectNewTitle": {
+		"message": "Select the activities on this page you haven't exported as $FORMAT$ yet",
+		"description": "Tooltip on 'Select new'. FORMAT is the current format label (GPX/TCX/Original).",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" }
+		}
+	},
+	"exportedOn": {
+		"message": "Exported as $FORMAT$ on $DATE$",
+		"description": "Tooltip on the ✓ beside a row's download button. FORMAT is GPX/TCX/Original; DATE is a locale-formatted date.",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" },
+			"date": { "content": "$2", "example": "11/7/2026" }
+		}
+	},
+	"moreOptions": {
+		"message": "More options",
+		"description": "Tooltip on the toolbar's '⋯' menu button."
+	},
+	"historyHeading": {
+		"message": "Export history",
+		"description": "Section heading in the '⋯' menu."
+	},
+	"historyImport": {
+		"message": "Mark activities from a CSV as exported ($FORMAT$)…",
+		"description": "'⋯' menu item. Opens a file picker for an activities.csv (from an earlier zip, or Strava's account archive) and marks its activities as already exported in the current FORMAT.",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" }
+		}
+	},
+	"historyImported": {
+		"message": "Marked $COUNT$ activities as exported ($FORMAT$).",
+		"description": "Status after importing export history from a CSV.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "120" },
+			"format": { "content": "$2", "example": "GPX" }
+		}
+	},
+	"historyImportEmpty": {
+		"message": "No activity IDs found in that file.",
+		"description": "Status when the chosen CSV has no numeric activity ids in its first column."
+	},
+	"historyForget": {
+		"message": "Forget export history",
+		"description": "'⋯' menu item that clears the record of which activities were exported (all formats). Needs a second click to confirm."
+	},
+	"historyForgetConfirm": {
+		"message": "Click again to confirm",
+		"description": "Label the 'Forget export history' item switches to after the first click; a second click within a few seconds confirms."
+	},
+	"historyForgotten": {
+		"message": "Export history cleared.",
+		"description": "Status after the export history has been forgotten."
+	},
+	"mergeModeLabel": {
+		"message": "Merge GPX into",
+		"description": "Label of the '⋯' menu dropdown choosing what a GPX merge produces: separate tracks, or one activity."
+	},
+	"mergeModeTracks": {
+		"message": "Separate tracks (for maps)",
+		"description": "GPX merge option: one track per activity in one file - for viewing a trip in a mapping tool. The default."
+	},
+	"mergeModeSingle": {
+		"message": "One activity (for re-upload)",
+		"description": "GPX merge option: one track with each activity as a segment - for uploading back to Strava as a single activity."
+	},
+	"joinSelected": {
+		"message": "Join selected into one activity",
+		"description": "Merge button label in GPX mode when the merge setting is 'One activity'."
+	},
+	"joinTitle": {
+		"message": "One track with each activity as a segment, in time order - for uploading to Strava as a single activity. Delete the originals first, or Strava may reject it as a duplicate.",
+		"description": "Tooltip on the merge button in 'One activity' mode."
+	},
+	"mergeSelectedTcx": {
+		"message": "Merge selected into one TCX",
+		"description": "Merge button label in TCX mode."
+	},
+	"mergeTcxTitle": {
+		"message": "One activity with each selected activity as a lap, in time order.",
+		"description": "Tooltip on the merge button in TCX mode."
+	},
+	"mergeNotOriginal": {
+		"message": "Merging works in GPX and TCX modes, not for Original files",
+		"description": "Tooltip on the disabled merge button in Original mode (original uploads are mostly binary FIT files)."
+	},
+	"mergingTcx": {
+		"message": "Merging into one TCX…",
+		"description": "Status while the TCX merge step runs (after all files have been fetched)."
+	},
+	"savedJoined": {
+		"message": "Saved one activity joined from $COUNT$ activities.",
+		"description": "Success message after joining activities into one (GPX, 'One activity' mode).",
+		"placeholders": {
+			"count": { "content": "$1", "example": "3" }
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Saved merged TCX with $COUNT$ activities.",
+		"description": "Success message after a TCX merge.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "3" }
+		}
+	},
+	"mergeOverlap": {
+		"message": "Can't join activities that overlap in time: $FIRST$ and $SECOND$",
+		"description": "Error when activities being joined into one (GPX 'One activity' mode, or a TCX merge) overlap in time. FIRST and SECOND are activity titles.",
+		"placeholders": {
+			"first": { "content": "$1", "example": "Morning Run" },
+			"second": { "content": "$2", "example": "Morning Run (watch)" }
+		}
+	},
+	"trimLabel": {
+		"message": "Hide start/end (GPX only)",
+		"description": "Label of the '⋯' menu dropdown that removes track points near each activity's start and end before saving (Off / 200 m / 500 m / 1 km)."
+	},
+	"trimOff": {
+		"message": "Off",
+		"description": "'Hide start/end' option: no trimming (the default)."
+	},
+	"trimTitle": {
+		"message": "Removes track points near each activity's start and end before saving, so files you share don't show where you start. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
+		"description": "Tooltip on the 'Hide start/end' setting. Keep '_trimmed' as-is (it's part of the file name)."
+	},
+	"trimChip": {
+		"message": "Hiding $RADIUS$ at start and end",
+		"description": "Toolbar chip shown while 'Hide start/end' applies. RADIUS is a distance like '200 m' or '1 km'.",
+		"placeholders": {
+			"radius": { "content": "$1", "example": "200 m" }
+		}
+	},
+	"trimTurnOff": {
+		"message": "Turn off",
+		"description": "Tooltip on the ✕ in the 'Hiding … at start and end' chip."
+	},
+	"trimOnlyGpx": {
+		"message": "Only available in GPX mode",
+		"description": "Tooltip on the disabled 'Hide start/end' setting in TCX and Original modes."
+	},
+	"trimAllHidden": {
+		"message": "the whole track is within the hidden distance",
+		"description": "Failure reason (lowercase, shown in parentheses or after a dash) when 'Hide start/end' would remove every point of an activity."
 	}
 }

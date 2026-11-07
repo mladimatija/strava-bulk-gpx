@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "La combinación solo está disponible en modo GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ seleccionados ($HIDDEN$ fuera de esta página)",
 		"placeholders": {
@@ -216,5 +213,158 @@
 	},
 	"csvFile": {
 		"message": "Archivo"
+	},
+	"exportTcx": {
+		"message": "Exportar TCX"
+	},
+	"selectNew": {
+		"message": "Seleccionar nuevas"
+	},
+	"selectNewTitle": {
+		"message": "Seleccionar las actividades de esta página que aún no has exportado como $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Exportada como $FORMAT$ el $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Más opciones"
+	},
+	"historyHeading": {
+		"message": "Historial de exportación"
+	},
+	"historyImport": {
+		"message": "Marcar actividades de un CSV como exportadas ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$ actividades marcadas como exportadas ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "No se encontraron ID de actividad en ese archivo."
+	},
+	"historyForget": {
+		"message": "Olvidar historial de exportación"
+	},
+	"historyForgetConfirm": {
+		"message": "Haz clic de nuevo para confirmar"
+	},
+	"historyForgotten": {
+		"message": "Historial de exportación borrado."
+	},
+	"mergeModeLabel": {
+		"message": "Combinar GPX en"
+	},
+	"mergeModeTracks": {
+		"message": "Tracks separados (para mapas)"
+	},
+	"mergeModeSingle": {
+		"message": "Una actividad (para volver a subir)"
+	},
+	"joinSelected": {
+		"message": "Unir selección en una actividad"
+	},
+	"joinTitle": {
+		"message": "Un track con cada actividad como un segmento, en orden cronológico, para subirlo a Strava como una sola actividad. Elimina antes las originales o Strava podría rechazarlo como duplicado."
+	},
+	"mergeSelectedTcx": {
+		"message": "Combinar selección en un TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Una actividad con cada actividad seleccionada como una vuelta, en orden cronológico."
+	},
+	"mergeNotOriginal": {
+		"message": "La combinación funciona en modo GPX y TCX, no con archivos originales"
+	},
+	"mergingTcx": {
+		"message": "Combinando en un TCX…"
+	},
+	"savedJoined": {
+		"message": "Se guardó una actividad unida a partir de $COUNT$ actividades.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "TCX combinado guardado con $COUNT$ actividades.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "No se pueden unir actividades que se solapan en el tiempo: $FIRST$ y $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
+	},
+	"trimLabel": {
+		"message": "Ocultar inicio/fin (solo GPX)"
+	},
+	"trimOff": {
+		"message": "Desactivado"
+	},
+	"trimTitle": {
+		"message": "Elimina los puntos cercanos al inicio y al final de cada actividad antes de guardar, para que los archivos que compartes no muestren desde dónde sales. Los archivos recortados terminan en _trimmed y ya no son idénticos a la exportación de Strava. Se restablece al recargar la página."
+	},
+	"trimChip": {
+		"message": "Ocultando $RADIUS$ al inicio y al final",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Desactivar"
+	},
+	"trimOnlyGpx": {
+		"message": "Solo disponible en modo GPX"
+	},
+	"trimAllHidden": {
+		"message": "todo el track está dentro de la distancia oculta"
 	}
 }

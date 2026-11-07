@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "Объединение доступно только в режиме GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "Выбрано: $COUNT$ (не на этой странице: $HIDDEN$)",
 		"placeholders": {
@@ -216,5 +213,158 @@
 	},
 	"csvFile": {
 		"message": "Файл"
+	},
+	"exportTcx": {
+		"message": "Экспорт TCX"
+	},
+	"selectNew": {
+		"message": "Выбрать новые"
+	},
+	"selectNewTitle": {
+		"message": "Выбрать тренировки на этой странице, ещё не экспортированные как $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Экспортировано как $FORMAT$ $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Другие параметры"
+	},
+	"historyHeading": {
+		"message": "История экспорта"
+	},
+	"historyImport": {
+		"message": "Отметить тренировки из CSV как экспортированные ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "Отмечено как экспортированные: $COUNT$ ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "В этом файле не найдено ID тренировок."
+	},
+	"historyForget": {
+		"message": "Очистить историю экспорта"
+	},
+	"historyForgetConfirm": {
+		"message": "Нажмите ещё раз для подтверждения"
+	},
+	"historyForgotten": {
+		"message": "История экспорта очищена."
+	},
+	"mergeModeLabel": {
+		"message": "Объединять GPX в"
+	},
+	"mergeModeTracks": {
+		"message": "Отдельные треки (для карт)"
+	},
+	"mergeModeSingle": {
+		"message": "Одну тренировку (для повторной загрузки)"
+	},
+	"joinSelected": {
+		"message": "Соединить выбранные в одну тренировку"
+	},
+	"joinTitle": {
+		"message": "Один трек, где каждая тренировка - отдельный сегмент, по времени. Для загрузки в Strava как одной тренировки. Сначала удалите исходные, иначе Strava может отклонить файл как дубликат."
+	},
+	"mergeSelectedTcx": {
+		"message": "Объединить выбранные в один TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Одна тренировка, где каждая выбранная тренировка - круг, по времени."
+	},
+	"mergeNotOriginal": {
+		"message": "Объединение работает в режимах GPX и TCX, но не для оригинальных файлов"
+	},
+	"mergingTcx": {
+		"message": "Объединение в один TCX…"
+	},
+	"savedJoined": {
+		"message": "Сохранена одна тренировка, соединённая из тренировок: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Сохранён объединённый TCX, тренировок: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Нельзя соединить тренировки, пересекающиеся по времени: $FIRST$ и $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
+	},
+	"trimLabel": {
+		"message": "Скрыть начало/конец (только GPX)"
+	},
+	"trimOff": {
+		"message": "Выкл."
+	},
+	"trimTitle": {
+		"message": "Перед сохранением удаляет точки трека рядом с началом и концом каждой тренировки, чтобы по файлам, которыми вы делитесь, нельзя было понять, откуда вы стартуете. Обрезанные файлы оканчиваются на _trimmed и уже не совпадают с экспортом Strava. Сбрасывается при перезагрузке страницы."
+	},
+	"trimChip": {
+		"message": "Скрыто $RADIUS$ в начале и конце",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Выключить"
+	},
+	"trimOnlyGpx": {
+		"message": "Доступно только в режиме GPX"
+	},
+	"trimAllHidden": {
+		"message": "весь трек попадает в скрытую зону"
 	}
 }

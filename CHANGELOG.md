@@ -4,6 +4,21 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-07
+
+### Added
+
+- **Export TCX on activity pages.** Your own activity pages get an **Export TCX** item in Strava's "…" menu, right after Export GPX (Strava serves `/export_tcx` but doesn't list it). Runs as a separate ~1 KB content script on `https://www.strava.com/activities/*`; no new permission.
+- **Export history and Select new.** Activities exported through a zip or a row button are remembered per format in `chrome.storage.local`: a ✓ appears beside the row button (tooltip shows the date), and a new **Select new** button selects only the rows not exported yet in the current format - a weekly backup is Select new → Download selected. Merges, list exports and failed downloads don't count.
+- **Join into one activity (GPX).** A new **⋯ → Merge GPX into → One activity** setting (remembered) turns the merge button into **Join selected into one activity**: `strava_joined_<date>.gpx` has one track with a segment per activity, in time order - the shape to upload back to Strava as a single activity. Activities that overlap in time are refused. Checked against strava.com with two real runs: while the originals exist, Strava rejects the joined file as a duplicate of the earliest, so they have to be deleted first.
+- **TCX merge.** The merge button now works in TCX mode: one activity whose laps are every selected activity's laps, in time order, with trackpoint distances carrying on and mixed sports set to "Other". Several `<Activity>` elements in one file would be schema-valid, but Strava and Garmin Connect only import one activity per TCX reliably. The button is now disabled only in Original mode.
+- **Hide start/end (GPX).** **⋯ → Hide start/end** removes track points within 200 m / 500 m / 1 km of each activity's start and end before saving, since Strava's map-visibility hiding doesn't apply to your own exports. It's a straight-line radius, so mid-route passes near home are hidden too, and the track is split into segments there instead of being drawn across the gap. Trimmed files are named `…_trimmed.gpx`, note the trimming in `<metadata><desc>`, and don't count as exported. Deliberately not remembered: it resets on reload, and a toolbar chip shows while it's on. Applies to row downloads, zips and merges.
+- **⋯ menu** on the toolbar, for rarely touched settings and actions: the GPX merge mode, Hide start/end, marking the activities in an earlier `activities.csv` (ours, or Strava's account archive) as exported, and forgetting the export history (inline two-click confirmation).
+
+### Fixed
+
+- **Column headers lined up with the wrong columns.** Strava's activities table sizes its columns from the header row (`table-layout: fixed`), and the extension's extra checkbox and button cells were only added to the body rows - so on the real page every value sat one column right of its heading ("Run" under Date, the date under Title, …) since 1.0. The header row now gets matching cells.
+
 ## [1.2.0] - 2026-11-07
 
 ### Added

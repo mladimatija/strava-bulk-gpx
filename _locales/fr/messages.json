@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "La fusion n'est disponible qu'en mode GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ sélectionné(s) ($HIDDEN$ hors de cette page)",
 		"placeholders": {
@@ -216,5 +213,158 @@
 	},
 	"csvFile": {
 		"message": "Fichier"
+	},
+	"exportTcx": {
+		"message": "Exporter TCX"
+	},
+	"selectNew": {
+		"message": "Sélectionner les nouvelles"
+	},
+	"selectNewTitle": {
+		"message": "Sélectionner les activités de cette page pas encore exportées en $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Exportée en $FORMAT$ le $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Plus d'options"
+	},
+	"historyHeading": {
+		"message": "Historique des exports"
+	},
+	"historyImport": {
+		"message": "Marquer les activités d'un CSV comme exportées ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$ activités marquées comme exportées ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "Aucun ID d'activité trouvé dans ce fichier."
+	},
+	"historyForget": {
+		"message": "Oublier l'historique des exports"
+	},
+	"historyForgetConfirm": {
+		"message": "Cliquez à nouveau pour confirmer"
+	},
+	"historyForgotten": {
+		"message": "Historique des exports effacé."
+	},
+	"mergeModeLabel": {
+		"message": "Fusionner les GPX en"
+	},
+	"mergeModeTracks": {
+		"message": "Traces séparées (pour les cartes)"
+	},
+	"mergeModeSingle": {
+		"message": "Une seule activité (pour la renvoyer)"
+	},
+	"joinSelected": {
+		"message": "Joindre la sélection en une activité"
+	},
+	"joinTitle": {
+		"message": "Une trace avec chaque activité comme segment, dans l'ordre chronologique, pour l'importer sur Strava comme une seule activité. Supprimez d'abord les originales, sinon Strava risque de la refuser comme doublon."
+	},
+	"mergeSelectedTcx": {
+		"message": "Fusionner la sélection en un TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Une activité dont chaque activité sélectionnée est un tour, dans l'ordre chronologique."
+	},
+	"mergeNotOriginal": {
+		"message": "La fusion fonctionne en mode GPX et TCX, pas avec les fichiers originaux"
+	},
+	"mergingTcx": {
+		"message": "Fusion en un TCX…"
+	},
+	"savedJoined": {
+		"message": "Une activité enregistrée, jointe à partir de $COUNT$ activités.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "TCX fusionné enregistré avec $COUNT$ activités.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Impossible de joindre des activités qui se chevauchent : $FIRST$ et $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
+	},
+	"trimLabel": {
+		"message": "Masquer début/fin (GPX uniquement)"
+	},
+	"trimOff": {
+		"message": "Désactivé"
+	},
+	"trimTitle": {
+		"message": "Supprime les points proches du début et de la fin de chaque activité avant l'enregistrement, pour que les fichiers partagés ne révèlent pas d'où vous partez. Les fichiers rognés se terminent par _trimmed et ne sont plus identiques à l'export Strava. Se réinitialise au rechargement de la page."
+	},
+	"trimChip": {
+		"message": "$RADIUS$ masqués au début et à la fin",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Désactiver"
+	},
+	"trimOnlyGpx": {
+		"message": "Disponible uniquement en mode GPX"
+	},
+	"trimAllHidden": {
+		"message": "toute la trace est dans la distance masquée"
 	}
 }

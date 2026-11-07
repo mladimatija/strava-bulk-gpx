@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "A combinação está disponível apenas no modo GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ selecionado(s) ($HIDDEN$ fora desta página)",
 		"placeholders": {
@@ -216,5 +213,158 @@
 	},
 	"csvFile": {
 		"message": "Arquivo"
+	},
+	"exportTcx": {
+		"message": "Exportar TCX"
+	},
+	"selectNew": {
+		"message": "Selecionar novas"
+	},
+	"selectNewTitle": {
+		"message": "Selecionar as atividades desta página que você ainda não exportou como $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Exportada como $FORMAT$ em $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Mais opções"
+	},
+	"historyHeading": {
+		"message": "Histórico de exportação"
+	},
+	"historyImport": {
+		"message": "Marcar atividades de um CSV como exportadas ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$ atividades marcadas como exportadas ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "Nenhum ID de atividade encontrado nesse arquivo."
+	},
+	"historyForget": {
+		"message": "Esquecer histórico de exportação"
+	},
+	"historyForgetConfirm": {
+		"message": "Clique novamente para confirmar"
+	},
+	"historyForgotten": {
+		"message": "Histórico de exportação apagado."
+	},
+	"mergeModeLabel": {
+		"message": "Combinar GPX em"
+	},
+	"mergeModeTracks": {
+		"message": "Trilhas separadas (para mapas)"
+	},
+	"mergeModeSingle": {
+		"message": "Uma atividade (para reenviar)"
+	},
+	"joinSelected": {
+		"message": "Unir selecionados em uma atividade"
+	},
+	"joinTitle": {
+		"message": "Uma trilha com cada atividade como um segmento, em ordem cronológica - para enviar ao Strava como uma única atividade. Exclua as originais antes, ou o Strava pode recusá-la como duplicada."
+	},
+	"mergeSelectedTcx": {
+		"message": "Combinar selecionados em um TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Uma atividade com cada atividade selecionada como uma volta, em ordem cronológica."
+	},
+	"mergeNotOriginal": {
+		"message": "A combinação funciona nos modos GPX e TCX, não com arquivos originais"
+	},
+	"mergingTcx": {
+		"message": "Combinando em um TCX…"
+	},
+	"savedJoined": {
+		"message": "Uma atividade salva, unida a partir de $COUNT$ atividades.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "TCX combinado salvo com $COUNT$ atividades.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Não é possível unir atividades que se sobrepõem no tempo: $FIRST$ e $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
+	},
+	"trimLabel": {
+		"message": "Ocultar início/fim (só GPX)"
+	},
+	"trimOff": {
+		"message": "Desativado"
+	},
+	"trimTitle": {
+		"message": "Remove os pontos perto do início e do fim de cada atividade antes de salvar, para que os arquivos que você compartilha não mostrem de onde você sai. Arquivos recortados terminam em _trimmed e não são mais idênticos à exportação do Strava. É redefinido ao recarregar a página."
+	},
+	"trimChip": {
+		"message": "Ocultando $RADIUS$ no início e no fim",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Desativar"
+	},
+	"trimOnlyGpx": {
+		"message": "Disponível só no modo GPX"
+	},
+	"trimAllHidden": {
+		"message": "toda a trilha está dentro da distância oculta"
 	}
 }

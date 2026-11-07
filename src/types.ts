@@ -88,3 +88,11 @@ export type ExportFormat = 'gpx' | 'tcx' | 'original';
  *               can't create folders, so they get the 'title' name
  */
 export type NamePattern = 'id' | 'title' | 'sport';
+
+/**
+ * How a GPX merge combines activities (a TCX merge always makes one activity):
+ *   - 'tracks' → one `<trk>` per activity, to view a trip in a mapping tool
+ *   - 'single' → one `<trk>` with a `<trkseg>` per activity, to upload back
+ *                to Strava as a single activity
+ */
+export type MergeMode = 'tracks' | 'single';

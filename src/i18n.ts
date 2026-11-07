@@ -48,7 +48,6 @@ export type MessageKey =
 	| 'mergeSelected'
 	| 'mergingGpx'
 	| 'savedMerged'
-	| 'mergeOnlyGpx'
 	| 'selectedCountWithHidden'
 	| 'clearSelection'
 	| 'namesLabel'
@@ -65,7 +64,38 @@ export type MessageKey =
 	| 'rateLimited'
 	| 'csvActivityId'
 	| 'csvActivityUrl'
-	| 'csvFile';
+	| 'csvFile'
+	| 'exportTcx'
+	| 'selectNew'
+	| 'selectNewTitle'
+	| 'exportedOn'
+	| 'moreOptions'
+	| 'historyHeading'
+	| 'historyImport'
+	| 'historyImported'
+	| 'historyImportEmpty'
+	| 'historyForget'
+	| 'historyForgetConfirm'
+	| 'historyForgotten'
+	| 'mergeModeLabel'
+	| 'mergeModeTracks'
+	| 'mergeModeSingle'
+	| 'joinSelected'
+	| 'joinTitle'
+	| 'mergeSelectedTcx'
+	| 'mergeTcxTitle'
+	| 'mergeNotOriginal'
+	| 'mergingTcx'
+	| 'savedJoined'
+	| 'savedMergedTcx'
+	| 'mergeOverlap'
+	| 'trimLabel'
+	| 'trimOff'
+	| 'trimTitle'
+	| 'trimChip'
+	| 'trimTurnOff'
+	| 'trimOnlyGpx'
+	| 'trimAllHidden';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -96,7 +126,6 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	mergeSelected: 'Merge selected into one GPX',
 	mergingGpx: 'Merging into one GPX…',
 	savedMerged: 'Saved merged GPX with $1 activities.',
-	mergeOnlyGpx: 'Merging is only available in GPX mode',
 	selectedCountWithHidden: '$1 selected ($2 not on this page)',
 	clearSelection: 'Clear selection',
 	namesLabel: 'Names:',
@@ -114,6 +143,39 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	csvActivityId: 'Activity ID',
 	csvActivityUrl: 'URL',
 	csvFile: 'File',
+	exportTcx: 'Export TCX',
+	selectNew: 'Select new',
+	selectNewTitle: "Select the activities on this page you haven't exported as $1 yet",
+	exportedOn: 'Exported as $1 on $2',
+	moreOptions: 'More options',
+	historyHeading: 'Export history',
+	historyImport: 'Mark activities from a CSV as exported ($1)…',
+	historyImported: 'Marked $1 activities as exported ($2).',
+	historyImportEmpty: 'No activity IDs found in that file.',
+	historyForget: 'Forget export history',
+	historyForgetConfirm: 'Click again to confirm',
+	historyForgotten: 'Export history cleared.',
+	mergeModeLabel: 'Merge GPX into',
+	mergeModeTracks: 'Separate tracks (for maps)',
+	mergeModeSingle: 'One activity (for re-upload)',
+	joinSelected: 'Join selected into one activity',
+	joinTitle:
+		'One track with each activity as a segment, in time order - for uploading to Strava as a single activity. Delete the originals first, or Strava may reject it as a duplicate.',
+	mergeSelectedTcx: 'Merge selected into one TCX',
+	mergeTcxTitle: 'One activity with each selected activity as a lap, in time order.',
+	mergeNotOriginal: 'Merging works in GPX and TCX modes, not for Original files',
+	mergingTcx: 'Merging into one TCX…',
+	savedJoined: 'Saved one activity joined from $1 activities.',
+	savedMergedTcx: 'Saved merged TCX with $1 activities.',
+	mergeOverlap: "Can't join activities that overlap in time: $1 and $2",
+	trimLabel: 'Hide start/end (GPX only)',
+	trimOff: 'Off',
+	trimTitle:
+		"Removes track points near each activity's start and end before saving, so files you share don't show where you start. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
+	trimChip: 'Hiding $1 at start and end',
+	trimTurnOff: 'Turn off',
+	trimOnlyGpx: 'Only available in GPX mode',
+	trimAllHidden: 'the whole track is within the hidden distance',
 };
 
 /**

@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "Sammenslåing er bare tilgjengelig i GPX-modus"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ valgt ($HIDDEN$ ikke på denne siden)",
 		"placeholders": {
@@ -216,5 +213,158 @@
 	},
 	"csvFile": {
 		"message": "Fil"
+	},
+	"exportTcx": {
+		"message": "Eksporter TCX"
+	},
+	"selectNew": {
+		"message": "Velg nye"
+	},
+	"selectNewTitle": {
+		"message": "Velg aktivitetene på denne siden som ikke er eksportert som $FORMAT$ ennå",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Eksportert som $FORMAT$ $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Flere valg"
+	},
+	"historyHeading": {
+		"message": "Eksporthistorikk"
+	},
+	"historyImport": {
+		"message": "Merk aktiviteter fra en CSV som eksportert ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$ aktiviteter merket som eksportert ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "Fant ingen aktivitets-ID-er i den filen."
+	},
+	"historyForget": {
+		"message": "Glem eksporthistorikk"
+	},
+	"historyForgetConfirm": {
+		"message": "Klikk igjen for å bekrefte"
+	},
+	"historyForgotten": {
+		"message": "Eksporthistorikken er tømt."
+	},
+	"mergeModeLabel": {
+		"message": "Slå sammen GPX til"
+	},
+	"mergeModeTracks": {
+		"message": "Separate spor (for kart)"
+	},
+	"mergeModeSingle": {
+		"message": "Én aktivitet (for ny opplasting)"
+	},
+	"joinSelected": {
+		"message": "Slå sammen valgte til én aktivitet"
+	},
+	"joinTitle": {
+		"message": "Ett spor med hver aktivitet som et segment, i tidsrekkefølge - for å laste opp til Strava som én aktivitet. Slett originalene først, ellers kan Strava avvise den som duplikat."
+	},
+	"mergeSelectedTcx": {
+		"message": "Slå sammen valgte til én TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Én aktivitet med hver valgte aktivitet som en runde, i tidsrekkefølge."
+	},
+	"mergeNotOriginal": {
+		"message": "Sammenslåing fungerer i GPX- og TCX-modus, ikke for originalfiler"
+	},
+	"mergingTcx": {
+		"message": "Slår sammen til én TCX…"
+	},
+	"savedJoined": {
+		"message": "Lagret én aktivitet satt sammen av $COUNT$ aktiviteter.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Lagret sammenslått TCX med $COUNT$ aktiviteter.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Kan ikke slå sammen aktiviteter som overlapper i tid: $FIRST$ og $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
+	},
+	"trimLabel": {
+		"message": "Skjul start/slutt (kun GPX)"
+	},
+	"trimOff": {
+		"message": "Av"
+	},
+	"trimTitle": {
+		"message": "Fjerner sporpunkter nær start og slutt på hver aktivitet før lagring, så filer du deler ikke viser hvor du starter. Trimmede filer slutter på _trimmed og er ikke lenger identiske med Stravas eksport. Tilbakestilles når du laster siden på nytt."
+	},
+	"trimChip": {
+		"message": "Skjuler $RADIUS$ ved start og slutt",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Slå av"
+	},
+	"trimOnlyGpx": {
+		"message": "Bare tilgjengelig i GPX-modus"
+	},
+	"trimAllHidden": {
+		"message": "hele sporet er innenfor den skjulte avstanden"
 	}
 }

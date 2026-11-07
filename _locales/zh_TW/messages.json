@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "合併僅在 GPX 模式下可用"
-	},
 	"selectedCountWithHidden": {
 		"message": "已選擇 $COUNT$ 項 (其中 $HIDDEN$ 項不在本頁)",
 		"placeholders": {
@@ -216,5 +213,158 @@
 	},
 	"csvFile": {
 		"message": "檔案"
+	},
+	"exportTcx": {
+		"message": "匯出 TCX"
+	},
+	"selectNew": {
+		"message": "選擇新的"
+	},
+	"selectNewTitle": {
+		"message": "選擇本頁中尚未匯出為 $FORMAT$ 的活動",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "已於 $DATE$ 匯出為 $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "更多選項"
+	},
+	"historyHeading": {
+		"message": "匯出記錄"
+	},
+	"historyImport": {
+		"message": "將 CSV 中的活動標記為已匯出 ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "已將 $COUNT$ 項活動標記為已匯出 ($FORMAT$)。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "該檔案中找不到活動 ID。"
+	},
+	"historyForget": {
+		"message": "清除匯出記錄"
+	},
+	"historyForgetConfirm": {
+		"message": "再次點擊以確認"
+	},
+	"historyForgotten": {
+		"message": "已清除匯出記錄。"
+	},
+	"mergeModeLabel": {
+		"message": "GPX 合併方式"
+	},
+	"mergeModeTracks": {
+		"message": "分開的軌跡 (用於地圖)"
+	},
+	"mergeModeSingle": {
+		"message": "一個活動 (用於重新上傳)"
+	},
+	"joinSelected": {
+		"message": "將所選合併為一個活動"
+	},
+	"joinTitle": {
+		"message": "一條軌跡，每個活動依時間順序作為一個分段，用於作為單一活動上傳到 Strava。請先刪除原活動，否則 Strava 可能將其視為重複而拒絕。"
+	},
+	"mergeSelectedTcx": {
+		"message": "合併所選為一個 TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "一個活動，每個所選活動依時間順序作為一圈。"
+	},
+	"mergeNotOriginal": {
+		"message": "合併僅適用於 GPX 和 TCX 模式，不適用於原始檔案"
+	},
+	"mergingTcx": {
+		"message": "正在合併為一個 TCX…"
+	},
+	"savedJoined": {
+		"message": "已儲存由 $COUNT$ 項活動合併而成的一個活動。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "已儲存包含 $COUNT$ 項活動的合併 TCX。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "無法合併時間重疊的活動: $FIRST$ 和 $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
+	},
+	"trimLabel": {
+		"message": "隱藏起點/終點 (僅 GPX)"
+	},
+	"trimOff": {
+		"message": "關閉"
+	},
+	"trimTitle": {
+		"message": "儲存前移除每個活動起點與終點附近的軌跡點，讓你分享的檔案不會暴露出發地點。裁剪後的檔名以 _trimmed 結尾，不再與 Strava 的匯出完全相同。重新載入頁面後會關閉。"
+	},
+	"trimChip": {
+		"message": "正在隱藏起點與終點的 $RADIUS$",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "關閉"
+	},
+	"trimOnlyGpx": {
+		"message": "僅在 GPX 模式下可用"
+	},
+	"trimAllHidden": {
+		"message": "整條軌跡都在隱藏範圍內"
 	}
 }
