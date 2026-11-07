@@ -168,5 +168,26 @@
 	},
 	"namesSport": {
 		"message": "Pastas por esporte"
+	},
+	"exportCsv": {
+		"message": "Exportar lista (CSV)"
+	},
+	"savedCsv": {
+		"message": "Lista de $COUNT$ atividades salva.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "ID da atividade"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "Arquivo"
 	}
 }

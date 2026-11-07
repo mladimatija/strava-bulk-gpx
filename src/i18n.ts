@@ -55,7 +55,12 @@ export type MessageKey =
 	| 'namesTooltip'
 	| 'namesId'
 	| 'namesTitle'
-	| 'namesSport';
+	| 'namesSport'
+	| 'exportCsv'
+	| 'savedCsv'
+	| 'csvActivityId'
+	| 'csvActivityUrl'
+	| 'csvFile';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -94,6 +99,11 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	namesId: 'Activity ID',
 	namesTitle: 'ID + title',
 	namesSport: 'Sport folders',
+	exportCsv: 'Export list (CSV)',
+	savedCsv: 'Saved a list of $1 activities.',
+	csvActivityId: 'Activity ID',
+	csvActivityUrl: 'URL',
+	csvFile: 'File',
 };
 
 /**

@@ -168,5 +168,26 @@
 	},
 	"namesSport": {
 		"message": "Cartelle per sport"
+	},
+	"exportCsv": {
+		"message": "Esporta elenco (CSV)"
+	},
+	"savedCsv": {
+		"message": "Elenco di $COUNT$ attività salvato.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "ID attività"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "File"
 	}
 }

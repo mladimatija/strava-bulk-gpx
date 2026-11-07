@@ -168,5 +168,26 @@
 	},
 	"namesSport": {
 		"message": "Složky podle sportu"
+	},
+	"exportCsv": {
+		"message": "Exportovat seznam (CSV)"
+	},
+	"savedCsv": {
+		"message": "Uložen seznam $COUNT$ aktivit.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "ID aktivity"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "Soubor"
 	}
 }

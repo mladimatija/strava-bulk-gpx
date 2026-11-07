@@ -3,6 +3,12 @@
  * imports between content.ts and downloader.ts.
  */
 
+/** One visible table cell, labelled by its column header (e.g. "Distance" → "10.07 km"). */
+export interface ActivityColumn {
+	label: string;
+	value: string;
+}
+
 /** An activity surfaced from a Strava table row into our toolbar/downloader. */
 export interface ActivityRow {
 	/** Numeric Strava activity id, kept as a string for stable map/set keys. */
@@ -11,6 +17,12 @@ export interface ActivityRow {
 	name: string;
 	/** Sport label, e.g. "Run", "Hike", "Workout". Best-effort. */
 	sport_type: string;
+	/**
+	 * The row's cells as Strava rendered them, captured when the row was
+	 * selected - the row may be on another page by the time we export, so
+	 * the CSV can't re-read it from the DOM.
+	 */
+	columns: ActivityColumn[];
 }
 
 /** Per-activity failure record returned by the bulk downloader. */

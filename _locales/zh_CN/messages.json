@@ -168,5 +168,26 @@
 	},
 	"namesSport": {
 		"message": "按运动分文件夹"
+	},
+	"exportCsv": {
+		"message": "导出列表 (CSV)"
+	},
+	"savedCsv": {
+		"message": "已保存 $COUNT$ 项活动的列表。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "活动 ID"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "文件"
 	}
 }

@@ -168,5 +168,26 @@
 	},
 	"namesSport": {
 		"message": "Папки по видам спорта"
+	},
+	"exportCsv": {
+		"message": "Экспорт списка (CSV)"
+	},
+	"savedCsv": {
+		"message": "Список сохранён, тренировок: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "ID тренировки"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "Файл"
 	}
 }

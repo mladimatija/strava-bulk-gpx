@@ -153,5 +153,28 @@
 	"namesSport": {
 		"message": "Sport folders",
 		"description": "File-naming option: like 'ID + title', but inside a zip each file goes into a folder named after its sport (Run/, Ride/, …)."
+	},
+	"exportCsv": {
+		"message": "Export list (CSV)",
+		"description": "Toolbar button that saves the selected activities' table columns (date, title, distance, …) as a CSV spreadsheet, without downloading any activity files."
+	},
+	"savedCsv": {
+		"message": "Saved a list of $COUNT$ activities.",
+		"description": "Terminal success message after Export list (CSV).",
+		"placeholders": {
+			"count": { "content": "$1", "example": "5" }
+		}
+	},
+	"csvActivityId": {
+		"message": "Activity ID",
+		"description": "Column header in the exported CSV: the numeric Strava activity id."
+	},
+	"csvActivityUrl": {
+		"message": "URL",
+		"description": "Column header in the exported CSV: link to the activity on strava.com."
+	},
+	"csvFile": {
+		"message": "File",
+		"description": "Column header in the CSV inside a bulk zip: the activity's file name within the zip."
 	}
 }

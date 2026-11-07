@@ -365,6 +365,14 @@ async function zipFileNames(bytes: Buffer): Promise<string[]> {
 		.sort();
 }
 
+/** CSV lines without the BOM, which is asserted separately. */
+function csvLines(text: string): string[] {
+	return text
+		.replace(/^\uFEFF/, '')
+		.trimEnd()
+		.split('\r\n');
+}
+
 interface FakeRow {
 	id: string;
 	sport: string;
@@ -436,7 +444,7 @@ test.describe('zip entries', () => {
 		await extensionPage.locator('select[data-role="format"]').selectOption('original');
 		await extensionPage.locator('.sbgx-select-all-cb').check();
 		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
-		expect(await zipFileNames(bytes)).toEqual(['activity-2.fit', 'activity-3.fit', 'activity.fit']);
+		expect(await zipFileNames(bytes)).toEqual(['activities.csv', 'activity-2.fit', 'activity-3.fit', 'activity.fit']);
 	});
 });
 
@@ -467,6 +475,7 @@ test.describe('selection across pages', () => {
 		);
 		expect(name).toMatch(/^strava_gpx_\d{4}-\d{2}-\d{2}\.zip$/);
 		expect(await zipFileNames(bytes)).toEqual([
+			'activities.csv',
 			'strava_9000000001.gpx',
 			'strava_9000000002.gpx',
 			'strava_9000000006.gpx',
@@ -521,6 +530,7 @@ test.describe('file names', () => {
 			'9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx',
 			'9000000002_Lunch Trail Run.gpx',
 			'9000000003_Morning Run.gpx',
+			'activities.csv',
 		]);
 
 		await installAnchorClickCapture(extensionPage);
@@ -538,6 +548,7 @@ test.describe('file names', () => {
 			'Run/9000000003_Morning Run.gpx',
 			'Trail Run/9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx',
 			'Trail Run/9000000002_Lunch Trail Run.gpx',
+			'activities.csv',
 		]);
 	});
 
@@ -554,5 +565,44 @@ test.describe('file names', () => {
 		await extensionPage.locator('select[data-role="names"]').selectOption('title');
 		const { name } = await downloadFrom(extensionPage, () => extensionPage.locator('.sbgx-btn-row').first().click());
 		expect(name).toBe('9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.fit');
+	});
+});
+
+test.describe('CSV', () => {
+	test('bulk zips carry an activities.csv of the table columns', async ({ extensionPage }) => {
+		await stubGpxExports(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		const zip = await JSZip.loadAsync(bytes);
+		const csv = (await zip.file('activities.csv')!.async('nodebuffer')).toString('utf8');
+
+		expect(csv.startsWith('\uFEFF')).toBe(true);
+		const lines = csvLines(csv);
+		expect(lines[0]).toBe('Activity ID,URL,File,Sport,Date,Title,Time,Distance,Elevation,Relative Effort');
+		expect(lines).toContain(
+			'9000000001,https://www.strava.com/activities/9000000001,strava_9000000001.gpx,Trail Run,' +
+				'"Sat, 09/05/2026",Traversa v19 feat. Ex Acini Novi Šćapi,5:32:41,48.11 km,"1,889 m",109',
+		);
+		expect(lines).toHaveLength(4);
+	});
+
+	test('Export list saves the selection as CSV without fetching any activity file', async ({ extensionPage }) => {
+		const exportRequests: string[] = [];
+		extensionPage.on('request', (req) => {
+			if (req.url().includes('/export_')) exportRequests.push(req.url());
+		});
+		await extensionPage.locator('.sbgx-row-cb').nth(1).check();
+		// A title a spreadsheet would evaluate as a formula, on another page.
+		await showOtherPage(extensionPage, [{ id: '9000000008', sport: 'Ride', title: '=1+1' }]);
+		await extensionPage.locator('tr[data-sbgx-id="9000000008"] .sbgx-row-cb').check();
+
+		const { name, bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="csv"]').click());
+		expect(name).toMatch(/^strava_activities_\d{4}-\d{2}-\d{2}\.csv$/);
+		const lines = csvLines(bytes.toString('utf8'));
+		expect(lines[0]).toBe('Activity ID,URL,Sport,Date,Title,Time,Distance,Elevation,Relative Effort');
+		expect(lines[1]).toContain(',Lunch Trail Run,');
+		expect(lines[2]).toContain(",'=1+1,");
+		expect(exportRequests).toEqual([]);
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved a list of 2 activities.');
 	});
 });

@@ -27,7 +27,9 @@ When you click a row's download button, or **Download selected** / **Merge selec
 
 1. The extension sends a request per activity to `https://www.strava.com/activities/<id>/export_gpx` (or `/export_tcx`, `/export_original`, depending on the format you picked) - the same URLs Strava's own "Export" links target.
 2. Strava streams each file back, byte-for-byte the same file you'd get from clicking that link manually.
-3. The browser writes the file (or a zip of multiple files) to your Downloads folder.
+3. The browser writes the file (or a zip of multiple files, plus an `activities.csv` summary built from the table you're looking at) to your Downloads folder.
+
+**Export list (CSV)** makes no network requests at all: it saves the columns already shown in Strava's table for the activities you selected.
 
 Strava is the only third party. Their privacy policy applies to those requests: <https://www.strava.com/legal/privacy>.
 

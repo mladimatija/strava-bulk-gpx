@@ -168,5 +168,26 @@
 	},
 	"namesSport": {
 		"message": "Sportmappen"
+	},
+	"exportCsv": {
+		"message": "Lijst exporteren (CSV)"
+	},
+	"savedCsv": {
+		"message": "Lijst met $COUNT$ activiteiten opgeslagen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "Activiteit-ID"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "Bestand"
 	}
 }

@@ -11,10 +11,10 @@
 //     table body (pagination, search, sort). Selection state survives via a
 //     module-scope Map keyed by activity id, so a selection can span pages.
 
-import { downloadSingle, downloadBulk, downloadMergedGpx } from './downloader.ts';
+import { downloadSingle, downloadBulk, downloadMergedGpx, downloadActivitiesCsv } from './downloader.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
 import { t } from './i18n.ts';
-import type { ActivityRow, ExportFormat, NamePattern, StatusKind } from './types.ts';
+import type { ActivityColumn, ActivityRow, ExportFormat, NamePattern, StatusKind } from './types.ts';
 
 const KOFI_URL = 'https://ko-fi.com/D1D51ZGOQK';
 
@@ -107,7 +107,24 @@ function findActivitiesTable(): HTMLTableElement | null {
 	return null;
 }
 
-/** Pull { id, name, sport_type } from a rendered table row, or null. */
+/**
+ * The row's visible cells, labelled by the table's header. Our injected
+ * cells are skipped, and so are columns with an empty header (Strava's
+ * Edit / Share actions). Without a header row, columns are numbered.
+ */
+function rowColumns(row: HTMLTableRowElement): ActivityColumn[] {
+	const headers = row.closest('table')?.tHead?.rows[0]?.cells;
+	const cells = Array.from(row.cells).filter((td) => !td.classList.contains('sbgx-cell'));
+	const columns: ActivityColumn[] = [];
+	cells.forEach((td, i) => {
+		const label = headers ? (headers[i]?.textContent ?? '').trim() : String(i + 1);
+		if (!label) return;
+		columns.push({ label, value: (td.textContent ?? '').trim().replace(/\s+/g, ' ') });
+	});
+	return columns;
+}
+
+/** Pull { id, name, sport_type, columns } from a rendered table row, or null. */
 function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	const link = row.querySelector<HTMLAnchorElement>('a[href*="/activities/"]');
 	if (!link) return null;
@@ -120,7 +137,7 @@ function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	// Sport is usually the first <td> in the row. Best-effort, fine if missing.
 	const sportCell = Array.from(row.cells).find((td) => !td.classList.contains('sbgx-cell'));
 	const sport_type = sportCell ? (sportCell.textContent ?? '').trim() : '';
-	return { id, name, sport_type };
+	return { id, name, sport_type, columns: rowColumns(row) };
 }
 
 /**
@@ -291,6 +308,7 @@ function buildToolbar(): HTMLDivElement {
       </label>
       <button class="sbgx-btn sbgx-btn-primary" data-role="bulk" disabled>${escapeHtml(t('downloadSelected'))}</button>
       <button class="sbgx-btn sbgx-btn-secondary" data-role="merge" disabled>${escapeHtml(t('mergeSelected'))}</button>
+      <button class="sbgx-btn" data-role="csv" disabled>${escapeHtml(t('exportCsv'))}</button>
       <span class="sbgx-tool sbgx-count" data-role="count">${escapeHtml(t('selectedCount', '0'))}</span>
       <button class="sbgx-btn sbgx-btn-link" data-role="clear" hidden>${escapeHtml(t('clearSelection'))}</button>
       <span class="sbgx-tool sbgx-status" data-role="status">
@@ -316,6 +334,7 @@ function buildToolbar(): HTMLDivElement {
 
 	toolbarPart(toolbar, 'bulk').addEventListener('click', handleBulkClick);
 	toolbarPart(toolbar, 'merge').addEventListener('click', handleMergeClick);
+	toolbarPart(toolbar, 'csv').addEventListener('click', handleCsvClick);
 	toolbarPart(toolbar, 'clear').addEventListener('click', () => {
 		STATE.selected.clear();
 		STATE.anchorId = null;
@@ -385,10 +404,12 @@ function renderToolbarCounts(): void {
 	const countEl = toolbarPart(STATE.toolbar, 'count');
 	const bulkBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'bulk');
 	const mergeBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'merge');
+	const csvBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'csv');
 	const clearBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'clear');
 	countEl.textContent =
 		offPage > 0 ? t('selectedCountWithHidden', [String(total), String(offPage)]) : t('selectedCount', String(total));
 	bulkBtn.disabled = total === 0 || STATE.busy;
+	csvBtn.disabled = total === 0 || STATE.busy;
 	clearBtn.hidden = total === 0;
 	clearBtn.disabled = STATE.busy;
 	// Merge is GPX-only - TCX and Original files aren't trivially concatenable
@@ -532,6 +553,15 @@ async function handleMergeClick(): Promise<void> {
 		STATE.busy = false;
 		renderToolbarCounts();
 	}
+}
+
+/** List-only export: the selected rows' table columns as CSV, no file fetches. */
+function handleCsvClick(): void {
+	if (STATE.busy) return;
+	const activities = collectSelectedActivities();
+	if (activities.length === 0) return;
+	downloadActivitiesCsv(activities);
+	setStatus(t('savedCsv', String(activities.length)), 'ok');
 }
 
 // ---------- Boot + observer ----------

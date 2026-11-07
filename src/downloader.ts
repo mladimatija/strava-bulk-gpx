@@ -11,6 +11,7 @@
 // host_permissions needed.
 
 import JSZip from 'jszip';
+import { activitiesCsv } from './csv.ts';
 import type { ActivityRow, BulkResult, ExportFormat, NamePattern, ProgressCallback } from './types.ts';
 
 /** Build the URL for a given activity + format. */
@@ -40,6 +41,11 @@ function downloadBlob(filename: string, blob: Blob): void {
 	a.click();
 	a.remove();
 	setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Today as YYYY-MM-DD, for batch filenames. */
+function today(): string {
+	return new Date().toISOString().slice(0, 10);
 }
 
 /**
@@ -160,6 +166,12 @@ export function downloadSingleGpx(activity: ActivityRow): Promise<void> {
 	return downloadSingle(activity, 'gpx');
 }
 
+/** Save a CSV of the given activities' table columns. No network involved. */
+export function downloadActivitiesCsv(activities: ActivityRow[]): void {
+	const blob = new Blob([activitiesCsv(activities)], { type: 'text/csv;charset=utf-8' });
+	downloadBlob(`strava_activities_${today()}.csv`, blob);
+}
+
 export interface BulkOptions {
 	/**
 	 * Notified as the download progresses through its stages. See {@link ProgressEvent}.
@@ -169,8 +181,12 @@ export interface BulkOptions {
 	names?: NamePattern;
 }
 
+/** Name of the activity summary added to every multi-file zip. */
+const CSV_NAME = 'activities.csv';
+
 /**
- * Bulk download. One id → one file (no zip). Multiple ids → zip.
+ * Bulk download. One id → one file (no zip). Multiple ids → zip, with an
+ * `activities.csv` summary next to the files.
  *
  * Emits progress as a discriminated event:
  *   - { stage: "downloading", completed, total } - fires immediately and after
@@ -196,8 +212,10 @@ export async function downloadBulk(
 
 	const total = activities.length;
 	const zip = new JSZip();
-	// Zip paths already taken - see uniquePath.
-	const used = new Set<string>();
+	/** Activity id → path inside the zip, for the CSV's File column. */
+	const files = new Map<string, string>();
+	// Reserve the summary's name so no activity file can overwrite it.
+	const used = new Set<string>([CSV_NAME]);
 	const failed: BulkResult['failed'] = [];
 	let completed = 0;
 
@@ -229,7 +247,9 @@ export async function downloadBulk(
 							format === 'original' ? parseContentDispositionFilename(res.headers.get('content-disposition')) : null;
 						// JSZip silently replaces an entry with the same name, so two
 						// uploads that share a filename would otherwise lose one file.
-						zip.file(uniquePath(activityFilePath(a, format, names, serverName), used), blob);
+						const path = uniquePath(activityFilePath(a, format, names, serverName), used);
+						zip.file(path, blob);
+						files.set(a.id, path);
 					}
 				} catch (e) {
 					const message = e instanceof Error ? e.message : String(e);
@@ -241,22 +261,27 @@ export async function downloadBulk(
 		}),
 	);
 
-	const successCount = total - failed.length;
-	if (successCount === 0) {
+	if (files.size === 0) {
 		throw new Error(`All ${total} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
 	}
 
 	onProgress?.({ stage: 'zipping' });
+	zip.file(
+		CSV_NAME,
+		activitiesCsv(
+			activities.filter((a) => files.has(a.id)),
+			files,
+		),
+	);
 	const blob = await zip.generateAsync({
 		type: 'blob',
 		compression: 'DEFLATE',
 		compressionOptions: { level: 6 },
 	});
-	const date = new Date().toISOString().slice(0, 10);
 	// Zip filename mentions the format, so a user with several batches doesn't
 	// confuse strava_gpx_…zip with strava_tcx_…zip in their Downloads folder.
-	downloadBlob(`strava_${format}_${date}.zip`, blob);
-	return { ok: successCount, failed };
+	downloadBlob(`strava_${format}_${today()}.zip`, blob);
+	return { ok: files.size, failed };
 }
 
 /** Backwards-compatible alias - older callers passed no format and expected GPX. */
@@ -424,7 +449,6 @@ export async function downloadMergedGpx(
 	onProgress?.({ stage: 'merging' });
 	const merged = mergeGpxDocuments(sources);
 	const blob = new Blob([merged], { type: 'application/gpx+xml' });
-	const date = new Date().toISOString().slice(0, 10);
-	downloadBlob(`strava_merged_${date}.gpx`, blob);
+	downloadBlob(`strava_merged_${today()}.gpx`, blob);
 	return { ok: sources.length, failed };
 }
