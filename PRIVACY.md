@@ -9,8 +9,8 @@ This extension is designed so that it cannot, by construction, collect or transm
 When you visit `https://www.strava.com/athlete/training`, the extension is allowed to:
 
 - Read and modify the DOM of that page (to add download buttons and a toolbar).
-- Make requests to other URLs on `strava.com` (specifically `/activities/<id>/export_gpx`) **using your existing logged-in browser session**. This is the same URL Strava's own "Export GPX" link on each activity page targets.
-- Save files to your computer via the browser's `downloads` API (so the GPX or zip file lands in your Downloads folder).
+- Make requests to other URLs on `strava.com` (specifically `/activities/<id>/export_gpx`, `/export_tcx` and `/export_original`) **using your existing logged-in browser session**. These are the same URLs Strava's own "Export" links on each activity page target.
+- Save files to your computer by triggering an ordinary browser download, the same way clicking a download link does (so the file or zip lands in your Downloads folder). It does not use, or request, the `downloads` permission.
 - Store your last-used export format (`GPX`, `TCX` or `Original`) in the browser's local extension storage via the `storage` permission, so it is pre-selected next time. This one value stays on your machine and is never transmitted.
 
 That's the entire permission surface. The extension does not request access to your cookies as a permission, your browsing history, your other tabs, or any non-Strava domain.
@@ -23,10 +23,10 @@ Your Strava session cookie, your activity data, your GPX files, your selections 
 
 ## Where your data goes
 
-When you click **GPX** on a row or **Download selected** in the toolbar:
+When you click a row's download button, or **Download selected** / **Merge selected into one GPX** in the toolbar:
 
-1. The extension sends a request to `https://www.strava.com/activities/<id>/export_gpx` - the same URL Strava's own "Export GPX" link targets.
-2. Strava streams the GPX file back, byte-for-byte the same file you'd get from clicking that link manually.
+1. The extension sends a request per activity to `https://www.strava.com/activities/<id>/export_gpx` (or `/export_tcx`, `/export_original`, depending on the format you picked) - the same URLs Strava's own "Export" links target.
+2. Strava streams each file back, byte-for-byte the same file you'd get from clicking that link manually.
 3. The browser writes the file (or a zip of multiple files) to your Downloads folder.
 
 Strava is the only third party. Their privacy policy applies to those requests: <https://www.strava.com/legal/privacy>.
