@@ -33,7 +33,7 @@ When you open <https://www.strava.com/athlete/training>, the extension:
 - Click the row button → one file lands in your Downloads in the chosen format.
 - Click **Download selected** with one row checked → one file (no zip).
 - Click **Download selected** with multiple rows checked → a `.zip` containing one file per activity (named `strava_<id>.gpx`, `strava_<id>.tcx`, or - for **Original** - whatever extension the file was uploaded with). The zip itself is named `strava_<format>_<date>.zip` so different batches don't collide in your Downloads folder.
-- Click **Merge selected into one GPX** → a single `strava_merged_<date>.gpx` containing one `<trk>` per activity. Useful when you want a multi-day trip rendered as one track collection in RideWithGPS / Gaia / Komoot, or archived as a single file. The merge button stays visible in all modes but disables outside GPX with a tooltip explaining why (TCX and Original aren't trivially concatenable).
+- Click **Merge selected into one GPX** → a single `strava_merged_<date>.gpx` containing one `<trk>` per activity, in chronological order. Useful when you want a multi-day trip rendered as one track collection in RideWithGPS / Gaia / Komoot, or archived as a single file. The merge button stays visible in all modes but disables outside GPX with a tooltip explaining why (TCX and Original aren't trivially concatenable).
 
 The three formats map to what Strava's own _Export_ menu offers on individual activity pages:
 

@@ -1,6 +1,7 @@
 // E2E behavior tests. Each test starts from a fresh fixture page with the
 // content script already mounted (see tests/fixtures/extension.ts).
 
+import { readFileSync } from 'node:fs';
 import { test, expect, type Page } from '../fixtures/extension.ts';
 
 interface CapturedClick {
@@ -306,7 +307,6 @@ test.describe('Strava Bulk GPX extension', () => {
 		// activity, with the right <name> markers from our stub.
 		const filePath = await download.path();
 		expect(filePath).toBeTruthy();
-		const { readFileSync } = await import('node:fs');
 		const merged = readFileSync(filePath, 'utf8');
 		expect(merged).toContain('<name>activity-9000000001</name>');
 		expect(merged).toContain('<name>activity-9000000002</name>');
@@ -317,5 +317,61 @@ test.describe('Strava Bulk GPX extension', () => {
 		// The terminal status should celebrate the merge with the savedMerged
 		// string rather than the regular savedActivities one.
 		await expect(extensionPage.locator('[data-role="status-text"]')).toContainText(/merged GPX with 3/i);
+	});
+});
+
+// ---------- Helpers for the export-feature tests below ----------
+
+/** Activity id from a stubbed /activities/<id>/export_* request. */
+function idFromUrl(url: string): string {
+	return /\/activities\/(\d+)\//.exec(url)?.[1] ?? 'unknown';
+}
+
+/** A minimal valid GPX whose track name identifies `id`, optionally with a start time and extra root children. */
+function gpxBody(id: string, startTime?: string, extra = ''): string {
+	const metadata = startTime ? `<metadata><time>${startTime}</time></metadata>` : '';
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Strava" xmlns="http://www.topografix.com/GPX/1/1">${metadata}${extra}
+  <trk><name>activity-${id}</name><trkseg><trkpt lat="45.0" lon="13.0"><ele>10</ele></trkpt></trkseg></trk>
+</gpx>`;
+}
+
+/** Run `action` and return the file it makes the browser save. */
+async function downloadFrom(page: Page, action: () => Promise<void>): Promise<{ name: string; bytes: Buffer }> {
+	const downloadPromise = page.waitForEvent('download', { timeout: 10000 });
+	await action();
+	const download = await downloadPromise;
+	return { name: download.suggestedFilename(), bytes: readFileSync(await download.path()) };
+}
+
+test.describe('merge ordering', () => {
+	test('merged tracks are chronological whatever order the responses arrive in', async ({ extensionPage }) => {
+		// Rows are listed newest first (01, 02, 03); the delays make responses
+		// land in a third order (01, 03, 02). Chronological is 03, 02, 01.
+		const starts: Record<string, string> = {
+			'9000000001': '2026-05-09T07:00:00Z',
+			'9000000002': '2026-05-08T07:00:00Z',
+			'9000000003': '2026-05-06T07:00:00Z',
+		};
+		const delays: Record<string, number> = { '9000000001': 0, '9000000002': 600, '9000000003': 300 };
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await new Promise((r) => setTimeout(r, delays[id] ?? 0));
+			// 02 also carries a waypoint, which the GPX schema requires before
+			// every <trk> in the merged document - not just before 02's own.
+			const extra = id === '9000000002' ? '<wpt lat="45.05" lon="13.05"><name>summit</name></wpt>' : '';
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id, starts[id], extra) });
+		});
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="merge"]').click());
+		const merged = bytes.toString('utf8');
+
+		const positions = ['9000000003', '9000000002', '9000000001'].map((id) =>
+			merged.indexOf(`<name>activity-${id}</name>`),
+		);
+		expect(positions.every((p) => p >= 0)).toBe(true);
+		expect(positions).toEqual([...positions].sort((a, b) => a - b));
+		expect(merged.indexOf('<wpt')).toBeLessThan(merged.indexOf('<trk'));
 	});
 });

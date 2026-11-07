@@ -202,6 +202,23 @@ export function downloadBulkGpx(activities: ActivityRow[], options: BulkOptions 
 
 const GPX_NS = 'http://www.topografix.com/GPX/1/1';
 
+interface MergeSource {
+	id: string;
+	name: string;
+	xml: string;
+}
+
+/**
+ * When a GPX document starts, in ms since the epoch: its first track point's
+ * `<time>`, else the first `<time>` anywhere (Strava puts the start time in
+ * `<metadata>`). NaN when it has none.
+ */
+function gpxStartTime(doc: Document): number {
+	const firstPoint = doc.getElementsByTagName('trkpt')[0];
+	const time = firstPoint?.getElementsByTagName('time')[0] ?? doc.getElementsByTagName('time')[0];
+	return Date.parse(time?.textContent ?? '');
+}
+
 /**
  * Assemble a single GPX 1.1 document by concatenating the `<wpt>`, `<rte>`,
  * and `<trk>` children of every source GPX. The output preserves namespaces,
@@ -209,11 +226,15 @@ const GPX_NS = 'http://www.topografix.com/GPX/1/1';
  * cadence, etc.) - `importNode(node, true)` copies the whole subtree without
  * stripping anything.
  *
+ * Sources are ordered by start time, so a multi-day trip reads day 1 → day N
+ * whatever order the rows were listed or fetched in. Sources without any
+ * timestamp keep their relative order, after the timed ones.
+ *
  * If a source `<trk>` has no `<name>` child, we inject one using the activity
  * title, so the merged file is still readable in tools like Garmin BaseCamp
  * that list tracks by name.
  */
-function mergeGpxDocuments(sources: { id: string; name: string; xml: string }[]): string {
+function mergeGpxDocuments(sources: MergeSource[]): string {
 	const parser = new DOMParser();
 	const serializer = new XMLSerializer();
 
@@ -227,23 +248,38 @@ function mergeGpxDocuments(sources: { id: string; name: string; xml: string }[])
 	);
 	const root = outDoc.documentElement;
 
-	for (const src of sources) {
-		const doc = parser.parseFromString(src.xml, 'application/xml');
+	const parsed = sources
+		.map((src) => {
+			const doc = parser.parseFromString(src.xml, 'application/xml');
+			return { src, doc, start: gpxStartTime(doc) };
+		})
 		// DOMParser returns an error document with a <parsererror> root rather
 		// than throwing on malformed XML. Skip those - the activity will still
 		// be counted as a successful fetch upstream, but its content can't be
 		// merged. (Better than corrupting the whole output.)
-		if (doc.getElementsByTagName('parsererror').length > 0) continue;
+		.filter(({ doc }) => doc.getElementsByTagName('parsererror').length === 0)
+		.sort((a, b) => {
+			const aUntimed = Number.isNaN(a.start);
+			const bUntimed = Number.isNaN(b.start);
+			if (aUntimed || bUntimed) return Number(aUntimed) - Number(bUntimed);
+			return a.start - b.start;
+		});
 
-		// Order matters per the GPX schema: <wpt>* then <rte>* then <trk>*.
-		// Strava's exports are pure <trk> in practice, but we honour the order
-		// for any source that does carry waypoints or routes.
+	// The GPX schema wants every <wpt> first, then every <rte>, then every
+	// <trk> - across the whole document, not per source. Strava's exports are
+	// pure <trk> in practice, but a source with waypoints must not end up
+	// after another source's tracks.
+	for (const { doc } of parsed) {
 		for (const wpt of Array.from(doc.getElementsByTagName('wpt'))) {
 			root.appendChild(outDoc.importNode(wpt, true));
 		}
+	}
+	for (const { doc } of parsed) {
 		for (const rte of Array.from(doc.getElementsByTagName('rte'))) {
 			root.appendChild(outDoc.importNode(rte, true));
 		}
+	}
+	for (const { src, doc } of parsed) {
 		for (const trk of Array.from(doc.getElementsByTagName('trk'))) {
 			const imported = outDoc.importNode(trk, true);
 			if (!imported.getElementsByTagName('name')[0] && src.name) {
@@ -261,8 +297,9 @@ function mergeGpxDocuments(sources: { id: string; name: string; xml: string }[])
 /**
  * Merge mode. Fetches `/export_gpx` for every selected activity, parses each
  * one, and emits a single combined GPX file. The output is one `<gpx>` root
- * with N `<trk>` children - useful for stitching together a multi-day trip
- * into a single track collection a mapping tool can render in one go.
+ * with N `<trk>` children in chronological order - useful for stitching
+ * together a multi-day trip into a single track collection a mapping tool
+ * can render in one go.
  *
  * Progress events mirror {@link downloadBulk} but the post-fetch stage is
  * `'merging'` instead of `'zipping'` so the UI can show the right string.
@@ -278,7 +315,9 @@ export async function downloadMergedGpx(
 
 	const total = activities.length;
 	const failed: BulkResult['failed'] = [];
-	const fetched: { id: string; name: string; xml: string }[] = [];
+	// Indexed by input position rather than pushed as fetches finish, so the
+	// merge never depends on which response happened to arrive first.
+	const fetched: (MergeSource | undefined)[] = [];
 	let completed = 0;
 
 	onProgress?.({ stage: 'downloading', completed, total });
@@ -300,7 +339,7 @@ export async function downloadMergedGpx(
 					if (!res.ok) {
 						failed.push({ id: a.id, reason: `HTTP ${res.status}` });
 					} else {
-						fetched.push({ id: a.id, name: a.name, xml: await res.text() });
+						fetched[i] = { id: a.id, name: a.name, xml: await res.text() };
 					}
 				} catch (e) {
 					const message = e instanceof Error ? e.message : String(e);
@@ -312,14 +351,16 @@ export async function downloadMergedGpx(
 		}),
 	);
 
-	if (fetched.length === 0) {
+	const sources = fetched.filter((s): s is MergeSource => s !== undefined);
+
+	if (sources.length === 0) {
 		throw new Error(`All ${total} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
 	}
 
 	onProgress?.({ stage: 'merging' });
-	const merged = mergeGpxDocuments(fetched);
+	const merged = mergeGpxDocuments(sources);
 	const blob = new Blob([merged], { type: 'application/gpx+xml' });
 	const date = new Date().toISOString().slice(0, 10);
 	downloadBlob(`strava_merged_${date}.gpx`, blob);
-	return { ok: fetched.length, failed };
+	return { ok: sources.length, failed };
 }
