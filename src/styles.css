@@ -4,6 +4,7 @@
 
 .sbgx-toolbar {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 12px;
 	padding: 10px 14px;
@@ -34,8 +35,8 @@
 	font-variant-numeric: tabular-nums;
 }
 
-/* Format select - sits between the Select-all checkbox and the bulk button.
-   Native <select> styled minimally so it fits the toolbar's line-height. */
+/* Format and Names selects - sit between the Select-all checkbox and the bulk
+   button. Native <select> styled minimally so it fits the toolbar's line-height. */
 .sbgx-format-wrap span {
 	color: #6d7177;
 }
@@ -158,11 +159,54 @@
 	line-height: 1;
 }
 
+/* "Clear selection" - a quiet text action next to the selection count, so it
+   doesn't compete with the real export buttons. */
+.sbgx-btn-link {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: #fc4c02;
+	text-decoration: underline;
+}
+.sbgx-btn-link:hover:not(:disabled) {
+	background: none;
+	color: #e04500;
+}
+
+/* Failure list after a partly failed run - its own full-width line under the
+   controls (the toolbar wraps), with the Retry button and an expandable list
+   naming each failed activity. */
+.sbgx-failures {
+	flex-basis: 100%;
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	color: #b06a00;
+}
+.sbgx-failures[hidden] {
+	display: none;
+}
+.sbgx-failures summary {
+	cursor: pointer;
+	padding: 6px 0;
+}
+.sbgx-failures ul {
+	margin: 4px 0 0;
+	padding-left: 18px;
+}
+.sbgx-failures a {
+	color: inherit;
+	text-decoration: underline;
+}
+
 /* Ko-fi widget - uses the official kofi6.png asset (bundled as a data URL via
    scripts/build-kofi.js). The image already carries Ko-fi's brand styling,
    so we just need to render it cleanly. */
 .sbgx-kofi {
 	display: inline-block;
+	/* Right-aligned even when the toolbar wraps and the spacer stays behind
+	   on the previous line. */
+	margin-left: auto;
 	line-height: 0;
 	transition:
 		opacity 80ms ease,

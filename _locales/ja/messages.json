@@ -137,5 +137,84 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "統合は GPX モードでのみ利用できます"
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$件選択中 (このページ以外に$HIDDEN$件)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "選択を解除"
+	},
+	"namesLabel": {
+		"message": "ファイル名:"
+	},
+	"namesTooltip": {
+		"message": "ダウンロードするファイルの名前の付け方。スポーツ別フォルダーは ZIP 内でのみ適用されます。"
+	},
+	"namesId": {
+		"message": "アクティビティ ID"
+	},
+	"namesTitle": {
+		"message": "ID + タイトル"
+	},
+	"namesSport": {
+		"message": "スポーツ別フォルダー"
+	},
+	"exportCsv": {
+		"message": "リストをエクスポート (CSV)"
+	},
+	"savedCsv": {
+		"message": "$COUNT$件のアクティビティのリストを保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"cancel": {
+		"message": "キャンセル"
+	},
+	"cancelled": {
+		"message": "キャンセルしました。何も保存されていません。"
+	},
+	"retryFailed": {
+		"message": "失敗した$COUNT$件を再試行",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "失敗したアクティビティを表示"
+	},
+	"rateLimited": {
+		"message": "Strava がリクエストを制限しています。$SECONDS$ 秒後に再試行します…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "アクティビティ ID"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "ファイル"
 	}
 }

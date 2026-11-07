@@ -4,6 +4,26 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-07
+
+### Added
+
+- **Selection across pages.** Selected activities stay selected while you page, search or filter in Strava's UI, and **Download selected** / **Merge** / **Export list** include them all. The count reads `N selected (M not on this page)`; a new **Clear selection** action drops everything.
+- **Shift-click range selection.** Shift-click a second row checkbox to select or deselect every row in between.
+- **File naming.** A new **Names** dropdown (remembered via `chrome.storage.local`): `Activity ID` (the existing `strava_<id>.gpx`), `ID + title` (`<id>_<title>.gpx`), or `Sport folders` (`<sport>/<id>_<title>.gpx` inside zips).
+- **`activities.csv` in every multi-file zip**, listing each activity's table columns (as Strava shows them, under Strava's own column headers) plus its id, URL and file name in the zip.
+- **Export list (CSV)** toolbar button: saves the selected activities' table columns as `strava_activities_<date>.csv` without fetching any activity files. Formula-like cells are defused against CSV injection.
+- **Cancel** button while a download or merge runs; nothing is saved after cancelling.
+- **Failure list and Retry.** After a partly failed run, the toolbar lists every failed activity with its reason (previously only the first reason was shown), and zip runs offer **Retry N failed** to fetch only those.
+- **Rate-limit handling.** On HTTP 429 the whole download pauses for Strava's `Retry-After` (or 5 / 10 / 20 s backoff, capped at 60 s) and retries the activity up to 3 times, with a status message during the wait.
+
+### Fixed
+
+- **Merged GPX track order.** Tracks were written in whatever order the parallel downloads finished; they're now sorted by start time, so a multi-day trip reads day 1 → day N.
+- **Merged GPX schema order.** A source's `<wpt>` waypoints could land after another source's `<trk>`; all waypoints, then routes, then tracks are now emitted across the whole document, as GPX 1.1 requires.
+- **Lost files in Original zips.** Two uploads with the same original filename overwrote each other in the zip; duplicates are now renamed `name-2.fit`, `name-3.fit`, ….
+- **`PRIVACY.md`** wrongly said files are saved via the `downloads` API (the extension uses ordinary browser downloads and doesn't request that permission) and listed only `/export_gpx`.
+
 ## [1.1.0] - 2026-11-05
 
 ### Added

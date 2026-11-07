@@ -137,5 +137,84 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "Sammenslåing er bare tilgjengelig i GPX-modus"
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$ valgt ($HIDDEN$ ikke på denne siden)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Fjern valg"
+	},
+	"namesLabel": {
+		"message": "Navn:"
+	},
+	"namesTooltip": {
+		"message": "Hvordan nedlastede filer navngis. Sportsmapper gjelder bare i ZIP-filer."
+	},
+	"namesId": {
+		"message": "Aktivitets-ID"
+	},
+	"namesTitle": {
+		"message": "ID + tittel"
+	},
+	"namesSport": {
+		"message": "Sportsmapper"
+	},
+	"exportCsv": {
+		"message": "Eksporter liste (CSV)"
+	},
+	"savedCsv": {
+		"message": "Liste med $COUNT$ aktiviteter lagret.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"cancel": {
+		"message": "Avbryt"
+	},
+	"cancelled": {
+		"message": "Avbrutt - ingenting ble lagret."
+	},
+	"retryFailed": {
+		"message": "Prøv $COUNT$ mislykkede på nytt",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Vis mislykkede aktiviteter"
+	},
+	"rateLimited": {
+		"message": "Strava begrenser forespørsler - prøver igjen om $SECONDS$ s…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "Aktivitets-ID"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "Fil"
 	}
 }

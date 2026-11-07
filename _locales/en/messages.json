@@ -121,5 +121,86 @@
 	"mergeOnlyGpx": {
 		"message": "Merging is only available in GPX mode",
 		"description": "Tooltip on the Merge button when the format dropdown is set to TCX or Original. Explains why the button is disabled (TCX/Original files aren't trivially concatenable into a single document)."
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$ selected ($HIDDEN$ not on this page)",
+		"description": "Selection count when some selected activities are on other pages of the list (or filtered out by a search). COUNT is the total selected; HIDDEN is how many of those aren't currently shown.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "25" },
+			"hidden": { "content": "$2", "example": "20" }
+		}
+	},
+	"clearSelection": {
+		"message": "Clear selection",
+		"description": "Link-style button next to the selection count. Deselects every activity, including ones on other pages."
+	},
+	"namesLabel": {
+		"message": "Names:",
+		"description": "Label preceding the file-naming dropdown in the toolbar."
+	},
+	"namesTooltip": {
+		"message": "How downloaded files are named. Sport folders only apply inside zips.",
+		"description": "Hover tooltip on the file-naming dropdown."
+	},
+	"namesId": {
+		"message": "Activity ID",
+		"description": "File-naming option: files are named strava_<activity id>.gpx (the default)."
+	},
+	"namesTitle": {
+		"message": "ID + title",
+		"description": "File-naming option: files are named <activity id>_<activity title>.gpx."
+	},
+	"namesSport": {
+		"message": "Sport folders",
+		"description": "File-naming option: like 'ID + title', but inside a zip each file goes into a folder named after its sport (Run/, Ride/, …)."
+	},
+	"exportCsv": {
+		"message": "Export list (CSV)",
+		"description": "Toolbar button that saves the selected activities' table columns (date, title, distance, …) as a CSV spreadsheet, without downloading any activity files."
+	},
+	"savedCsv": {
+		"message": "Saved a list of $COUNT$ activities.",
+		"description": "Terminal success message after Export list (CSV).",
+		"placeholders": {
+			"count": { "content": "$1", "example": "5" }
+		}
+	},
+	"cancel": {
+		"message": "Cancel",
+		"description": "Toolbar button shown while a bulk download or merge is running. Stops it without saving anything."
+	},
+	"cancelled": {
+		"message": "Cancelled - nothing was saved.",
+		"description": "Status shown after the user cancels a running bulk download or merge."
+	},
+	"retryFailed": {
+		"message": "Retry $COUNT$ failed",
+		"description": "Button shown after a bulk download where some activities failed. Downloads only those again, as a new file.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "2" }
+		}
+	},
+	"showFailures": {
+		"message": "Show failed activities",
+		"description": "Expandable list under the toolbar after a partly failed run, naming each activity that failed and why."
+	},
+	"rateLimited": {
+		"message": "Strava is limiting requests - retrying in $SECONDS$ s…",
+		"description": "Progress status while Strava has asked us to slow down (HTTP 429). The download continues automatically after the wait.",
+		"placeholders": {
+			"seconds": { "content": "$1", "example": "10" }
+		}
+	},
+	"csvActivityId": {
+		"message": "Activity ID",
+		"description": "Column header in the exported CSV: the numeric Strava activity id."
+	},
+	"csvActivityUrl": {
+		"message": "URL",
+		"description": "Column header in the exported CSV: link to the activity on strava.com."
+	},
+	"csvFile": {
+		"message": "File",
+		"description": "Column header in the CSV inside a bulk zip: the activity's file name within the zip."
 	}
 }

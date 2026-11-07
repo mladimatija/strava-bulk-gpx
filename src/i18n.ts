@@ -48,7 +48,24 @@ export type MessageKey =
 	| 'mergeSelected'
 	| 'mergingGpx'
 	| 'savedMerged'
-	| 'mergeOnlyGpx';
+	| 'mergeOnlyGpx'
+	| 'selectedCountWithHidden'
+	| 'clearSelection'
+	| 'namesLabel'
+	| 'namesTooltip'
+	| 'namesId'
+	| 'namesTitle'
+	| 'namesSport'
+	| 'exportCsv'
+	| 'savedCsv'
+	| 'cancel'
+	| 'cancelled'
+	| 'retryFailed'
+	| 'showFailures'
+	| 'rateLimited'
+	| 'csvActivityId'
+	| 'csvActivityUrl'
+	| 'csvFile';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -80,6 +97,23 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	mergingGpx: 'Merging into one GPX…',
 	savedMerged: 'Saved merged GPX with $1 activities.',
 	mergeOnlyGpx: 'Merging is only available in GPX mode',
+	selectedCountWithHidden: '$1 selected ($2 not on this page)',
+	clearSelection: 'Clear selection',
+	namesLabel: 'Names:',
+	namesTooltip: 'How downloaded files are named. Sport folders only apply inside zips.',
+	namesId: 'Activity ID',
+	namesTitle: 'ID + title',
+	namesSport: 'Sport folders',
+	exportCsv: 'Export list (CSV)',
+	savedCsv: 'Saved a list of $1 activities.',
+	cancel: 'Cancel',
+	cancelled: 'Cancelled - nothing was saved.',
+	retryFailed: 'Retry $1 failed',
+	showFailures: 'Show failed activities',
+	rateLimited: 'Strava is limiting requests - retrying in $1 s…',
+	csvActivityId: 'Activity ID',
+	csvActivityUrl: 'URL',
+	csvFile: 'File',
 };
 
 /**

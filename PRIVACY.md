@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective date:** 2026-05-14
+**Effective date:** 2026-11-07
 
 This extension is designed so that it cannot, by construction, collect or transmit your data to anyone except Strava itself. Read this page to understand exactly how that works.
 
@@ -9,25 +9,27 @@ This extension is designed so that it cannot, by construction, collect or transm
 When you visit `https://www.strava.com/athlete/training`, the extension is allowed to:
 
 - Read and modify the DOM of that page (to add download buttons and a toolbar).
-- Make requests to other URLs on `strava.com` (specifically `/activities/<id>/export_gpx`) **using your existing logged-in browser session**. This is the same URL Strava's own "Export GPX" link on each activity page targets.
-- Save files to your computer via the browser's `downloads` API (so the GPX or zip file lands in your Downloads folder).
-- Store your last-used export format (`GPX`, `TCX` or `Original`) in the browser's local extension storage via the `storage` permission, so it is pre-selected next time. This one value stays on your machine and is never transmitted.
+- Make requests to other URLs on `strava.com` (specifically `/activities/<id>/export_gpx`, `/export_tcx` and `/export_original`) **using your existing logged-in browser session**. These are the same URLs Strava's own "Export" links on each activity page target.
+- Save files to your computer by triggering an ordinary browser download, the same way clicking a download link does (so the file or zip lands in your Downloads folder). It does not use, or request, the `downloads` permission.
+- Store two toolbar preferences in the browser's local extension storage via the `storage` permission, so they are pre-selected next time: your last-used export format (`GPX`, `TCX` or `Original`) and your file-naming choice (`Activity ID`, `ID + title` or `Sport folders`). These values stay on your machine and are never transmitted.
 
 That's the entire permission surface. The extension does not request access to your cookies as a permission, your browsing history, your other tabs, or any non-Strava domain.
 
 ## What we collect, store, or transmit
 
-**Nothing about you.** The only thing saved is the export-format preference described above, locally. This extension has no backend, no analytics, no telemetry, no error reporting service, no remote configuration. Every line of code runs locally in your browser. The only network requests it makes are to `www.strava.com`, and they only happen when you click a download button.
+**Nothing about you.** The only things saved are the two toolbar preferences described above, locally. Your selection of activities is kept in memory only and is gone when you leave or reload the page. This extension has no backend, no analytics, no telemetry, no error reporting service, no remote configuration. Every line of code runs locally in your browser. The only network requests it makes are to `www.strava.com`, and they only happen when you click a download button.
 
 Your Strava session cookie, your activity data, your GPX files, your selections - none of it leaves your machine. We never see it because there is no "we" on the server side.
 
 ## Where your data goes
 
-When you click **GPX** on a row or **Download selected** in the toolbar:
+When you click a row's download button, or **Download selected** / **Merge selected into one GPX** in the toolbar:
 
-1. The extension sends a request to `https://www.strava.com/activities/<id>/export_gpx` - the same URL Strava's own "Export GPX" link targets.
-2. Strava streams the GPX file back, byte-for-byte the same file you'd get from clicking that link manually.
-3. The browser writes the file (or a zip of multiple files) to your Downloads folder.
+1. The extension sends a request per activity to `https://www.strava.com/activities/<id>/export_gpx` (or `/export_tcx`, `/export_original`, depending on the format you picked) - the same URLs Strava's own "Export" links target.
+2. Strava streams each file back, byte-for-byte the same file you'd get from clicking that link manually.
+3. The browser writes the file (or a zip of multiple files, plus an `activities.csv` summary built from the table you're looking at) to your Downloads folder.
+
+**Export list (CSV)** makes no network requests at all: it saves the columns already shown in Strava's table for the activities you selected.
 
 Strava is the only third party. Their privacy policy applies to those requests: <https://www.strava.com/legal/privacy>.
 

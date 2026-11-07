@@ -3,6 +3,12 @@
  * imports between content.ts and downloader.ts.
  */
 
+/** One visible table cell, labelled by its column header (e.g. "Distance" → "10.07 km"). */
+export interface ActivityColumn {
+	label: string;
+	value: string;
+}
+
 /** An activity surfaced from a Strava table row into our toolbar/downloader. */
 export interface ActivityRow {
 	/** Numeric Strava activity id, kept as a string for stable map/set keys. */
@@ -11,6 +17,12 @@ export interface ActivityRow {
 	name: string;
 	/** Sport label, e.g. "Run", "Hike", "Workout". Best-effort. */
 	sport_type: string;
+	/**
+	 * The row's cells as Strava rendered them, captured when the row was
+	 * selected - the row may be on another page by the time we export, so
+	 * the CSV can't re-read it from the DOM.
+	 */
+	columns: ActivityColumn[];
 }
 
 /** Per-activity failure record returned by the bulk downloader. */
@@ -38,9 +50,15 @@ export interface BulkResult {
  *   - 'merging'     - emitted once when a merged-GPX run switches from
  *     fetching to parsing/combining the individual `<trk>` blocks into a
  *     single output document.
+ *   - 'throttled'   - Strava answered HTTP 429; every worker pauses for
+ *     `seconds` before retrying. Fetches that settle during the pause
+ *     re-emit it (with the remaining wait) instead of 'downloading'.
  */
 export type ProgressEvent =
-	{ stage: 'downloading'; completed: number; total: number } | { stage: 'zipping' } | { stage: 'merging' };
+	| { stage: 'downloading'; completed: number; total: number }
+	| { stage: 'zipping' }
+	| { stage: 'merging' }
+	| { stage: 'throttled'; seconds: number };
 
 export type ProgressCallback = (event: ProgressEvent) => void;
 
@@ -60,3 +78,13 @@ export type StatusKind = '' | 'info' | 'ok' | 'warn' | 'err';
  * back to whatever the server suggested.
  */
 export type ExportFormat = 'gpx' | 'tcx' | 'original';
+
+/**
+ * How exported files are named (see `activityFilePath` in downloader.ts):
+ *   - 'id'    → `strava_<id>.gpx`; Original keeps Strava's suggested name
+ *   - 'title' → `<id>_<title>.gpx` - the id prefix keeps names unique and
+ *               sorts them in upload order
+ *   - 'sport' → `<sport>/<id>_<title>.gpx` inside zips; single downloads
+ *               can't create folders, so they get the 'title' name
+ */
+export type NamePattern = 'id' | 'title' | 'sport';

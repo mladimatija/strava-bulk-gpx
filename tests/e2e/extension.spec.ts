@@ -1,6 +1,8 @@
 // E2E behavior tests. Each test starts from a fresh fixture page with the
 // content script already mounted (see tests/fixtures/extension.ts).
 
+import { readFileSync } from 'node:fs';
+import JSZip from 'jszip';
 import { test, expect, type Page } from '../fixtures/extension.ts';
 
 interface CapturedClick {
@@ -306,7 +308,6 @@ test.describe('Strava Bulk GPX extension', () => {
 		// activity, with the right <name> markers from our stub.
 		const filePath = await download.path();
 		expect(filePath).toBeTruthy();
-		const { readFileSync } = await import('node:fs');
 		const merged = readFileSync(filePath, 'utf8');
 		expect(merged).toContain('<name>activity-9000000001</name>');
 		expect(merged).toContain('<name>activity-9000000002</name>');
@@ -317,5 +318,381 @@ test.describe('Strava Bulk GPX extension', () => {
 		// The terminal status should celebrate the merge with the savedMerged
 		// string rather than the regular savedActivities one.
 		await expect(extensionPage.locator('[data-role="status-text"]')).toContainText(/merged GPX with 3/i);
+	});
+});
+
+// ---------- Helpers for the export-feature tests below ----------
+
+/** Activity id from a stubbed /activities/<id>/export_* request. */
+function idFromUrl(url: string): string {
+	return /\/activities\/(\d+)\//.exec(url)?.[1] ?? 'unknown';
+}
+
+/** A minimal valid GPX whose track name identifies `id`, optionally with a start time and extra root children. */
+function gpxBody(id: string, startTime?: string, extra = ''): string {
+	const metadata = startTime ? `<metadata><time>${startTime}</time></metadata>` : '';
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Strava" xmlns="http://www.topografix.com/GPX/1/1">${metadata}${extra}
+  <trk><name>activity-${id}</name><trkseg><trkpt lat="45.0" lon="13.0"><ele>10</ele></trkpt></trkseg></trk>
+</gpx>`;
+}
+
+/** Answer every /export_gpx request with {@link gpxBody}. */
+async function stubGpxExports(page: Page): Promise<void> {
+	await page.route('**/activities/*/export_gpx', async (route) => {
+		await route.fulfill({
+			status: 200,
+			contentType: 'application/gpx+xml',
+			body: gpxBody(idFromUrl(route.request().url())),
+		});
+	});
+}
+
+/** Run `action` and return the file it makes the browser save. */
+async function downloadFrom(page: Page, action: () => Promise<void>): Promise<{ name: string; bytes: Buffer }> {
+	const downloadPromise = page.waitForEvent('download', { timeout: 10000 });
+	await action();
+	const download = await downloadPromise;
+	return { name: download.suggestedFilename(), bytes: readFileSync(await download.path()) };
+}
+
+/** Sorted file paths inside a zip (folder entries left out). */
+async function zipFileNames(bytes: Buffer): Promise<string[]> {
+	const zip = await JSZip.loadAsync(bytes);
+	return Object.values(zip.files)
+		.filter((f) => !f.dir)
+		.map((f) => f.name)
+		.sort();
+}
+
+/** CSV lines without the BOM, which is asserted separately. */
+function csvLines(text: string): string[] {
+	return text
+		.replace(/^\uFEFF/, '')
+		.trimEnd()
+		.split('\r\n');
+}
+
+interface FakeRow {
+	id: string;
+	sport: string;
+	title: string;
+}
+
+/**
+ * Simulate Strava paginating: swap the table body for other activities, the
+ * way its React re-render does, and wait for the extension to augment them.
+ */
+async function showOtherPage(page: Page, rows: FakeRow[]): Promise<void> {
+	await page.evaluate((fakeRows) => {
+		document.querySelector('tbody')!.innerHTML = fakeRows
+			.map(
+				(r) =>
+					`<tr><td>${r.sport}</td><td>Mon, 04/05/2026</td><td><a href="/activities/${r.id}">${r.title}</a></td>` +
+					`<td class="num">30:00</td><td class="num">5.00 km</td><td class="num">20 m</td><td class="num">5</td>` +
+					`<td class="row-actions"><a href="#">Edit</a></td></tr>`,
+			)
+			.join('');
+	}, rows);
+	await page.locator(`tr[data-sbgx-id="${rows[0]!.id}"] .sbgx-row-cb`).waitFor();
+}
+
+test.describe('merge ordering', () => {
+	test('merged tracks are chronological whatever order the responses arrive in', async ({ extensionPage }) => {
+		// Rows are listed newest first (01, 02, 03); the delays make responses
+		// land in a third order (01, 03, 02). Chronological is 03, 02, 01.
+		const starts: Record<string, string> = {
+			'9000000001': '2026-05-09T07:00:00Z',
+			'9000000002': '2026-05-08T07:00:00Z',
+			'9000000003': '2026-05-06T07:00:00Z',
+		};
+		const delays: Record<string, number> = { '9000000001': 0, '9000000002': 600, '9000000003': 300 };
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await new Promise((r) => setTimeout(r, delays[id] ?? 0));
+			// 02 also carries a waypoint, which the GPX schema requires before
+			// every <trk> in the merged document - not just before 02's own.
+			const extra = id === '9000000002' ? '<wpt lat="45.05" lon="13.05"><name>summit</name></wpt>' : '';
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id, starts[id], extra) });
+		});
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="merge"]').click());
+		const merged = bytes.toString('utf8');
+
+		const positions = ['9000000003', '9000000002', '9000000001'].map((id) =>
+			merged.indexOf(`<name>activity-${id}</name>`),
+		);
+		expect(positions.every((p) => p >= 0)).toBe(true);
+		expect(positions).toEqual([...positions].sort((a, b) => a - b));
+		expect(merged.indexOf('<wpt')).toBeLessThan(merged.indexOf('<trk'));
+	});
+});
+
+test.describe('zip entries', () => {
+	test('Original uploads that share a filename all survive in the zip', async ({ extensionPage }) => {
+		// JSZip silently replaces same-named entries, so without de-duplication
+		// two of these three files would vanish from the archive.
+		await extensionPage.route('**/activities/*/export_original', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/octet-stream',
+				headers: { 'Content-Disposition': 'attachment; filename="activity.fit"' },
+				body: `FIT ${idFromUrl(route.request().url())}`,
+			});
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('original');
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual(['activities.csv', 'activity-2.fit', 'activity-3.fit', 'activity.fit']);
+	});
+});
+
+test.describe('selection across pages', () => {
+	const otherPage: FakeRow[] = [
+		{ id: '9000000006', sport: 'Ride', title: 'Gravel Loop' },
+		{ id: '9000000007', sport: 'Hike', title: 'Ridge Hike' },
+	];
+
+	test('selections on other pages are counted and downloaded', async ({ extensionPage }) => {
+		const cbs = extensionPage.locator('.sbgx-row-cb');
+		const count = extensionPage.locator('[data-role="count"]');
+		await cbs.nth(0).check();
+		await cbs.nth(1).check();
+
+		await showOtherPage(extensionPage, otherPage);
+		await expect(count).toHaveText('2 selected (2 not on this page)');
+		// Nothing on this page is ticked, but the earlier picks still count.
+		await expect(extensionPage.locator('.sbgx-select-all-cb')).not.toBeChecked();
+		await expect(extensionPage.locator('[data-role="bulk"]')).toBeEnabled();
+
+		await extensionPage.locator('tr[data-sbgx-id="9000000006"] .sbgx-row-cb').check();
+		await expect(count).toHaveText('3 selected (2 not on this page)');
+
+		await stubGpxExports(extensionPage);
+		const { name, bytes } = await downloadFrom(extensionPage, () =>
+			extensionPage.locator('[data-role="bulk"]').click(),
+		);
+		expect(name).toMatch(/^strava_gpx_\d{4}-\d{2}-\d{2}\.zip$/);
+		expect(await zipFileNames(bytes)).toEqual([
+			'activities.csv',
+			'strava_9000000001.gpx',
+			'strava_9000000002.gpx',
+			'strava_9000000006.gpx',
+		]);
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved 3 activities.');
+	});
+
+	test('Clear selection drops everything, including other pages', async ({ extensionPage }) => {
+		const clear = extensionPage.locator('[data-role="clear"]');
+		await expect(clear).toBeHidden();
+		await extensionPage.locator('.sbgx-row-cb').first().check();
+		await showOtherPage(extensionPage, otherPage);
+		await extensionPage.locator('tr[data-sbgx-id="9000000007"] .sbgx-row-cb').check();
+
+		await clear.click();
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('0 selected');
+		await expect(extensionPage.locator('tr[data-sbgx-id="9000000007"] .sbgx-row-cb')).not.toBeChecked();
+		await expect(extensionPage.locator('[data-role="bulk"]')).toBeDisabled();
+		await expect(clear).toBeHidden();
+	});
+
+	test('shift-click selects and deselects a range of rows', async ({ extensionPage }) => {
+		const cbs = extensionPage.locator('.sbgx-row-cb');
+		const count = extensionPage.locator('[data-role="count"]');
+		await cbs.nth(0).click();
+		await cbs.nth(2).click({ modifiers: ['Shift'] });
+		for (let i = 0; i < 3; i++) await expect(cbs.nth(i)).toBeChecked();
+		await expect(count).toHaveText('3 selected');
+
+		// The third row is now the anchor; shift-unticking the second clears 2-3.
+		await cbs.nth(1).click({ modifiers: ['Shift'] });
+		await expect(cbs.nth(0)).toBeChecked();
+		await expect(cbs.nth(1)).not.toBeChecked();
+		await expect(cbs.nth(2)).not.toBeChecked();
+		await expect(count).toHaveText('1 selected');
+	});
+});
+
+test.describe('file names', () => {
+	test('"ID + title" names zip entries and per-row downloads, and is remembered', async ({ extensionPage }) => {
+		const names = extensionPage.locator('select[data-role="names"]');
+		await expect(names).toHaveValue('id');
+		await names.selectOption('title');
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(names).toHaveValue('title');
+
+		await stubGpxExports(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual([
+			'9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx',
+			'9000000002_Lunch Trail Run.gpx',
+			'9000000003_Morning Run.gpx',
+			'activities.csv',
+		]);
+
+		await installAnchorClickCapture(extensionPage);
+		await extensionPage.locator('.sbgx-btn-row').first().click();
+		const clicks = await readCapturedAnchorClicks(extensionPage);
+		expect(clicks.map((c) => c.download)).toEqual(['9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx']);
+	});
+
+	test('"Sport folders" groups zip entries by sport', async ({ extensionPage }) => {
+		await extensionPage.locator('select[data-role="names"]').selectOption('sport');
+		await stubGpxExports(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual([
+			'Run/9000000003_Morning Run.gpx',
+			'Trail Run/9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx',
+			'Trail Run/9000000002_Lunch Trail Run.gpx',
+			'activities.csv',
+		]);
+	});
+
+	test('Original with a custom name keeps the uploaded extension', async ({ extensionPage }) => {
+		await extensionPage.route('**/activities/*/export_original', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/octet-stream',
+				headers: { 'Content-Disposition': 'attachment; filename="garmin-upload.fit"' },
+				body: 'FIT',
+			});
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('original');
+		await extensionPage.locator('select[data-role="names"]').selectOption('title');
+		const { name } = await downloadFrom(extensionPage, () => extensionPage.locator('.sbgx-btn-row').first().click());
+		expect(name).toBe('9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.fit');
+	});
+});
+
+test.describe('CSV', () => {
+	test('bulk zips carry an activities.csv of the table columns', async ({ extensionPage }) => {
+		await stubGpxExports(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		const zip = await JSZip.loadAsync(bytes);
+		const csv = (await zip.file('activities.csv')!.async('nodebuffer')).toString('utf8');
+
+		expect(csv.startsWith('\uFEFF')).toBe(true);
+		const lines = csvLines(csv);
+		expect(lines[0]).toBe('Activity ID,URL,File,Sport,Date,Title,Time,Distance,Elevation,Relative Effort');
+		expect(lines).toContain(
+			'9000000001,https://www.strava.com/activities/9000000001,strava_9000000001.gpx,Trail Run,' +
+				'"Sat, 09/05/2026",Traversa v19 feat. Ex Acini Novi Šćapi,5:32:41,48.11 km,"1,889 m",109',
+		);
+		expect(lines).toHaveLength(4);
+	});
+
+	test('Export list saves the selection as CSV without fetching any activity file', async ({ extensionPage }) => {
+		const exportRequests: string[] = [];
+		extensionPage.on('request', (req) => {
+			if (req.url().includes('/export_')) exportRequests.push(req.url());
+		});
+		await extensionPage.locator('.sbgx-row-cb').nth(1).check();
+		// A title a spreadsheet would evaluate as a formula, on another page.
+		await showOtherPage(extensionPage, [{ id: '9000000008', sport: 'Ride', title: '=1+1' }]);
+		await extensionPage.locator('tr[data-sbgx-id="9000000008"] .sbgx-row-cb').check();
+
+		const { name, bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="csv"]').click());
+		expect(name).toMatch(/^strava_activities_\d{4}-\d{2}-\d{2}\.csv$/);
+		const lines = csvLines(bytes.toString('utf8'));
+		expect(lines[0]).toBe('Activity ID,URL,Sport,Date,Title,Time,Distance,Elevation,Relative Effort');
+		expect(lines[1]).toContain(',Lunch Trail Run,');
+		expect(lines[2]).toContain(",'=1+1,");
+		expect(exportRequests).toEqual([]);
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved a list of 2 activities.');
+	});
+});
+
+test.describe('cancel, retry and rate limits', () => {
+	test('Cancel stops a running bulk download and saves nothing', async ({ extensionPage }) => {
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			await new Promise((r) => setTimeout(r, 3000));
+			// The extension aborts these requests, so fulfilling may throw.
+			await route
+				.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody('slow') })
+				.catch(() => undefined);
+		});
+		let downloads = 0;
+		extensionPage.on('download', () => downloads++);
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		await extensionPage.locator('[data-role="bulk"]').click();
+		const cancel = extensionPage.locator('[data-role="cancel"]');
+		await expect(cancel).toBeVisible();
+		await cancel.click();
+
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Cancelled - nothing was saved.');
+		await expect(cancel).toBeHidden();
+		await expect(extensionPage.locator('[data-role="bulk"]')).toBeEnabled();
+		await extensionPage.waitForTimeout(500);
+		expect(downloads).toBe(0);
+	});
+
+	test('failures are listed, and Retry fetches only those', async ({ extensionPage }) => {
+		let failSecond = true;
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			if (id === '9000000002' && failSecond) {
+				failSecond = false;
+				await route.fulfill({ status: 500, body: '' });
+				return;
+			}
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) });
+		});
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual(['activities.csv', 'strava_9000000001.gpx', 'strava_9000000003.gpx']);
+		const status = extensionPage.locator('[data-role="status-text"]');
+		await expect(status).toHaveText('Saved 2, skipped 1 (HTTP 500)');
+
+		const failures = extensionPage.locator('[data-role="failures"]');
+		await failures.locator('summary').click();
+		await expect(failures.locator('li')).toHaveText(['Lunch Trail Run - HTTP 500']);
+		const retry = extensionPage.locator('[data-role="retry"]');
+		await expect(retry).toHaveText('Retry 1 failed');
+
+		// One activity left → a plain single-file download, which the capture records.
+		await installAnchorClickCapture(extensionPage);
+		await retry.click();
+		await expect(status).toHaveText('Saved 1 activities.');
+		const clicks = await readCapturedAnchorClicks(extensionPage);
+		expect(clicks.map((c) => c.href)).toEqual([expect.stringMatching(/\/activities\/9000000002\/export_gpx$/)]);
+		await expect(failures).toBeHidden();
+	});
+
+	test('a rate-limited request waits for Retry-After, then succeeds', async ({ extensionPage }) => {
+		const hits: Record<string, number> = {};
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			hits[id] = (hits[id] ?? 0) + 1;
+			if (id === '9000000001' && hits[id] === 1) {
+				await route.fulfill({ status: 429, headers: { 'Retry-After': '2' }, body: '' });
+				return;
+			}
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) });
+		});
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const status = extensionPage.locator('[data-role="status-text"]');
+		const started = Date.now();
+		const { bytes } = await downloadFrom(extensionPage, async () => {
+			await extensionPage.locator('[data-role="bulk"]').click();
+			await expect(status).toContainText('Strava is limiting requests - retrying in');
+		});
+
+		expect(Date.now() - started).toBeGreaterThanOrEqual(1900);
+		expect(hits['9000000001']).toBe(2);
+		expect(await zipFileNames(bytes)).toEqual([
+			'activities.csv',
+			'strava_9000000001.gpx',
+			'strava_9000000002.gpx',
+			'strava_9000000003.gpx',
+		]);
+		await expect(status).toHaveText('Saved 3 activities.');
 	});
 });

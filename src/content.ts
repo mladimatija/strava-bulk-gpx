@@ -9,12 +9,18 @@
 //     at the end - but only when the row has GPS data (distance > 0).
 //   - A MutationObserver re-runs the injection whenever Strava replaces the
 //     table body (pagination, search, sort). Selection state survives via a
-//     module-scope Set keyed by activity id.
+//     module-scope Map keyed by activity id, so a selection can span pages.
 
-import { downloadSingle, downloadBulk, downloadMergedGpx } from './downloader.ts';
+import {
+	downloadSingle,
+	downloadBulk,
+	downloadMergedGpx,
+	downloadActivitiesCsv,
+	type BulkOptions,
+} from './downloader.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
 import { t } from './i18n.ts';
-import type { ActivityRow, ExportFormat, StatusKind } from './types.ts';
+import type { ActivityColumn, ActivityRow, ExportFormat, NamePattern, ProgressEvent, StatusKind } from './types.ts';
 
 const KOFI_URL = 'https://ko-fi.com/D1D51ZGOQK';
 
@@ -33,42 +39,76 @@ function escapeHtml(s: string): string {
 		.replace(/'/g, '&#39;');
 }
 
+/** An activity that failed in the last run, with the reason shown to the user. */
+interface FailedActivity {
+	activity: ActivityRow;
+	reason: string;
+}
+
 interface State {
-	selected: Set<string>;
+	/**
+	 * Selected activities by id. Kept across Strava's pagination and searches,
+	 * so a selection can span pages; the row data is captured at selection
+	 * time because off-page rows aren't in the DOM to re-read.
+	 */
+	selected: Map<string, ActivityRow>;
 	toolbar: HTMLDivElement | null;
 	busy: boolean;
 	/** Currently selected export format - drives per-row button text + URLs. */
 	format: ExportFormat;
+	/** How downloaded files are named. */
+	names: NamePattern;
+	/** Aborts the in-flight bulk/merge run; null when idle. */
+	abort: AbortController | null;
+	/**
+	 * Failures from the last run, listed under the toolbar. `retryFormat` is
+	 * set for zip runs (retrying fetches only the failed ones); merge runs
+	 * leave it null - re-merging just the failures would drop the rest.
+	 */
+	lastRun: { failed: FailedActivity[]; retryFormat: ExportFormat | null } | null;
+	/** Row last toggled - the anchor for shift-click range selection. */
+	anchorId: string | null;
 }
 
 const STATE: State = {
-	selected: new Set<string>(),
+	selected: new Map<string, ActivityRow>(),
 	toolbar: null,
 	busy: false,
 	format: 'gpx',
+	names: 'id',
+	abort: null,
+	lastRun: null,
+	anchorId: null,
 };
 
 const FORMAT_STORAGE_KEY = 'exportFormat';
+const NAMES_STORAGE_KEY = 'namePattern';
 
 /** Narrow an untrusted stored value to a known format, defaulting to gpx. */
 function parseFormat(value: unknown): ExportFormat {
 	return value === 'tcx' || value === 'original' ? value : 'gpx';
 }
 
-/** Restore the last-used export format; storage failures fall back to gpx. */
-async function loadFormat(): Promise<void> {
+/** Narrow an untrusted stored value to a known name pattern, defaulting to id. */
+function parseNames(value: unknown): NamePattern {
+	return value === 'title' || value === 'sport' ? value : 'id';
+}
+
+/** Restore the last-used format and name pattern; storage failures keep the defaults. */
+async function loadPreferences(): Promise<void> {
 	try {
-		const stored = await chrome.storage.local.get(FORMAT_STORAGE_KEY);
+		const stored = await chrome.storage.local.get([FORMAT_STORAGE_KEY, NAMES_STORAGE_KEY]);
 		STATE.format = parseFormat(stored[FORMAT_STORAGE_KEY]);
+		STATE.names = parseNames(stored[NAMES_STORAGE_KEY]);
 	} catch {
-		// Keep the default - a broken storage area shouldn't block exports.
+		// Keep the defaults - a broken storage area shouldn't block exports.
 	}
 }
 
-/** Persist the chosen format for the next page load (best-effort). */
-function saveFormat(format: ExportFormat): void {
-	chrome.storage.local.set({ [FORMAT_STORAGE_KEY]: format }).catch((err: unknown) => {
-		console.warn('Could not save export format', err);
+/** Persist a toolbar preference for the next page load (best-effort). */
+function savePreference(key: string, value: string): void {
+	chrome.storage.local.set({ [key]: value }).catch((err: unknown) => {
+		console.warn(`Could not save ${key}`, err);
 	});
 }
 
@@ -89,7 +129,24 @@ function findActivitiesTable(): HTMLTableElement | null {
 	return null;
 }
 
-/** Pull { id, name, sport_type } from a rendered table row, or null. */
+/**
+ * The row's visible cells, labelled by the table's header. Our injected
+ * cells are skipped, and so are columns with an empty header (Strava's
+ * Edit / Share actions). Without a header row, columns are numbered.
+ */
+function rowColumns(row: HTMLTableRowElement): ActivityColumn[] {
+	const headers = row.closest('table')?.tHead?.rows[0]?.cells;
+	const cells = Array.from(row.cells).filter((td) => !td.classList.contains('sbgx-cell'));
+	const columns: ActivityColumn[] = [];
+	cells.forEach((td, i) => {
+		const label = headers ? (headers[i]?.textContent ?? '').trim() : String(i + 1);
+		if (!label) return;
+		columns.push({ label, value: (td.textContent ?? '').trim().replace(/\s+/g, ' ') });
+	});
+	return columns;
+}
+
+/** Pull { id, name, sport_type, columns } from a rendered table row, or null. */
 function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	const link = row.querySelector<HTMLAnchorElement>('a[href*="/activities/"]');
 	if (!link) return null;
@@ -100,9 +157,9 @@ function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	const id = m[1];
 	const name = (link.textContent ?? '').trim() || `Activity ${id}`;
 	// Sport is usually the first <td> in the row. Best-effort, fine if missing.
-	const sportCell = row.querySelector('td');
+	const sportCell = Array.from(row.cells).find((td) => !td.classList.contains('sbgx-cell'));
 	const sport_type = sportCell ? (sportCell.textContent ?? '').trim() : '';
-	return { id, name, sport_type };
+	return { id, name, sport_type, columns: rowColumns(row) };
 }
 
 /**
@@ -121,6 +178,49 @@ function rowHasGps(row: HTMLTableRowElement): boolean {
 		return Number.isFinite(value) && value > 0;
 	}
 	return false;
+}
+
+/**
+ * Selectable rows currently on screen, in table order, one per activity id
+ * (Strava sometimes renders a sticky-header mirror or a transient duplicate
+ * `<tr>` for the same activity).
+ */
+function visibleSelectableRows(): HTMLTableRowElement[] {
+	const seen = new Set<string>();
+	const rows: HTMLTableRowElement[] = [];
+	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-has-gps="1"]')) {
+		const id = row.dataset.sbgxId;
+		if (!id || seen.has(id)) continue;
+		seen.add(id);
+		rows.push(row);
+	}
+	return rows;
+}
+
+// ---------- Selection ----------
+
+function setSelected(activity: ActivityRow, selected: boolean): void {
+	if (selected) STATE.selected.set(activity.id, activity);
+	else STATE.selected.delete(activity.id);
+}
+
+/**
+ * Shift-click: set every visible row between the anchor and the clicked row
+ * (inclusive, in table order) to the clicked checkbox's new state. Returns
+ * false when the anchor isn't on this page, so the caller falls back to a
+ * plain toggle.
+ */
+function selectRange(fromId: string, toId: string, selected: boolean): boolean {
+	const rows = visibleSelectableRows();
+	const ids = rows.map((row) => row.dataset.sbgxId);
+	const from = ids.indexOf(fromId);
+	const to = ids.indexOf(toId);
+	if (from === -1 || to === -1) return false;
+	for (const row of rows.slice(Math.min(from, to), Math.max(from, to) + 1)) {
+		const a = activityFromRow(row);
+		if (a) setSelected(a, selected);
+	}
+	return true;
 }
 
 // ---------- Per-row injection ----------
@@ -143,9 +243,16 @@ function injectRow(row: HTMLTableRowElement): void {
 		cb.type = 'checkbox';
 		cb.className = 'sbgx-row-cb';
 		cb.checked = STATE.selected.has(a.id);
-		cb.addEventListener('change', () => {
-			if (cb.checked) STATE.selected.add(a.id);
-			else STATE.selected.delete(a.id);
+		// `click` rather than `change`: only the click event carries shiftKey.
+		// Keyboard toggles (Space) dispatch a click too.
+		cb.addEventListener('click', (e: MouseEvent) => {
+			const anchor = STATE.anchorId;
+			const ranged = e.shiftKey && anchor !== null && anchor !== a.id && selectRange(anchor, a.id, cb.checked);
+			if (!ranged) setSelected(a, cb.checked);
+			// Shift-click also extends the browser's text selection across the
+			// table; drop it so the page doesn't flash blue.
+			if (e.shiftKey) window.getSelection()?.removeAllRanges();
+			STATE.anchorId = a.id;
 			onSelectionChanged();
 		});
 		cbCell.appendChild(cb);
@@ -171,7 +278,7 @@ function injectRow(row: HTMLTableRowElement): void {
 			try {
 				// Read the format from STATE at click time so changing the
 				// selector after rendering immediately affects what gets fetched.
-				await downloadSingle(a, STATE.format);
+				await downloadSingle(a, STATE.format, STATE.names);
 			} catch (err) {
 				const message = err instanceof Error ? err.message : String(err);
 				alert(t('rowDownloadFailed', [a.id, message]));
@@ -191,6 +298,11 @@ function injectAllRows(table: HTMLTableElement): void {
 
 // ---------- Toolbar ----------
 
+/** Look up one of the toolbar's `data-role` elements. */
+function toolbarPart<T extends HTMLElement>(toolbar: HTMLElement, role: string): T {
+	return toolbar.querySelector<T>(`[data-role="${role}"]`)!;
+}
+
 function buildToolbar(): HTMLDivElement {
 	const toolbar = document.createElement('div');
 	toolbar.className = 'sbgx-toolbar';
@@ -208,9 +320,20 @@ function buildToolbar(): HTMLDivElement {
           <option value="original">${escapeHtml(t('formatOriginal'))}</option>
         </select>
       </label>
+      <label class="sbgx-tool sbgx-format-wrap" title="${escapeHtml(t('namesTooltip'))}">
+        <span>${escapeHtml(t('namesLabel'))}</span>
+        <select class="sbgx-format" data-role="names">
+          <option value="id">${escapeHtml(t('namesId'))}</option>
+          <option value="title">${escapeHtml(t('namesTitle'))}</option>
+          <option value="sport">${escapeHtml(t('namesSport'))}</option>
+        </select>
+      </label>
       <button class="sbgx-btn sbgx-btn-primary" data-role="bulk" disabled>${escapeHtml(t('downloadSelected'))}</button>
       <button class="sbgx-btn sbgx-btn-secondary" data-role="merge" disabled>${escapeHtml(t('mergeSelected'))}</button>
+      <button class="sbgx-btn" data-role="csv" disabled>${escapeHtml(t('exportCsv'))}</button>
+      <button class="sbgx-btn" data-role="cancel" hidden>${escapeHtml(t('cancel'))}</button>
       <span class="sbgx-tool sbgx-count" data-role="count">${escapeHtml(t('selectedCount', '0'))}</span>
+      <button class="sbgx-btn sbgx-btn-link" data-role="clear" hidden>${escapeHtml(t('clearSelection'))}</button>
       <span class="sbgx-tool sbgx-status" data-role="status">
         <span class="sbgx-spinner" data-role="spinner" hidden></span>
         <span class="sbgx-status-text" data-role="status-text"></span>
@@ -219,40 +342,56 @@ function buildToolbar(): HTMLDivElement {
       <a class="sbgx-kofi" href="${KOFI_URL}" target="_blank" rel="noopener" title="${koFiLabel}">
         <img src="${KOFI_IMAGE}" alt="${koFiLabel}" />
       </a>
+      <div class="sbgx-failures" data-role="failures" hidden>
+        <button class="sbgx-btn" data-role="retry"></button>
+        <details>
+          <summary>${escapeHtml(t('showFailures'))}</summary>
+          <ul data-role="failures-list"></ul>
+        </details>
+      </div>
     `;
 
 	const selectAll = toolbar.querySelector<HTMLInputElement>('.sbgx-select-all-cb')!;
 	selectAll.addEventListener('change', () => {
-		const want = selectAll.checked;
-		// Only operate on GPS-bearing rows - others don't have a checkbox.
-		for (const cb of document.querySelectorAll<HTMLInputElement>('.sbgx-row-cb')) {
-			const id = cb.closest<HTMLTableRowElement>('tr')?.dataset.sbgxId;
-			if (!id) continue;
-			cb.checked = want;
-			if (want) STATE.selected.add(id);
-			else STATE.selected.delete(id);
+		// Only operate on GPS-bearing rows on this page - others don't have a
+		// checkbox, and off-page selections stay as they are.
+		for (const row of visibleSelectableRows()) {
+			const a = activityFromRow(row);
+			if (a) setSelected(a, selectAll.checked);
 		}
 		onSelectionChanged();
 	});
 
-	const bulkBtn = toolbar.querySelector<HTMLButtonElement>('[data-role="bulk"]')!;
-	bulkBtn.addEventListener('click', handleBulkClick);
+	toolbarPart(toolbar, 'bulk').addEventListener('click', handleBulkClick);
+	toolbarPart(toolbar, 'merge').addEventListener('click', handleMergeClick);
+	toolbarPart(toolbar, 'csv').addEventListener('click', handleCsvClick);
+	toolbarPart(toolbar, 'cancel').addEventListener('click', () => STATE.abort?.abort());
+	toolbarPart(toolbar, 'retry').addEventListener('click', handleRetryClick);
+	toolbarPart(toolbar, 'clear').addEventListener('click', () => {
+		STATE.selected.clear();
+		STATE.anchorId = null;
+		onSelectionChanged();
+	});
 
-	const mergeBtn = toolbar.querySelector<HTMLButtonElement>('[data-role="merge"]')!;
-	mergeBtn.addEventListener('click', handleMergeClick);
-
-	const formatSelect = toolbar.querySelector<HTMLSelectElement>('[data-role="format"]')!;
+	const formatSelect = toolbarPart<HTMLSelectElement>(toolbar, 'format');
 	formatSelect.value = STATE.format;
 	formatSelect.addEventListener('change', () => {
 		// Tolerate unexpected values defensively; if someone hacks the DOM in
 		// devtools we still fall back to gpx rather than crashing later.
 		const next = formatSelect.value;
 		STATE.format = parseFormat(next);
-		saveFormat(STATE.format);
+		savePreference(FORMAT_STORAGE_KEY, STATE.format);
 		refreshRowButtons();
 		// renderToolbarCounts re-derives the merge button's disabled/title
 		// state from STATE.format, so it has to run on every format change.
 		renderToolbarCounts();
+	});
+
+	const namesSelect = toolbarPart<HTMLSelectElement>(toolbar, 'names');
+	namesSelect.value = STATE.names;
+	namesSelect.addEventListener('change', () => {
+		STATE.names = parseNames(namesSelect.value);
+		savePreference(NAMES_STORAGE_KEY, STATE.names);
 	});
 	return toolbar;
 }
@@ -282,26 +421,31 @@ function ensureToolbar(table: HTMLTableElement): HTMLDivElement | null {
 	const tb = buildToolbar();
 	parent.insertBefore(tb, table);
 	STATE.toolbar = tb;
+	renderFailures();
 	return tb;
 }
 
 function renderToolbarCounts(): void {
 	if (!STATE.toolbar) return;
-	// Only GPS-bearing rows are selectable, so only count those for both
-	// the "X selected" text and the "select all" indeterminate state.
-	const selectableIds = new Set<string>();
-	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-has-gps="1"]')) {
-		const id = row.dataset.sbgxId;
-		if (id) selectableIds.add(id);
-	}
-	let visibleSelected = 0;
-	for (const id of STATE.selected) if (selectableIds.has(id)) visibleSelected++;
+	// The "select all" state only concerns this page's selectable rows; the
+	// count and the action buttons cover the whole selection, wherever it is.
+	const visibleIds = visibleSelectableRows().map((row) => row.dataset.sbgxId);
+	const visibleSelected = visibleIds.filter((id) => id && STATE.selected.has(id)).length;
+	const total = STATE.selected.size;
+	const offPage = total - visibleSelected;
 
-	const countEl = STATE.toolbar.querySelector<HTMLElement>('[data-role="count"]')!;
-	const bulkBtn = STATE.toolbar.querySelector<HTMLButtonElement>('[data-role="bulk"]')!;
-	const mergeBtn = STATE.toolbar.querySelector<HTMLButtonElement>('[data-role="merge"]')!;
-	countEl.textContent = t('selectedCount', String(visibleSelected));
-	bulkBtn.disabled = visibleSelected === 0 || STATE.busy;
+	const countEl = toolbarPart(STATE.toolbar, 'count');
+	const bulkBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'bulk');
+	const mergeBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'merge');
+	const csvBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'csv');
+	const clearBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'clear');
+	countEl.textContent =
+		offPage > 0 ? t('selectedCountWithHidden', [String(total), String(offPage)]) : t('selectedCount', String(total));
+	bulkBtn.disabled = total === 0 || STATE.busy;
+	csvBtn.disabled = total === 0 || STATE.busy;
+	clearBtn.hidden = total === 0;
+	clearBtn.disabled = STATE.busy;
+	toolbarPart(STATE.toolbar, 'cancel').hidden = !STATE.busy;
 	// Merge is GPX-only - TCX and Original files aren't trivially concatenable
 	// into one document. Rather than hide the button silently (which leaves
 	// users wondering where it went after switching format), keep it visible
@@ -312,7 +456,7 @@ function renderToolbarCounts(): void {
 	// attribute lingers in the DOM, which trips up attribute-based assertions
 	// in the e2e suite.
 	const mergeAvailable = STATE.format === 'gpx';
-	mergeBtn.disabled = !mergeAvailable || visibleSelected === 0 || STATE.busy;
+	mergeBtn.disabled = !mergeAvailable || total === 0 || STATE.busy;
 	if (mergeAvailable) {
 		mergeBtn.removeAttribute('title');
 	} else {
@@ -320,12 +464,12 @@ function renderToolbarCounts(): void {
 	}
 
 	const allCb = STATE.toolbar.querySelector<HTMLInputElement>('.sbgx-select-all-cb')!;
-	if (selectableIds.size === 0) {
+	if (visibleIds.length === 0) {
 		allCb.checked = false;
 		allCb.indeterminate = false;
 	} else {
-		allCb.checked = visibleSelected === selectableIds.size;
-		allCb.indeterminate = visibleSelected > 0 && visibleSelected < selectableIds.size;
+		allCb.checked = visibleSelected === visibleIds.length;
+		allCb.indeterminate = visibleSelected > 0 && visibleSelected < visibleIds.length;
 	}
 }
 
@@ -338,12 +482,39 @@ function renderToolbarCounts(): void {
  */
 function setStatus(text: string, kind: StatusKind = '', { spinner = false }: { spinner?: boolean } = {}): void {
 	if (!STATE.toolbar) return;
-	const container = STATE.toolbar.querySelector<HTMLElement>('[data-role="status"]')!;
-	const textEl = container.querySelector<HTMLElement>('[data-role="status-text"]')!;
-	const spinnerEl = container.querySelector<HTMLElement>('[data-role="spinner"]')!;
-	textEl.textContent = text;
+	const container = toolbarPart(STATE.toolbar, 'status');
+	toolbarPart(container, 'status-text').textContent = text;
 	container.dataset.kind = kind;
-	spinnerEl.hidden = !spinner;
+	toolbarPart(container, 'spinner').hidden = !spinner;
+}
+
+/**
+ * Show STATE.lastRun's failures under the toolbar: one line per activity,
+ * linking to it, with the reason - so a partial run says exactly what's
+ * missing, not just the first error. Hidden when there's nothing to show.
+ */
+function renderFailures(): void {
+	if (!STATE.toolbar) return;
+	const run = STATE.lastRun;
+	toolbarPart(STATE.toolbar, 'failures').hidden = !run;
+	if (!run) return;
+
+	const retryBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'retry');
+	retryBtn.hidden = run.retryFormat === null;
+	retryBtn.disabled = STATE.busy;
+	retryBtn.textContent = t('retryFailed', String(run.failed.length));
+
+	const items = run.failed.map(({ activity, reason }) => {
+		const link = document.createElement('a');
+		link.href = `/activities/${activity.id}`;
+		link.target = '_blank';
+		link.rel = 'noopener';
+		link.textContent = activity.name;
+		const li = document.createElement('li');
+		li.append(link, ` - ${reason}`);
+		return li;
+	});
+	toolbarPart(STATE.toolbar, 'failures-list').replaceChildren(...items);
 }
 
 /**
@@ -360,104 +531,118 @@ function syncRowCheckboxes(): void {
 
 /**
  * User-initiated selection change. Clears any leftover post-download status
- * (e.g. "Saved 4 activities.") so the toolbar reflects only the current
- * intent, but leaves in-progress download messages alone.
+ * (e.g. "Saved 4 activities.") and failure list so the toolbar reflects only
+ * the current intent, but leaves in-progress download messages alone.
  */
 function onSelectionChanged(): void {
 	syncRowCheckboxes();
-	if (!STATE.busy) setStatus('');
+	if (!STATE.busy) {
+		setStatus('');
+		STATE.lastRun = null;
+		renderFailures();
+	}
 	renderToolbarCounts();
 }
 
-/**
- * Build the activity list from currently visible rows that are in the
- * selected set. Dedupes by activity id - Strava sometimes renders more than
- * one <tr> per activity (sticky header mirror, transient rows during
- * pagination), and both would otherwise inflate the count.
- */
+/** Everything selected, on this page or others, in the order it was picked. */
 function collectSelectedActivities(): ActivityRow[] {
-	const seen = new Set<string>();
-	const activities: ActivityRow[] = [];
-	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-id]')) {
-		const id = row.dataset.sbgxId;
-		if (!id || !STATE.selected.has(id) || seen.has(id)) continue;
-		seen.add(id);
-		const a = activityFromRow(row);
-		if (a) activities.push(a);
-	}
-	return activities;
+	return [...STATE.selected.values()];
 }
 
-async function handleBulkClick(): Promise<void> {
-	if (STATE.busy) return;
-	const activities = collectSelectedActivities();
-	if (activities.length === 0) return;
-
-	STATE.busy = true;
-	renderToolbarCounts();
-	setStatus(t('preparingDownloads', String(activities.length)), 'info', { spinner: true });
-	try {
-		const result = await downloadBulk(activities, STATE.format, {
-			onProgress: (ev) => {
-				if (ev.stage === 'downloading') {
-					setStatus(t('downloadingProgress', [String(ev.completed), String(ev.total)]), 'info', { spinner: true });
-				} else if (ev.stage === 'zipping') {
-					setStatus(t('buildingZip'), 'info', { spinner: true });
-				}
-			},
-		});
-		const firstFailed = result.failed[0];
-		const note = firstFailed
-			? t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason])
-			: t('savedActivities', String(result.ok));
-		setStatus(note, firstFailed ? 'warn' : 'ok');
-	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
-		setStatus(t('downloadFailed', message), 'err');
-	} finally {
-		STATE.busy = false;
-		renderToolbarCounts();
+/** Map a downloader progress event onto the status line. */
+function showProgress(ev: ProgressEvent): void {
+	if (ev.stage === 'downloading') {
+		setStatus(t('downloadingProgress', [String(ev.completed), String(ev.total)]), 'info', { spinner: true });
+	} else if (ev.stage === 'throttled') {
+		setStatus(t('rateLimited', String(ev.seconds)), 'info', { spinner: true });
+	} else if (ev.stage === 'zipping') {
+		setStatus(t('buildingZip'), 'info', { spinner: true });
+	} else {
+		setStatus(t('mergingGpx'), 'info', { spinner: true });
 	}
 }
 
 /**
- * Merge-mode bulk handler. Reuses the same fetch concurrency as
- * {@link handleBulkClick} but emits a single combined .gpx instead of a zip
- * of per-activity files. Only sensible when STATE.format === 'gpx'; the
- * button is hidden otherwise, but we still gate defensively in case the user
- * clicked between format changes.
+ * Shared lifecycle for zip and merge runs: single-flighting via STATE.busy,
+ * the Cancel button, progress, and the terminal outcome - success, partial
+ * success (with the failure list), cancelled, or failed.
  */
-async function handleMergeClick(): Promise<void> {
-	if (STATE.busy) return;
-	if (STATE.format !== 'gpx') return;
-	const activities = collectSelectedActivities();
-	if (activities.length === 0) return;
+async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 'zip' | 'merge'): Promise<void> {
+	if (STATE.busy || activities.length === 0) return;
 
+	const controller = new AbortController();
 	STATE.busy = true;
+	STATE.abort = controller;
+	STATE.lastRun = null;
 	renderToolbarCounts();
+	renderFailures();
 	setStatus(t('preparingDownloads', String(activities.length)), 'info', { spinner: true });
+	const options: BulkOptions = { onProgress: showProgress, signal: controller.signal, names: STATE.names };
 	try {
-		const result = await downloadMergedGpx(activities, {
-			onProgress: (ev) => {
-				if (ev.stage === 'downloading') {
-					setStatus(t('downloadingProgress', [String(ev.completed), String(ev.total)]), 'info', { spinner: true });
-				} else if (ev.stage === 'merging') {
-					setStatus(t('mergingGpx'), 'info', { spinner: true });
-				}
-			},
-		});
+		const result =
+			mode === 'merge' ? await downloadMergedGpx(activities, options) : await downloadBulk(activities, format, options);
 		const firstFailed = result.failed[0];
-		const note = firstFailed
-			? t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason])
-			: t('savedMerged', String(result.ok));
-		setStatus(note, firstFailed ? 'warn' : 'ok');
+		if (firstFailed) {
+			setStatus(t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason]), 'warn');
+			const byId = new Map(activities.map((a) => [a.id, a]));
+			STATE.lastRun = {
+				failed: result.failed.map((f) => ({ activity: byId.get(f.id)!, reason: f.reason })),
+				retryFormat: mode === 'zip' ? format : null,
+			};
+		} else {
+			setStatus(mode === 'merge' ? t('savedMerged', String(result.ok)) : t('savedActivities', String(result.ok)), 'ok');
+		}
 	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
-		setStatus(t('downloadFailed', message), 'err');
+		if (controller.signal.aborted) {
+			setStatus(t('cancelled'), 'warn');
+		} else {
+			const message = err instanceof Error ? err.message : String(err);
+			setStatus(t('downloadFailed', message), 'err');
+		}
 	} finally {
 		STATE.busy = false;
+		STATE.abort = null;
 		renderToolbarCounts();
+		renderFailures();
 	}
+}
+
+function handleBulkClick(): Promise<void> {
+	return runExport(collectSelectedActivities(), STATE.format, 'zip');
+}
+
+/**
+ * Merge-mode bulk handler. Same fetch pool as {@link handleBulkClick} but
+ * emits a single combined .gpx instead of a zip of per-activity files. Only
+ * sensible when STATE.format === 'gpx'; the button is disabled otherwise, but
+ * we still gate defensively in case the user clicked between format changes.
+ */
+function handleMergeClick(): Promise<void> {
+	if (STATE.format !== 'gpx') return Promise.resolve();
+	return runExport(collectSelectedActivities(), 'gpx', 'merge');
+}
+
+/** Re-run a zip run's failures only, in the format that run used. */
+function handleRetryClick(): Promise<void> {
+	const run = STATE.lastRun;
+	if (!run?.retryFormat) return Promise.resolve();
+	return runExport(
+		run.failed.map((f) => f.activity),
+		run.retryFormat,
+		'zip',
+	);
+}
+
+/** List-only export: the selected rows' table columns as CSV, no file fetches. */
+function handleCsvClick(): void {
+	if (STATE.busy) return;
+	const activities = collectSelectedActivities();
+	if (activities.length === 0) return;
+	downloadActivitiesCsv(activities);
+	setStatus(t('savedCsv', String(activities.length)), 'ok');
+	// A previous run's failure list no longer describes what just happened.
+	STATE.lastRun = null;
+	renderFailures();
 }
 
 // ---------- Boot + observer ----------
@@ -471,9 +656,9 @@ function tick(): void {
 }
 
 async function start(): Promise<void> {
-	// Load the saved format first so the toolbar and row buttons render with
-	// it from the start instead of flashing GPX.
-	await loadFormat();
+	// Load saved preferences first so the toolbar and row buttons render with
+	// them from the start instead of flashing the defaults.
+	await loadPreferences();
 	tick();
 	// Strava's React reflows the table on every search / sort / pagination.
 	// A single observer on the body handles all of it; the injection helpers

@@ -137,5 +137,84 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "Samenvoegen is alleen beschikbaar in GPX-modus"
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$ geselecteerd ($HIDDEN$ niet op deze pagina)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Selectie wissen"
+	},
+	"namesLabel": {
+		"message": "Namen:"
+	},
+	"namesTooltip": {
+		"message": "Hoe gedownloade bestanden worden genoemd. Sportmappen gelden alleen in ZIP-bestanden."
+	},
+	"namesId": {
+		"message": "Activiteit-ID"
+	},
+	"namesTitle": {
+		"message": "ID + titel"
+	},
+	"namesSport": {
+		"message": "Sportmappen"
+	},
+	"exportCsv": {
+		"message": "Lijst exporteren (CSV)"
+	},
+	"savedCsv": {
+		"message": "Lijst met $COUNT$ activiteiten opgeslagen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"cancel": {
+		"message": "Annuleren"
+	},
+	"cancelled": {
+		"message": "Geannuleerd - er is niets opgeslagen."
+	},
+	"retryFailed": {
+		"message": "$COUNT$ mislukte opnieuw proberen",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Mislukte activiteiten tonen"
+	},
+	"rateLimited": {
+		"message": "Strava beperkt verzoeken - nieuwe poging over $SECONDS$ s…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "Activiteit-ID"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "Bestand"
 	}
 }

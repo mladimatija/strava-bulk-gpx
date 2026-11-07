@@ -137,5 +137,84 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "Łączenie dostępne tylko w trybie GPX"
+	},
+	"selectedCountWithHidden": {
+		"message": "Zaznaczono: $COUNT$ (poza tą stroną: $HIDDEN$)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Wyczyść zaznaczenie"
+	},
+	"namesLabel": {
+		"message": "Nazwy:"
+	},
+	"namesTooltip": {
+		"message": "Sposób nazywania pobranych plików. Foldery według sportu działają tylko w plikach ZIP."
+	},
+	"namesId": {
+		"message": "ID aktywności"
+	},
+	"namesTitle": {
+		"message": "ID + tytuł"
+	},
+	"namesSport": {
+		"message": "Foldery według sportu"
+	},
+	"exportCsv": {
+		"message": "Eksportuj listę (CSV)"
+	},
+	"savedCsv": {
+		"message": "Zapisano listę aktywności: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"cancel": {
+		"message": "Anuluj"
+	},
+	"cancelled": {
+		"message": "Anulowano - nic nie zapisano."
+	},
+	"retryFailed": {
+		"message": "Ponów nieudane ($COUNT$)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Pokaż nieudane aktywności"
+	},
+	"rateLimited": {
+		"message": "Strava ogranicza żądania - ponowna próba za $SECONDS$ s…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "ID aktywności"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "Plik"
 	}
 }

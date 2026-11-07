@@ -137,5 +137,84 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "合併僅在 GPX 模式下可用"
+	},
+	"selectedCountWithHidden": {
+		"message": "已選擇 $COUNT$ 項 (其中 $HIDDEN$ 項不在本頁)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "清除選擇"
+	},
+	"namesLabel": {
+		"message": "檔名:"
+	},
+	"namesTooltip": {
+		"message": "下載檔案的命名方式。依運動分資料夾僅在 ZIP 中生效。"
+	},
+	"namesId": {
+		"message": "活動 ID"
+	},
+	"namesTitle": {
+		"message": "ID + 標題"
+	},
+	"namesSport": {
+		"message": "依運動分資料夾"
+	},
+	"exportCsv": {
+		"message": "匯出清單 (CSV)"
+	},
+	"savedCsv": {
+		"message": "已儲存 $COUNT$ 項活動的清單。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"cancel": {
+		"message": "取消"
+	},
+	"cancelled": {
+		"message": "已取消 - 未儲存任何內容。"
+	},
+	"retryFailed": {
+		"message": "重試 $COUNT$ 項失敗",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "顯示失敗的活動"
+	},
+	"rateLimited": {
+		"message": "Strava 正在限制請求 - $SECONDS$ 秒後重試…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "活動 ID"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "檔案"
 	}
 }

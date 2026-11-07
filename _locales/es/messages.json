@@ -137,5 +137,84 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "La combinación solo está disponible en modo GPX"
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$ seleccionados ($HIDDEN$ fuera de esta página)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Borrar selección"
+	},
+	"namesLabel": {
+		"message": "Nombres:"
+	},
+	"namesTooltip": {
+		"message": "Cómo se nombran los archivos descargados. Las carpetas por deporte solo se aplican dentro de los ZIP."
+	},
+	"namesId": {
+		"message": "ID de actividad"
+	},
+	"namesTitle": {
+		"message": "ID + título"
+	},
+	"namesSport": {
+		"message": "Carpetas por deporte"
+	},
+	"exportCsv": {
+		"message": "Exportar lista (CSV)"
+	},
+	"savedCsv": {
+		"message": "Lista de $COUNT$ actividades guardada.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"cancel": {
+		"message": "Cancelar"
+	},
+	"cancelled": {
+		"message": "Cancelado: no se guardó nada."
+	},
+	"retryFailed": {
+		"message": "Reintentar $COUNT$ fallidas",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Mostrar actividades fallidas"
+	},
+	"rateLimited": {
+		"message": "Strava está limitando las solicitudes: reintentando en $SECONDS$ s…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "ID de actividad"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "Archivo"
 	}
 }

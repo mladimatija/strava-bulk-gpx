@@ -137,5 +137,84 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "Slučování je dostupné pouze v režimu GPX"
+	},
+	"selectedCountWithHidden": {
+		"message": "Vybráno: $COUNT$ ($HIDDEN$ mimo tuto stránku)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Zrušit výběr"
+	},
+	"namesLabel": {
+		"message": "Názvy:"
+	},
+	"namesTooltip": {
+		"message": "Jak se pojmenují stažené soubory. Složky podle sportu platí jen uvnitř ZIP."
+	},
+	"namesId": {
+		"message": "ID aktivity"
+	},
+	"namesTitle": {
+		"message": "ID + název"
+	},
+	"namesSport": {
+		"message": "Složky podle sportu"
+	},
+	"exportCsv": {
+		"message": "Exportovat seznam (CSV)"
+	},
+	"savedCsv": {
+		"message": "Uložen seznam $COUNT$ aktivit.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"cancel": {
+		"message": "Zrušit"
+	},
+	"cancelled": {
+		"message": "Zrušeno - nic nebylo uloženo."
+	},
+	"retryFailed": {
+		"message": "Zkusit znovu neúspěšné ($COUNT$)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Zobrazit neúspěšné aktivity"
+	},
+	"rateLimited": {
+		"message": "Strava omezuje požadavky - nový pokus za $SECONDS$ s…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
+	"csvActivityId": {
+		"message": "ID aktivity"
+	},
+	"csvActivityUrl": {
+		"message": "URL"
+	},
+	"csvFile": {
+		"message": "Soubor"
 	}
 }
