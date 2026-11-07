@@ -761,6 +761,35 @@ test.describe('activity page', () => {
 	});
 });
 
+test.describe('⋯ menu', () => {
+	test("opens above Strava's row controls and keeps its file input hidden", async ({ extensionPage }) => {
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		const menu = extensionPage.locator('.sbgx-menu');
+		await expect(menu).toBeVisible();
+		// The fixture displays file inputs and stacks Share drop-downs at
+		// z-index 30, like Strava's stylesheets do.
+		await expect(extensionPage.locator('[data-role="history-file"]')).toBeHidden();
+		const covered = await menu.evaluate((m) => {
+			const box = m.getBoundingClientRect();
+			const shares = [...document.querySelectorAll('.share')]
+				.map((s) => s.getBoundingClientRect())
+				.filter((s) => s.right > box.left && s.left < box.right && s.bottom > box.top && s.top < box.bottom);
+			// Every point where a Share control lies under the menu must hit the menu.
+			return {
+				overlapping: shares.length,
+				onTop: shares.every((s) => {
+					const x = (Math.max(s.left, box.left) + Math.min(s.right, box.right)) / 2;
+					const y = (Math.max(s.top, box.top) + Math.min(s.bottom, box.bottom)) / 2;
+					const hit = document.elementFromPoint(x, y);
+					return hit !== null && m.contains(hit);
+				}),
+			};
+		});
+		expect(covered.overlapping).toBeGreaterThan(0);
+		expect(covered.onTop).toBe(true);
+	});
+});
+
 test.describe('export history', () => {
 	test('zip downloads mark activities as exported, and Select new skips them', async ({ extensionPage }) => {
 		await stubGpxExports(extensionPage);
