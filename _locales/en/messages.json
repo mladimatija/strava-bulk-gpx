@@ -206,5 +206,63 @@
 	"exportTcx": {
 		"message": "Export TCX",
 		"description": "Item added to the '…' menu on an activity page, after Strava's own 'Export GPX'. Used only when Strava's own item text doesn't contain 'GPX' (otherwise Strava's wording is reused with GPX swapped for TCX)."
+	},
+	"selectNew": {
+		"message": "Select new",
+		"description": "Link-style toolbar button next to 'Select all visible'. Selects the rows on this page whose activity hasn't been exported in the current format yet."
+	},
+	"selectNewTitle": {
+		"message": "Select the activities on this page you haven't exported as $FORMAT$ yet",
+		"description": "Tooltip on 'Select new'. FORMAT is the current format label (GPX/TCX/Original).",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" }
+		}
+	},
+	"exportedOn": {
+		"message": "Exported as $FORMAT$ on $DATE$",
+		"description": "Tooltip on the ✓ beside a row's download button. FORMAT is GPX/TCX/Original; DATE is a locale-formatted date.",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" },
+			"date": { "content": "$2", "example": "11/7/2026" }
+		}
+	},
+	"moreOptions": {
+		"message": "More options",
+		"description": "Tooltip on the toolbar's '⋯' menu button."
+	},
+	"historyHeading": {
+		"message": "Export history",
+		"description": "Section heading in the '⋯' menu."
+	},
+	"historyImport": {
+		"message": "Mark activities from a CSV as exported ($FORMAT$)…",
+		"description": "'⋯' menu item. Opens a file picker for an activities.csv (from an earlier zip, or Strava's account archive) and marks its activities as already exported in the current FORMAT.",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" }
+		}
+	},
+	"historyImported": {
+		"message": "Marked $COUNT$ activities as exported ($FORMAT$).",
+		"description": "Status after importing export history from a CSV.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "120" },
+			"format": { "content": "$2", "example": "GPX" }
+		}
+	},
+	"historyImportEmpty": {
+		"message": "No activity IDs found in that file.",
+		"description": "Status when the chosen CSV has no numeric activity ids in its first column."
+	},
+	"historyForget": {
+		"message": "Forget export history",
+		"description": "'⋯' menu item that clears the record of which activities were exported (all formats). Needs a second click to confirm."
+	},
+	"historyForgetConfirm": {
+		"message": "Click again to confirm",
+		"description": "Label the 'Forget export history' item switches to after the first click; a second click within a few seconds confirms."
+	},
+	"historyForgotten": {
+		"message": "Export history cleared.",
+		"description": "Status after the export history has been forgotten."
 	}
 }

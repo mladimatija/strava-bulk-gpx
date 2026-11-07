@@ -66,7 +66,18 @@ export type MessageKey =
 	| 'csvActivityId'
 	| 'csvActivityUrl'
 	| 'csvFile'
-	| 'exportTcx';
+	| 'exportTcx'
+	| 'selectNew'
+	| 'selectNewTitle'
+	| 'exportedOn'
+	| 'moreOptions'
+	| 'historyHeading'
+	| 'historyImport'
+	| 'historyImported'
+	| 'historyImportEmpty'
+	| 'historyForget'
+	| 'historyForgetConfirm'
+	| 'historyForgotten';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -116,6 +127,17 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	csvActivityUrl: 'URL',
 	csvFile: 'File',
 	exportTcx: 'Export TCX',
+	selectNew: 'Select new',
+	selectNewTitle: "Select the activities on this page you haven't exported as $1 yet",
+	exportedOn: 'Exported as $1 on $2',
+	moreOptions: 'More options',
+	historyHeading: 'Export history',
+	historyImport: 'Mark activities from a CSV as exported ($1)…',
+	historyImported: 'Marked $1 activities as exported ($2).',
+	historyImportEmpty: 'No activity IDs found in that file.',
+	historyForget: 'Forget export history',
+	historyForgetConfirm: 'Click again to confirm',
+	historyForgotten: 'Export history cleared.',
 };
 
 /**

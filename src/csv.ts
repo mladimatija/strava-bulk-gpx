@@ -44,3 +44,55 @@ export function activitiesCsv(activities: ActivityRow[], files?: Map<string, str
 	}
 	return '\uFEFF' + lines.map((cells) => cells.map(csvCell).join(',')).join('\r\n') + '\r\n';
 }
+
+/**
+ * Parse CSV text into rows of cells, per RFC 4180: quoted fields may contain
+ * commas, doubled quotes and line breaks. A leading BOM is ignored.
+ */
+export function parseCsv(text: string): string[][] {
+	const src = text.replace(/^\uFEFF/, '');
+	const rows: string[][] = [];
+	let row: string[] = [];
+	let cell = '';
+	let quoted = false;
+	for (let i = 0; i < src.length; i++) {
+		const ch = src[i]!;
+		if (quoted) {
+			if (ch !== '"') cell += ch;
+			else if (src[i + 1] === '"') cell += src[++i];
+			else quoted = false;
+		} else if (ch === '"') {
+			quoted = true;
+		} else if (ch === ',') {
+			row.push(cell);
+			cell = '';
+		} else if (ch === '\n' || ch === '\r') {
+			if (ch === '\r' && src[i + 1] === '\n') i++;
+			row.push(cell);
+			rows.push(row);
+			row = [];
+			cell = '';
+		} else {
+			cell += ch;
+		}
+	}
+	if (cell !== '' || row.length > 0) {
+		row.push(cell);
+		rows.push(row);
+	}
+	return rows;
+}
+
+/**
+ * Activity ids from a CSV whose first column holds them: our own
+ * `activities.csv` / "Export list", or the one in Strava's account archive.
+ * The header and any non-numeric first cell are skipped.
+ */
+export function activityIdsFromCsv(text: string): string[] {
+	const ids = new Set<string>();
+	for (const [first] of parseCsv(text)) {
+		const id = first?.trim();
+		if (id && /^\d+$/.test(id)) ids.add(id);
+	}
+	return [...ids];
+}

@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "Exporter TCX"
+	},
+	"selectNew": {
+		"message": "Sélectionner les nouvelles"
+	},
+	"selectNewTitle": {
+		"message": "Sélectionner les activités de cette page pas encore exportées en $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Exportée en $FORMAT$ le $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Plus d'options"
+	},
+	"historyHeading": {
+		"message": "Historique des exports"
+	},
+	"historyImport": {
+		"message": "Marquer les activités d'un CSV comme exportées ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$ activités marquées comme exportées ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "Aucun ID d'activité trouvé dans ce fichier."
+	},
+	"historyForget": {
+		"message": "Oublier l'historique des exports"
+	},
+	"historyForgetConfirm": {
+		"message": "Cliquez à nouveau pour confirmer"
+	},
+	"historyForgotten": {
+		"message": "Historique des exports effacé."
 	}
 }

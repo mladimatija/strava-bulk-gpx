@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "TCX exporteren"
+	},
+	"selectNew": {
+		"message": "Nieuwe selecteren"
+	},
+	"selectNewTitle": {
+		"message": "Activiteiten op deze pagina selecteren die je nog niet als $FORMAT$ hebt geëxporteerd",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Geëxporteerd als $FORMAT$ op $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Meer opties"
+	},
+	"historyHeading": {
+		"message": "Exportgeschiedenis"
+	},
+	"historyImport": {
+		"message": "Activiteiten uit een CSV als geëxporteerd markeren ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$ activiteiten als geëxporteerd gemarkeerd ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "Geen activiteit-ID's gevonden in dat bestand."
+	},
+	"historyForget": {
+		"message": "Exportgeschiedenis vergeten"
+	},
+	"historyForgetConfirm": {
+		"message": "Klik nogmaals om te bevestigen"
+	},
+	"historyForgotten": {
+		"message": "Exportgeschiedenis gewist."
 	}
 }

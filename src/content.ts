@@ -18,6 +18,8 @@ import {
 	downloadActivitiesCsv,
 	type BulkOptions,
 } from './downloader.ts';
+import { activityIdsFromCsv } from './csv.ts';
+import { clearHistory, exportedAt, exportedTotal, loadHistory, recordExports } from './history.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
 import { t } from './i18n.ts';
 import type { ActivityColumn, ActivityRow, ExportFormat, NamePattern, ProgressEvent, StatusKind } from './types.ts';
@@ -263,6 +265,12 @@ function injectRow(row: HTMLTableRowElement): void {
 	const dlCell = document.createElement('td');
 	dlCell.className = 'sbgx-cell sbgx-cell-dl';
 	if (hasGps) {
+		const done = document.createElement('span');
+		done.className = 'sbgx-done';
+		done.textContent = '✓';
+		renderExportBadge(done, a.id);
+		dlCell.appendChild(done);
+
 		const btn = document.createElement('button');
 		btn.type = 'button';
 		btn.className = 'sbgx-btn sbgx-btn-primary sbgx-btn-row';
@@ -275,10 +283,12 @@ function injectRow(row: HTMLTableRowElement): void {
 			btn.disabled = true;
 			const old = btn.textContent ?? formatLabel(STATE.format);
 			btn.textContent = '…';
+			// Read the format from STATE at click time so changing the
+			// selector after rendering immediately affects what gets fetched.
+			const format = STATE.format;
 			try {
-				// Read the format from STATE at click time so changing the
-				// selector after rendering immediately affects what gets fetched.
-				await downloadSingle(a, STATE.format, STATE.names);
+				await downloadSingle(a, format, STATE.names);
+				rememberExports([a.id], format);
 			} catch (err) {
 				const message = err instanceof Error ? err.message : String(err);
 				alert(t('rowDownloadFailed', [a.id, message]));
@@ -312,6 +322,7 @@ function buildToolbar(): HTMLDivElement {
         <input type="checkbox" class="sbgx-select-all-cb" />
         <span>${escapeHtml(t('selectAllVisible'))}</span>
       </label>
+      <button class="sbgx-btn sbgx-btn-link" data-role="select-new">${escapeHtml(t('selectNew'))}</button>
       <label class="sbgx-tool sbgx-format-wrap">
         <span>${escapeHtml(t('formatLabel'))}</span>
         <select class="sbgx-format" data-role="format">
@@ -331,6 +342,15 @@ function buildToolbar(): HTMLDivElement {
       <button class="sbgx-btn sbgx-btn-primary" data-role="bulk" disabled>${escapeHtml(t('downloadSelected'))}</button>
       <button class="sbgx-btn sbgx-btn-secondary" data-role="merge" disabled>${escapeHtml(t('mergeSelected'))}</button>
       <button class="sbgx-btn" data-role="csv" disabled>${escapeHtml(t('exportCsv'))}</button>
+      <details class="sbgx-more" data-role="more">
+        <summary class="sbgx-btn" title="${escapeHtml(t('moreOptions'))}">⋯</summary>
+        <div class="sbgx-menu">
+          <span class="sbgx-menu-heading">${escapeHtml(t('historyHeading'))}</span>
+          <button class="sbgx-btn" data-role="history-import"></button>
+          <input type="file" accept=".csv,text/csv" data-role="history-file" hidden />
+          <button class="sbgx-btn" data-role="history-forget">${escapeHtml(t('historyForget'))}</button>
+        </div>
+      </details>
       <button class="sbgx-btn" data-role="cancel" hidden>${escapeHtml(t('cancel'))}</button>
       <span class="sbgx-tool sbgx-count" data-role="count">${escapeHtml(t('selectedCount', '0'))}</span>
       <button class="sbgx-btn sbgx-btn-link" data-role="clear" hidden>${escapeHtml(t('clearSelection'))}</button>
@@ -362,6 +382,18 @@ function buildToolbar(): HTMLDivElement {
 		onSelectionChanged();
 	});
 
+	toolbarPart(toolbar, 'select-new').addEventListener('click', () => {
+		// Adds to the selection; activities already exported in the current
+		// format, and off-page picks, stay as they are.
+		for (const row of visibleSelectableRows()) {
+			const id = row.dataset.sbgxId;
+			if (!id || exportedAt(id, STATE.format) !== null) continue;
+			const a = activityFromRow(row);
+			if (a) setSelected(a, true);
+		}
+		onSelectionChanged();
+	});
+
 	toolbarPart(toolbar, 'bulk').addEventListener('click', handleBulkClick);
 	toolbarPart(toolbar, 'merge').addEventListener('click', handleMergeClick);
 	toolbarPart(toolbar, 'csv').addEventListener('click', handleCsvClick);
@@ -382,6 +414,7 @@ function buildToolbar(): HTMLDivElement {
 		STATE.format = parseFormat(next);
 		savePreference(FORMAT_STORAGE_KEY, STATE.format);
 		refreshRowButtons();
+		renderExportBadges();
 		// renderToolbarCounts re-derives the merge button's disabled/title
 		// state from STATE.format, so it has to run on every format change.
 		renderToolbarCounts();
@@ -393,7 +426,74 @@ function buildToolbar(): HTMLDivElement {
 		STATE.names = parseNames(namesSelect.value);
 		savePreference(NAMES_STORAGE_KEY, STATE.names);
 	});
+
+	wireMoreMenu(toolbar);
 	return toolbar;
+}
+
+/**
+ * The "⋯" menu holds rarely used actions - for now, export history:
+ * marking activities from an earlier CSV as exported (so existing users
+ * don't start with everything "new"), and forgetting the history.
+ */
+function wireMoreMenu(toolbar: HTMLDivElement): void {
+	const more = toolbarPart<HTMLDetailsElement>(toolbar, 'more');
+	document.addEventListener('click', (e) => {
+		if (more.open && !more.contains(e.target as Node)) more.open = false;
+	});
+
+	const fileInput = toolbarPart<HTMLInputElement>(toolbar, 'history-file');
+	toolbarPart(toolbar, 'history-import').addEventListener('click', () => fileInput.click());
+	fileInput.addEventListener('change', async () => {
+		const file = fileInput.files?.[0];
+		fileInput.value = '';
+		if (!file) return;
+		more.open = false;
+		const format = STATE.format;
+		try {
+			const ids = activityIdsFromCsv(await file.text());
+			if (ids.length === 0) {
+				setStatus(t('historyImportEmpty'), 'warn');
+				return;
+			}
+			await recordExports(ids, format);
+			renderExportBadges();
+			renderToolbarCounts();
+			setStatus(t('historyImported', [String(ids.length), formatLabel(format)]), 'ok');
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			setStatus(t('downloadFailed', message), 'err');
+		}
+	});
+
+	// Forgetting is irreversible, so it takes a second click within a few
+	// seconds - an inline confirmation instead of a blocking confirm() dialog.
+	const forgetBtn = toolbarPart<HTMLButtonElement>(toolbar, 'history-forget');
+	let disarmTimer: number | undefined;
+	const disarm = (): void => {
+		window.clearTimeout(disarmTimer);
+		delete forgetBtn.dataset.armed;
+		forgetBtn.textContent = t('historyForget');
+	};
+	forgetBtn.addEventListener('click', async () => {
+		if (forgetBtn.dataset.armed !== '1') {
+			forgetBtn.dataset.armed = '1';
+			forgetBtn.textContent = t('historyForgetConfirm');
+			disarmTimer = window.setTimeout(disarm, 4000);
+			return;
+		}
+		disarm();
+		more.open = false;
+		try {
+			await clearHistory();
+			renderExportBadges();
+			renderToolbarCounts();
+			setStatus(t('historyForgotten'), 'ok');
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			setStatus(t('downloadFailed', message), 'err');
+		}
+	});
 }
 
 /**
@@ -446,6 +546,16 @@ function renderToolbarCounts(): void {
 	clearBtn.hidden = total === 0;
 	clearBtn.disabled = STATE.busy;
 	toolbarPart(STATE.toolbar, 'cancel').hidden = !STATE.busy;
+
+	// "Select new" only has work to do when an unselected row on this page
+	// hasn't been exported in the current format yet.
+	const selectNewBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'select-new');
+	const label = formatLabel(STATE.format);
+	selectNewBtn.disabled =
+		STATE.busy || !visibleIds.some((id) => id && !STATE.selected.has(id) && exportedAt(id, STATE.format) === null);
+	selectNewBtn.title = t('selectNewTitle', label);
+	toolbarPart(STATE.toolbar, 'history-import').textContent = t('historyImport', label);
+	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'history-forget').disabled = exportedTotal() === 0;
 	// Merge is GPX-only - TCX and Original files aren't trivially concatenable
 	// into one document. Rather than hide the button silently (which leaves
 	// users wondering where it went after switching format), keep it visible
@@ -517,6 +627,33 @@ function renderFailures(): void {
 	toolbarPart(STATE.toolbar, 'failures-list').replaceChildren(...items);
 }
 
+/** Show `badge` (the ✓ beside a row button) if `id` was exported in the current format. */
+function renderExportBadge(badge: HTMLElement, id: string): void {
+	const at = exportedAt(id, STATE.format);
+	badge.hidden = at === null;
+	badge.title = at === null ? '' : t('exportedOn', [formatLabel(STATE.format), new Date(at).toLocaleDateString()]);
+}
+
+/** Re-evaluate every row's ✓ - after a format change or a history update. */
+function renderExportBadges(): void {
+	for (const badge of document.querySelectorAll<HTMLElement>('.sbgx-done')) {
+		const id = badge.closest<HTMLTableRowElement>('tr')?.dataset.sbgxId;
+		if (id) renderExportBadge(badge, id);
+	}
+}
+
+/** Record successfully exported activities (best-effort) and refresh the ✓ marks. */
+function rememberExports(ids: string[], format: ExportFormat): void {
+	recordExports(ids, format)
+		.then(() => {
+			renderExportBadges();
+			renderToolbarCounts();
+		})
+		.catch((err: unknown) => {
+			console.warn('Could not save export history', err);
+		});
+}
+
 /**
  * Reflect STATE.selected onto every rendered checkbox. Important when two
  * rows share an id (sticky header mirror, etc.) - without this, checking one
@@ -581,6 +718,13 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 	try {
 		const result =
 			mode === 'merge' ? await downloadMergedGpx(activities, options) : await downloadBulk(activities, format, options);
+		if (mode === 'zip') {
+			const failedIds = new Set(result.failed.map((f) => f.id));
+			rememberExports(
+				activities.filter((a) => !failedIds.has(a.id)).map((a) => a.id),
+				format,
+			);
+		}
 		const firstFailed = result.failed[0];
 		if (firstFailed) {
 			setStatus(t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason]), 'warn');
@@ -656,9 +800,16 @@ function tick(): void {
 }
 
 async function start(): Promise<void> {
-	// Load saved preferences first so the toolbar and row buttons render with
-	// them from the start instead of flashing the defaults.
-	await loadPreferences();
+	// Load saved preferences and the export history first so the toolbar and
+	// row buttons render with them from the start instead of flashing the
+	// defaults.
+	await Promise.all([
+		loadPreferences(),
+		loadHistory(() => {
+			renderExportBadges();
+			renderToolbarCounts();
+		}),
+	]);
 	tick();
 	// Strava's React reflows the table on every search / sort / pagination.
 	// A single observer on the body handles all of it; the injection helpers

@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "TCX 내보내기"
+	},
+	"selectNew": {
+		"message": "새 항목 선택"
+	},
+	"selectNewTitle": {
+		"message": "이 페이지에서 아직 $FORMAT$(으)로 내보내지 않은 활동 선택",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "$DATE$에 $FORMAT$(으)로 내보냄",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "추가 옵션"
+	},
+	"historyHeading": {
+		"message": "내보내기 기록"
+	},
+	"historyImport": {
+		"message": "CSV의 활동을 내보냄으로 표시 ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$개 활동을 내보냄으로 표시했습니다 ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "해당 파일에서 활동 ID를 찾을 수 없습니다."
+	},
+	"historyForget": {
+		"message": "내보내기 기록 지우기"
+	},
+	"historyForgetConfirm": {
+		"message": "확인하려면 다시 클릭하세요"
+	},
+	"historyForgotten": {
+		"message": "내보내기 기록을 지웠습니다."
 	}
 }

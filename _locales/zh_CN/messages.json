@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "导出 TCX"
+	},
+	"selectNew": {
+		"message": "选择新的"
+	},
+	"selectNewTitle": {
+		"message": "选择本页中尚未导出为 $FORMAT$ 的活动",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "已于 $DATE$ 导出为 $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "更多选项"
+	},
+	"historyHeading": {
+		"message": "导出历史"
+	},
+	"historyImport": {
+		"message": "将 CSV 中的活动标记为已导出 ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "已将 $COUNT$ 项活动标记为已导出 ($FORMAT$)。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "该文件中未找到活动 ID。"
+	},
+	"historyForget": {
+		"message": "清除导出历史"
+	},
+	"historyForgetConfirm": {
+		"message": "再次点击以确认"
+	},
+	"historyForgotten": {
+		"message": "已清除导出历史。"
 	}
 }

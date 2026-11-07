@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "Exportovat TCX"
+	},
+	"selectNew": {
+		"message": "Vybrat nové"
+	},
+	"selectNewTitle": {
+		"message": "Vybrat aktivity na této stránce, které jste ještě neexportovali jako $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Exportováno jako $FORMAT$ dne $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Další možnosti"
+	},
+	"historyHeading": {
+		"message": "Historie exportů"
+	},
+	"historyImport": {
+		"message": "Označit aktivity z CSV jako exportované ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "Označeno jako exportované: $COUNT$ aktivit ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "V souboru nebyla nalezena žádná ID aktivit."
+	},
+	"historyForget": {
+		"message": "Zapomenout historii exportů"
+	},
+	"historyForgetConfirm": {
+		"message": "Klikněte znovu pro potvrzení"
+	},
+	"historyForgotten": {
+		"message": "Historie exportů vymazána."
 	}
 }

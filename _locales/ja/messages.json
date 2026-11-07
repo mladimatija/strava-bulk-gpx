@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "TCX をエクスポート"
+	},
+	"selectNew": {
+		"message": "新規を選択"
+	},
+	"selectNewTitle": {
+		"message": "このページで、まだ $FORMAT$ としてエクスポートしていないアクティビティを選択",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "$DATE$ に $FORMAT$ としてエクスポート済み",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "その他のオプション"
+	},
+	"historyHeading": {
+		"message": "エクスポート履歴"
+	},
+	"historyImport": {
+		"message": "CSV のアクティビティをエクスポート済みにする ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$件のアクティビティをエクスポート済みにしました ($FORMAT$)。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "そのファイルにアクティビティ ID が見つかりません。"
+	},
+	"historyForget": {
+		"message": "エクスポート履歴を消去"
+	},
+	"historyForgetConfirm": {
+		"message": "もう一度クリックして確定"
+	},
+	"historyForgotten": {
+		"message": "エクスポート履歴を消去しました。"
 	}
 }

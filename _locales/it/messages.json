@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "Esporta TCX"
+	},
+	"selectNew": {
+		"message": "Seleziona nuove"
+	},
+	"selectNewTitle": {
+		"message": "Seleziona le attività di questa pagina non ancora esportate come $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Esportata come $FORMAT$ il $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Altre opzioni"
+	},
+	"historyHeading": {
+		"message": "Cronologia esportazioni"
+	},
+	"historyImport": {
+		"message": "Segna le attività di un CSV come esportate ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$ attività segnate come esportate ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "Nessun ID attività trovato in quel file."
+	},
+	"historyForget": {
+		"message": "Dimentica cronologia esportazioni"
+	},
+	"historyForgetConfirm": {
+		"message": "Fai di nuovo clic per confermare"
+	},
+	"historyForgotten": {
+		"message": "Cronologia esportazioni cancellata."
 	}
 }

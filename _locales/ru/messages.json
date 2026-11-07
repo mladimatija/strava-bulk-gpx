@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "Экспорт TCX"
+	},
+	"selectNew": {
+		"message": "Выбрать новые"
+	},
+	"selectNewTitle": {
+		"message": "Выбрать тренировки на этой странице, ещё не экспортированные как $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Экспортировано как $FORMAT$ $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Другие параметры"
+	},
+	"historyHeading": {
+		"message": "История экспорта"
+	},
+	"historyImport": {
+		"message": "Отметить тренировки из CSV как экспортированные ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "Отмечено как экспортированные: $COUNT$ ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "В этом файле не найдено ID тренировок."
+	},
+	"historyForget": {
+		"message": "Очистить историю экспорта"
+	},
+	"historyForgetConfirm": {
+		"message": "Нажмите ещё раз для подтверждения"
+	},
+	"historyForgotten": {
+		"message": "История экспорта очищена."
 	}
 }

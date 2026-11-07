@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "Eksportuj TCX"
+	},
+	"selectNew": {
+		"message": "Zaznacz nowe"
+	},
+	"selectNewTitle": {
+		"message": "Zaznacz aktywności na tej stronie, których jeszcze nie wyeksportowano jako $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Wyeksportowano jako $FORMAT$ dnia $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Więcej opcji"
+	},
+	"historyHeading": {
+		"message": "Historia eksportu"
+	},
+	"historyImport": {
+		"message": "Oznacz aktywności z pliku CSV jako wyeksportowane ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "Oznaczono jako wyeksportowane: $COUNT$ aktywności ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "W tym pliku nie znaleziono identyfikatorów aktywności."
+	},
+	"historyForget": {
+		"message": "Zapomnij historię eksportu"
+	},
+	"historyForgetConfirm": {
+		"message": "Kliknij ponownie, aby potwierdzić"
+	},
+	"historyForgotten": {
+		"message": "Historia eksportu wyczyszczona."
 	}
 }

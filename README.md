@@ -28,9 +28,10 @@ that command yet.
 
 When you open <https://www.strava.com/athlete/training>, the extension:
 
-- Adds a small toolbar above the activity table with a **Select all visible** checkbox, a **Format** dropdown (GPX / TCX / Original), a **Names** dropdown, a **Download selected** button, a **Merge selected into one GPX** button, and an **Export list (CSV)** button.
+- Adds a small toolbar above the activity table with a **Select all visible** checkbox, a **Select new** button, a **Format** dropdown (GPX / TCX / Original), a **Names** dropdown, a **Download selected** button, a **Merge selected into one GPX** button, an **Export list (CSV)** button, and a **⋯** menu.
 - Adds a checkbox at the start of every row and a per-row export button at the end. The button's label tracks the format dropdown - it reads **GPX**, **TCX**, or **Original** depending on what's selected. Shift-click a second checkbox to select (or deselect) every row in between.
 - Keeps your selection while you page through, search or filter in Strava's UI, so one download can cover activities from several pages. The count shows how many selected activities aren't on the current page; **Clear selection** drops them all.
+- Remembers which activities you've exported, per format: a ✓ appears beside the row button (hover it for the date), and **Select new** picks only the rows on the page you haven't exported in the current format yet. A weekly backup is **Select new** → **Download selected**. The **⋯** menu can mark the activities in an earlier `activities.csv` (from one of these zips, or from Strava's account archive) as exported, or forget the history.
 - Click the row button → one file lands in your Downloads in the chosen format.
 - Click **Download selected** with one activity selected → one file (no zip).
 - Click **Download selected** with several activities selected → a `.zip` containing one file per activity, plus an `activities.csv` listing each activity's table columns (date, title, time, distance, …) and its file name in the zip. The zip itself is named `strava_<format>_<date>.zip` so different batches don't collide in your Downloads folder.

@@ -219,5 +219,70 @@
 	},
 	"exportTcx": {
 		"message": "Eksporter TCX"
+	},
+	"selectNew": {
+		"message": "Velg nye"
+	},
+	"selectNewTitle": {
+		"message": "Velg aktivitetene på denne siden som ikke er eksportert som $FORMAT$ ennå",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportedOn": {
+		"message": "Eksportert som $FORMAT$ $DATE$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			},
+			"date": {
+				"content": "$2",
+				"example": "11/7/2026"
+			}
+		}
+	},
+	"moreOptions": {
+		"message": "Flere valg"
+	},
+	"historyHeading": {
+		"message": "Eksporthistorikk"
+	},
+	"historyImport": {
+		"message": "Merk aktiviteter fra en CSV som eksportert ($FORMAT$)…",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImported": {
+		"message": "$COUNT$ aktiviteter merket som eksportert ($FORMAT$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"historyImportEmpty": {
+		"message": "Fant ingen aktivitets-ID-er i den filen."
+	},
+	"historyForget": {
+		"message": "Glem eksporthistorikk"
+	},
+	"historyForgetConfirm": {
+		"message": "Klikk igjen for å bekrefte"
+	},
+	"historyForgotten": {
+		"message": "Eksporthistorikken er tømt."
 	}
 }

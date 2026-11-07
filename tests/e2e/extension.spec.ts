@@ -732,3 +732,74 @@ test.describe('activity page', () => {
 		await expect(extensionPage.locator('a[href$="/export_tcx"]')).toHaveCount(0);
 	});
 });
+
+test.describe('export history', () => {
+	test('zip downloads mark activities as exported, and Select new skips them', async ({ extensionPage }) => {
+		await stubGpxExports(extensionPage);
+		const cbs = extensionPage.locator('.sbgx-row-cb');
+		const done = extensionPage.locator('.sbgx-done');
+		await cbs.nth(0).check();
+		await cbs.nth(1).check();
+		await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+
+		await expect(done.nth(0)).toBeVisible();
+		await expect(done.nth(1)).toBeVisible();
+		await expect(done.nth(2)).toBeHidden();
+		await expect(done.nth(0)).toHaveAttribute('title', /^Exported as GPX on /);
+
+		await extensionPage.locator('[data-role="clear"]').click();
+		await extensionPage.locator('[data-role="select-new"]').click();
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('1 selected');
+		await expect(cbs.nth(2)).toBeChecked();
+
+		// History is per format - nothing has been exported as TCX yet.
+		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		await expect(done.nth(0)).toBeHidden();
+		await extensionPage.locator('[data-role="select-new"]').click();
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('3 selected');
+	});
+
+	test('per-row downloads are remembered across reloads, and Forget clears them', async ({ extensionPage }) => {
+		await installAnchorClickCapture(extensionPage);
+		await extensionPage.locator('.sbgx-btn-row').first().click();
+		const done = extensionPage.locator('.sbgx-done').first();
+		await expect(done).toBeVisible();
+
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(done).toBeVisible();
+
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		const forget = extensionPage.locator('[data-role="history-forget"]');
+		await forget.click();
+		await expect(forget).toHaveText('Click again to confirm');
+		await expect(done).toBeVisible();
+		await forget.click();
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Export history cleared.');
+		await expect(done).toBeHidden();
+		await expect(forget).toBeDisabled();
+	});
+
+	test('history can be seeded from an earlier activities.csv', async ({ extensionPage }) => {
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await expect(extensionPage.locator('[data-role="history-import"]')).toHaveText(
+			'Mark activities from a CSV as exported (GPX)…',
+		);
+		await extensionPage.locator('[data-role="history-file"]').setInputFiles({
+			name: 'activities.csv',
+			mimeType: 'text/csv',
+			buffer: Buffer.from(
+				'\uFEFFActivity ID,URL,Title\r\n' +
+					'9000000001,https://www.strava.com/activities/9000000001,"Long, ""hilly"" day"\r\n' +
+					'9000000003,https://www.strava.com/activities/9000000003,Morning Run\r\n',
+			),
+		});
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText(
+			'Marked 2 activities as exported (GPX).',
+		);
+		const done = extensionPage.locator('.sbgx-done');
+		await expect(done.nth(0)).toBeVisible();
+		await expect(done.nth(1)).toBeHidden();
+		await expect(done.nth(2)).toBeVisible();
+	});
+});
