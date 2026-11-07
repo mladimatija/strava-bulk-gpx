@@ -9,7 +9,7 @@
 //     at the end - but only when the row has GPS data (distance > 0).
 //   - A MutationObserver re-runs the injection whenever Strava replaces the
 //     table body (pagination, search, sort). Selection state survives via a
-//     module-scope Set keyed by activity id.
+//     module-scope Map keyed by activity id, so a selection can span pages.
 
 import { downloadSingle, downloadBulk, downloadMergedGpx } from './downloader.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
@@ -34,18 +34,26 @@ function escapeHtml(s: string): string {
 }
 
 interface State {
-	selected: Set<string>;
+	/**
+	 * Selected activities by id. Kept across Strava's pagination and searches,
+	 * so a selection can span pages; the row data is captured at selection
+	 * time because off-page rows aren't in the DOM to re-read.
+	 */
+	selected: Map<string, ActivityRow>;
 	toolbar: HTMLDivElement | null;
 	busy: boolean;
 	/** Currently selected export format - drives per-row button text + URLs. */
 	format: ExportFormat;
+	/** Row last toggled - the anchor for shift-click range selection. */
+	anchorId: string | null;
 }
 
 const STATE: State = {
-	selected: new Set<string>(),
+	selected: new Map<string, ActivityRow>(),
 	toolbar: null,
 	busy: false,
 	format: 'gpx',
+	anchorId: null,
 };
 
 const FORMAT_STORAGE_KEY = 'exportFormat';
@@ -123,6 +131,49 @@ function rowHasGps(row: HTMLTableRowElement): boolean {
 	return false;
 }
 
+/**
+ * Selectable rows currently on screen, in table order, one per activity id
+ * (Strava sometimes renders a sticky-header mirror or a transient duplicate
+ * `<tr>` for the same activity).
+ */
+function visibleSelectableRows(): HTMLTableRowElement[] {
+	const seen = new Set<string>();
+	const rows: HTMLTableRowElement[] = [];
+	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-has-gps="1"]')) {
+		const id = row.dataset.sbgxId;
+		if (!id || seen.has(id)) continue;
+		seen.add(id);
+		rows.push(row);
+	}
+	return rows;
+}
+
+// ---------- Selection ----------
+
+function setSelected(activity: ActivityRow, selected: boolean): void {
+	if (selected) STATE.selected.set(activity.id, activity);
+	else STATE.selected.delete(activity.id);
+}
+
+/**
+ * Shift-click: set every visible row between the anchor and the clicked row
+ * (inclusive, in table order) to the clicked checkbox's new state. Returns
+ * false when the anchor isn't on this page, so the caller falls back to a
+ * plain toggle.
+ */
+function selectRange(fromId: string, toId: string, selected: boolean): boolean {
+	const rows = visibleSelectableRows();
+	const ids = rows.map((row) => row.dataset.sbgxId);
+	const from = ids.indexOf(fromId);
+	const to = ids.indexOf(toId);
+	if (from === -1 || to === -1) return false;
+	for (const row of rows.slice(Math.min(from, to), Math.max(from, to) + 1)) {
+		const a = activityFromRow(row);
+		if (a) setSelected(a, selected);
+	}
+	return true;
+}
+
 // ---------- Per-row injection ----------
 
 function injectRow(row: HTMLTableRowElement): void {
@@ -143,9 +194,16 @@ function injectRow(row: HTMLTableRowElement): void {
 		cb.type = 'checkbox';
 		cb.className = 'sbgx-row-cb';
 		cb.checked = STATE.selected.has(a.id);
-		cb.addEventListener('change', () => {
-			if (cb.checked) STATE.selected.add(a.id);
-			else STATE.selected.delete(a.id);
+		// `click` rather than `change`: only the click event carries shiftKey.
+		// Keyboard toggles (Space) dispatch a click too.
+		cb.addEventListener('click', (e: MouseEvent) => {
+			const anchor = STATE.anchorId;
+			const ranged = e.shiftKey && anchor !== null && anchor !== a.id && selectRange(anchor, a.id, cb.checked);
+			if (!ranged) setSelected(a, cb.checked);
+			// Shift-click also extends the browser's text selection across the
+			// table; drop it so the page doesn't flash blue.
+			if (e.shiftKey) window.getSelection()?.removeAllRanges();
+			STATE.anchorId = a.id;
 			onSelectionChanged();
 		});
 		cbCell.appendChild(cb);
@@ -191,6 +249,11 @@ function injectAllRows(table: HTMLTableElement): void {
 
 // ---------- Toolbar ----------
 
+/** Look up one of the toolbar's `data-role` elements. */
+function toolbarPart<T extends HTMLElement>(toolbar: HTMLElement, role: string): T {
+	return toolbar.querySelector<T>(`[data-role="${role}"]`)!;
+}
+
 function buildToolbar(): HTMLDivElement {
 	const toolbar = document.createElement('div');
 	toolbar.className = 'sbgx-toolbar';
@@ -211,6 +274,7 @@ function buildToolbar(): HTMLDivElement {
       <button class="sbgx-btn sbgx-btn-primary" data-role="bulk" disabled>${escapeHtml(t('downloadSelected'))}</button>
       <button class="sbgx-btn sbgx-btn-secondary" data-role="merge" disabled>${escapeHtml(t('mergeSelected'))}</button>
       <span class="sbgx-tool sbgx-count" data-role="count">${escapeHtml(t('selectedCount', '0'))}</span>
+      <button class="sbgx-btn sbgx-btn-link" data-role="clear" hidden>${escapeHtml(t('clearSelection'))}</button>
       <span class="sbgx-tool sbgx-status" data-role="status">
         <span class="sbgx-spinner" data-role="spinner" hidden></span>
         <span class="sbgx-status-text" data-role="status-text"></span>
@@ -223,25 +287,24 @@ function buildToolbar(): HTMLDivElement {
 
 	const selectAll = toolbar.querySelector<HTMLInputElement>('.sbgx-select-all-cb')!;
 	selectAll.addEventListener('change', () => {
-		const want = selectAll.checked;
-		// Only operate on GPS-bearing rows - others don't have a checkbox.
-		for (const cb of document.querySelectorAll<HTMLInputElement>('.sbgx-row-cb')) {
-			const id = cb.closest<HTMLTableRowElement>('tr')?.dataset.sbgxId;
-			if (!id) continue;
-			cb.checked = want;
-			if (want) STATE.selected.add(id);
-			else STATE.selected.delete(id);
+		// Only operate on GPS-bearing rows on this page - others don't have a
+		// checkbox, and off-page selections stay as they are.
+		for (const row of visibleSelectableRows()) {
+			const a = activityFromRow(row);
+			if (a) setSelected(a, selectAll.checked);
 		}
 		onSelectionChanged();
 	});
 
-	const bulkBtn = toolbar.querySelector<HTMLButtonElement>('[data-role="bulk"]')!;
-	bulkBtn.addEventListener('click', handleBulkClick);
+	toolbarPart(toolbar, 'bulk').addEventListener('click', handleBulkClick);
+	toolbarPart(toolbar, 'merge').addEventListener('click', handleMergeClick);
+	toolbarPart(toolbar, 'clear').addEventListener('click', () => {
+		STATE.selected.clear();
+		STATE.anchorId = null;
+		onSelectionChanged();
+	});
 
-	const mergeBtn = toolbar.querySelector<HTMLButtonElement>('[data-role="merge"]')!;
-	mergeBtn.addEventListener('click', handleMergeClick);
-
-	const formatSelect = toolbar.querySelector<HTMLSelectElement>('[data-role="format"]')!;
+	const formatSelect = toolbarPart<HTMLSelectElement>(toolbar, 'format');
 	formatSelect.value = STATE.format;
 	formatSelect.addEventListener('change', () => {
 		// Tolerate unexpected values defensively; if someone hacks the DOM in
@@ -287,21 +350,22 @@ function ensureToolbar(table: HTMLTableElement): HTMLDivElement | null {
 
 function renderToolbarCounts(): void {
 	if (!STATE.toolbar) return;
-	// Only GPS-bearing rows are selectable, so only count those for both
-	// the "X selected" text and the "select all" indeterminate state.
-	const selectableIds = new Set<string>();
-	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-has-gps="1"]')) {
-		const id = row.dataset.sbgxId;
-		if (id) selectableIds.add(id);
-	}
-	let visibleSelected = 0;
-	for (const id of STATE.selected) if (selectableIds.has(id)) visibleSelected++;
+	// The "select all" state only concerns this page's selectable rows; the
+	// count and the action buttons cover the whole selection, wherever it is.
+	const visibleIds = visibleSelectableRows().map((row) => row.dataset.sbgxId);
+	const visibleSelected = visibleIds.filter((id) => id && STATE.selected.has(id)).length;
+	const total = STATE.selected.size;
+	const offPage = total - visibleSelected;
 
-	const countEl = STATE.toolbar.querySelector<HTMLElement>('[data-role="count"]')!;
-	const bulkBtn = STATE.toolbar.querySelector<HTMLButtonElement>('[data-role="bulk"]')!;
-	const mergeBtn = STATE.toolbar.querySelector<HTMLButtonElement>('[data-role="merge"]')!;
-	countEl.textContent = t('selectedCount', String(visibleSelected));
-	bulkBtn.disabled = visibleSelected === 0 || STATE.busy;
+	const countEl = toolbarPart(STATE.toolbar, 'count');
+	const bulkBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'bulk');
+	const mergeBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'merge');
+	const clearBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'clear');
+	countEl.textContent =
+		offPage > 0 ? t('selectedCountWithHidden', [String(total), String(offPage)]) : t('selectedCount', String(total));
+	bulkBtn.disabled = total === 0 || STATE.busy;
+	clearBtn.hidden = total === 0;
+	clearBtn.disabled = STATE.busy;
 	// Merge is GPX-only - TCX and Original files aren't trivially concatenable
 	// into one document. Rather than hide the button silently (which leaves
 	// users wondering where it went after switching format), keep it visible
@@ -312,7 +376,7 @@ function renderToolbarCounts(): void {
 	// attribute lingers in the DOM, which trips up attribute-based assertions
 	// in the e2e suite.
 	const mergeAvailable = STATE.format === 'gpx';
-	mergeBtn.disabled = !mergeAvailable || visibleSelected === 0 || STATE.busy;
+	mergeBtn.disabled = !mergeAvailable || total === 0 || STATE.busy;
 	if (mergeAvailable) {
 		mergeBtn.removeAttribute('title');
 	} else {
@@ -320,12 +384,12 @@ function renderToolbarCounts(): void {
 	}
 
 	const allCb = STATE.toolbar.querySelector<HTMLInputElement>('.sbgx-select-all-cb')!;
-	if (selectableIds.size === 0) {
+	if (visibleIds.length === 0) {
 		allCb.checked = false;
 		allCb.indeterminate = false;
 	} else {
-		allCb.checked = visibleSelected === selectableIds.size;
-		allCb.indeterminate = visibleSelected > 0 && visibleSelected < selectableIds.size;
+		allCb.checked = visibleSelected === visibleIds.length;
+		allCb.indeterminate = visibleSelected > 0 && visibleSelected < visibleIds.length;
 	}
 }
 
@@ -338,12 +402,10 @@ function renderToolbarCounts(): void {
  */
 function setStatus(text: string, kind: StatusKind = '', { spinner = false }: { spinner?: boolean } = {}): void {
 	if (!STATE.toolbar) return;
-	const container = STATE.toolbar.querySelector<HTMLElement>('[data-role="status"]')!;
-	const textEl = container.querySelector<HTMLElement>('[data-role="status-text"]')!;
-	const spinnerEl = container.querySelector<HTMLElement>('[data-role="spinner"]')!;
-	textEl.textContent = text;
+	const container = toolbarPart(STATE.toolbar, 'status');
+	toolbarPart(container, 'status-text').textContent = text;
 	container.dataset.kind = kind;
-	spinnerEl.hidden = !spinner;
+	toolbarPart(container, 'spinner').hidden = !spinner;
 }
 
 /**
@@ -369,23 +431,9 @@ function onSelectionChanged(): void {
 	renderToolbarCounts();
 }
 
-/**
- * Build the activity list from currently visible rows that are in the
- * selected set. Dedupes by activity id - Strava sometimes renders more than
- * one <tr> per activity (sticky header mirror, transient rows during
- * pagination), and both would otherwise inflate the count.
- */
+/** Everything selected, on this page or others, in the order it was picked. */
 function collectSelectedActivities(): ActivityRow[] {
-	const seen = new Set<string>();
-	const activities: ActivityRow[] = [];
-	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-id]')) {
-		const id = row.dataset.sbgxId;
-		if (!id || !STATE.selected.has(id) || seen.has(id)) continue;
-		seen.add(id);
-		const a = activityFromRow(row);
-		if (a) activities.push(a);
-	}
-	return activities;
+	return [...STATE.selected.values()];
 }
 
 async function handleBulkClick(): Promise<void> {

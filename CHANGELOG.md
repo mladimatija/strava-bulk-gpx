@@ -4,6 +4,11 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- **Selection across pages.** Selected activities stay selected while you page, search or filter in Strava's UI, and **Download selected** / **Merge** include them all. The count reads `N selected (M not on this page)`; a new **Clear selection** action drops everything.
+- **Shift-click range selection.** Shift-click a second row checkbox to select or deselect every row in between.
+
 ### Fixed
 
 - **Merged GPX track order.** Tracks were written in whatever order the parallel downloads finished; they're now sorted by start time, so a multi-day trip reads day 1 → day N.

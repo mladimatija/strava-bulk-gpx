@@ -29,10 +29,11 @@ that command yet.
 When you open <https://www.strava.com/athlete/training>, the extension:
 
 - Adds a small toolbar above the activity table with a **Select all visible** checkbox, a **Format** dropdown (GPX / TCX / Original), a **Download selected** button, and a **Merge selected into one GPX** button.
-- Adds a checkbox at the start of every row and a per-row export button at the end. The button's label tracks the format dropdown - it reads **GPX**, **TCX**, or **Original** depending on what's selected.
+- Adds a checkbox at the start of every row and a per-row export button at the end. The button's label tracks the format dropdown - it reads **GPX**, **TCX**, or **Original** depending on what's selected. Shift-click a second checkbox to select (or deselect) every row in between.
+- Keeps your selection while you page through, search or filter in Strava's UI, so one download can cover activities from several pages. The count shows how many selected activities aren't on the current page; **Clear selection** drops them all.
 - Click the row button → one file lands in your Downloads in the chosen format.
-- Click **Download selected** with one row checked → one file (no zip).
-- Click **Download selected** with multiple rows checked → a `.zip` containing one file per activity (named `strava_<id>.gpx`, `strava_<id>.tcx`, or - for **Original** - whatever extension the file was uploaded with). The zip itself is named `strava_<format>_<date>.zip` so different batches don't collide in your Downloads folder.
+- Click **Download selected** with one activity selected → one file (no zip).
+- Click **Download selected** with several activities selected → a `.zip` containing one file per activity (named `strava_<id>.gpx`, `strava_<id>.tcx`, or - for **Original** - whatever extension the file was uploaded with). The zip itself is named `strava_<format>_<date>.zip` so different batches don't collide in your Downloads folder.
 - Click **Merge selected into one GPX** → a single `strava_merged_<date>.gpx` containing one `<trk>` per activity, in chronological order. Useful when you want a multi-day trip rendered as one track collection in RideWithGPS / Gaia / Komoot, or archived as a single file. The merge button stays visible in all modes but disables outside GPX with a tooltip explaining why (TCX and Original aren't trivially concatenable).
 
 The three formats map to what Strava's own _Export_ menu offers on individual activity pages:
@@ -103,7 +104,7 @@ After a `git pull`, run `npm run build` again and click the reload icon next to 
 5. Click the per-row button on a single row, or check multiple rows and click **Download selected** in the toolbar.
 6. In GPX mode you can also click **Merge selected into one GPX** to get a single combined `.gpx` instead of a zip.
 
-The download respects Strava's pagination – only currently visible rows can be checked. To download more than one page worth, page through and download each page's batch.
+Rows can only be checked while they're on screen, but the selection survives Strava's pagination: check rows on page 1, go to page 2, check more, and **Download selected** fetches all of them. The selection lives in memory only, so reloading the page clears it.
 
 ## Development
 

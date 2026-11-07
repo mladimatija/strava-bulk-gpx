@@ -337,6 +337,17 @@ function gpxBody(id: string, startTime?: string, extra = ''): string {
 </gpx>`;
 }
 
+/** Answer every /export_gpx request with {@link gpxBody}. */
+async function stubGpxExports(page: Page): Promise<void> {
+	await page.route('**/activities/*/export_gpx', async (route) => {
+		await route.fulfill({
+			status: 200,
+			contentType: 'application/gpx+xml',
+			body: gpxBody(idFromUrl(route.request().url())),
+		});
+	});
+}
+
 /** Run `action` and return the file it makes the browser save. */
 async function downloadFrom(page: Page, action: () => Promise<void>): Promise<{ name: string; bytes: Buffer }> {
 	const downloadPromise = page.waitForEvent('download', { timeout: 10000 });
@@ -352,6 +363,30 @@ async function zipFileNames(bytes: Buffer): Promise<string[]> {
 		.filter((f) => !f.dir)
 		.map((f) => f.name)
 		.sort();
+}
+
+interface FakeRow {
+	id: string;
+	sport: string;
+	title: string;
+}
+
+/**
+ * Simulate Strava paginating: swap the table body for other activities, the
+ * way its React re-render does, and wait for the extension to augment them.
+ */
+async function showOtherPage(page: Page, rows: FakeRow[]): Promise<void> {
+	await page.evaluate((fakeRows) => {
+		document.querySelector('tbody')!.innerHTML = fakeRows
+			.map(
+				(r) =>
+					`<tr><td>${r.sport}</td><td>Mon, 04/05/2026</td><td><a href="/activities/${r.id}">${r.title}</a></td>` +
+					`<td class="num">30:00</td><td class="num">5.00 km</td><td class="num">20 m</td><td class="num">5</td>` +
+					`<td class="row-actions"><a href="#">Edit</a></td></tr>`,
+			)
+			.join('');
+	}, rows);
+	await page.locator(`tr[data-sbgx-id="${rows[0]!.id}"] .sbgx-row-cb`).waitFor();
 }
 
 test.describe('merge ordering', () => {
@@ -402,5 +437,70 @@ test.describe('zip entries', () => {
 		await extensionPage.locator('.sbgx-select-all-cb').check();
 		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
 		expect(await zipFileNames(bytes)).toEqual(['activity-2.fit', 'activity-3.fit', 'activity.fit']);
+	});
+});
+
+test.describe('selection across pages', () => {
+	const otherPage: FakeRow[] = [
+		{ id: '9000000006', sport: 'Ride', title: 'Gravel Loop' },
+		{ id: '9000000007', sport: 'Hike', title: 'Ridge Hike' },
+	];
+
+	test('selections on other pages are counted and downloaded', async ({ extensionPage }) => {
+		const cbs = extensionPage.locator('.sbgx-row-cb');
+		const count = extensionPage.locator('[data-role="count"]');
+		await cbs.nth(0).check();
+		await cbs.nth(1).check();
+
+		await showOtherPage(extensionPage, otherPage);
+		await expect(count).toHaveText('2 selected (2 not on this page)');
+		// Nothing on this page is ticked, but the earlier picks still count.
+		await expect(extensionPage.locator('.sbgx-select-all-cb')).not.toBeChecked();
+		await expect(extensionPage.locator('[data-role="bulk"]')).toBeEnabled();
+
+		await extensionPage.locator('tr[data-sbgx-id="9000000006"] .sbgx-row-cb').check();
+		await expect(count).toHaveText('3 selected (2 not on this page)');
+
+		await stubGpxExports(extensionPage);
+		const { name, bytes } = await downloadFrom(extensionPage, () =>
+			extensionPage.locator('[data-role="bulk"]').click(),
+		);
+		expect(name).toMatch(/^strava_gpx_\d{4}-\d{2}-\d{2}\.zip$/);
+		expect(await zipFileNames(bytes)).toEqual([
+			'strava_9000000001.gpx',
+			'strava_9000000002.gpx',
+			'strava_9000000006.gpx',
+		]);
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved 3 activities.');
+	});
+
+	test('Clear selection drops everything, including other pages', async ({ extensionPage }) => {
+		const clear = extensionPage.locator('[data-role="clear"]');
+		await expect(clear).toBeHidden();
+		await extensionPage.locator('.sbgx-row-cb').first().check();
+		await showOtherPage(extensionPage, otherPage);
+		await extensionPage.locator('tr[data-sbgx-id="9000000007"] .sbgx-row-cb').check();
+
+		await clear.click();
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('0 selected');
+		await expect(extensionPage.locator('tr[data-sbgx-id="9000000007"] .sbgx-row-cb')).not.toBeChecked();
+		await expect(extensionPage.locator('[data-role="bulk"]')).toBeDisabled();
+		await expect(clear).toBeHidden();
+	});
+
+	test('shift-click selects and deselects a range of rows', async ({ extensionPage }) => {
+		const cbs = extensionPage.locator('.sbgx-row-cb');
+		const count = extensionPage.locator('[data-role="count"]');
+		await cbs.nth(0).click();
+		await cbs.nth(2).click({ modifiers: ['Shift'] });
+		for (let i = 0; i < 3; i++) await expect(cbs.nth(i)).toBeChecked();
+		await expect(count).toHaveText('3 selected');
+
+		// The third row is now the anchor; shift-unticking the second clears 2-3.
+		await cbs.nth(1).click({ modifiers: ['Shift'] });
+		await expect(cbs.nth(0)).toBeChecked();
+		await expect(cbs.nth(1)).not.toBeChecked();
+		await expect(cbs.nth(2)).not.toBeChecked();
+		await expect(count).toHaveText('1 selected');
 	});
 });

@@ -137,5 +137,21 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "Объединение доступно только в режиме GPX"
+	},
+	"selectedCountWithHidden": {
+		"message": "Выбрано: $COUNT$ (не на этой странице: $HIDDEN$)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Снять выделение"
 	}
 }

@@ -137,5 +137,21 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "병합은 GPX 모드에서만 사용할 수 있습니다"
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$개 선택됨 (이 페이지 밖 $HIDDEN$개)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "선택 해제"
 	}
 }

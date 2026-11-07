@@ -17,7 +17,7 @@ That's the entire permission surface. The extension does not request access to y
 
 ## What we collect, store, or transmit
 
-**Nothing about you.** The only thing saved is the export-format preference described above, locally. This extension has no backend, no analytics, no telemetry, no error reporting service, no remote configuration. Every line of code runs locally in your browser. The only network requests it makes are to `www.strava.com`, and they only happen when you click a download button.
+**Nothing about you.** The only thing saved is the export-format preference described above, locally. Your selection of activities is kept in memory only and is gone when you leave or reload the page. This extension has no backend, no analytics, no telemetry, no error reporting service, no remote configuration. Every line of code runs locally in your browser. The only network requests it makes are to `www.strava.com`, and they only happen when you click a download button.
 
 Your Strava session cookie, your activity data, your GPX files, your selections - none of it leaves your machine. We never see it because there is no "we" on the server side.
 

@@ -137,5 +137,21 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "Sammenslåing er bare tilgjengelig i GPX-modus"
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$ valgt ($HIDDEN$ ikke på denne siden)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Fjern valg"
 	}
 }

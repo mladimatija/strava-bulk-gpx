@@ -137,5 +137,21 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "La fusion n'est disponible qu'en mode GPX"
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$ sélectionné(s) ($HIDDEN$ hors de cette page)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Effacer la sélection"
 	}
 }

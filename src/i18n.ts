@@ -48,7 +48,9 @@ export type MessageKey =
 	| 'mergeSelected'
 	| 'mergingGpx'
 	| 'savedMerged'
-	| 'mergeOnlyGpx';
+	| 'mergeOnlyGpx'
+	| 'selectedCountWithHidden'
+	| 'clearSelection';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -80,6 +82,8 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	mergingGpx: 'Merging into one GPX…',
 	savedMerged: 'Saved merged GPX with $1 activities.',
 	mergeOnlyGpx: 'Merging is only available in GPX mode',
+	selectedCountWithHidden: '$1 selected ($2 not on this page)',
+	clearSelection: 'Clear selection',
 };
 
 /**

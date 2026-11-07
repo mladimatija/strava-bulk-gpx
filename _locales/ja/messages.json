@@ -137,5 +137,21 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "統合は GPX モードでのみ利用できます"
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$件選択中 (このページ以外に$HIDDEN$件)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "選択を解除"
 	}
 }

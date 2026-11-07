@@ -4,6 +4,7 @@
 
 .sbgx-toolbar {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 12px;
 	padding: 10px 14px;
@@ -158,11 +159,28 @@
 	line-height: 1;
 }
 
+/* "Clear selection" - a quiet text action next to the selection count, so it
+   doesn't compete with the real export buttons. */
+.sbgx-btn-link {
+	padding: 0;
+	border: 0;
+	background: none;
+	color: #fc4c02;
+	text-decoration: underline;
+}
+.sbgx-btn-link:hover:not(:disabled) {
+	background: none;
+	color: #e04500;
+}
+
 /* Ko-fi widget - uses the official kofi6.png asset (bundled as a data URL via
    scripts/build-kofi.js). The image already carries Ko-fi's brand styling,
    so we just need to render it cleanly. */
 .sbgx-kofi {
 	display: inline-block;
+	/* Right-aligned even when the toolbar wraps and the spacer stays behind
+	   on the previous line. */
+	margin-left: auto;
 	line-height: 0;
 	transition:
 		opacity 80ms ease,

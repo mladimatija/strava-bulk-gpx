@@ -137,5 +137,21 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "Slučování je dostupné pouze v režimu GPX"
+	},
+	"selectedCountWithHidden": {
+		"message": "Vybráno: $COUNT$ ($HIDDEN$ mimo tuto stránku)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Zrušit výběr"
 	}
 }

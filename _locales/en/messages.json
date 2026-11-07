@@ -121,5 +121,17 @@
 	"mergeOnlyGpx": {
 		"message": "Merging is only available in GPX mode",
 		"description": "Tooltip on the Merge button when the format dropdown is set to TCX or Original. Explains why the button is disabled (TCX/Original files aren't trivially concatenable into a single document)."
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$ selected ($HIDDEN$ not on this page)",
+		"description": "Selection count when some selected activities are on other pages of the list (or filtered out by a search). COUNT is the total selected; HIDDEN is how many of those aren't currently shown.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "25" },
+			"hidden": { "content": "$2", "example": "20" }
+		}
+	},
+	"clearSelection": {
+		"message": "Clear selection",
+		"description": "Link-style button next to the selection count. Deselects every activity, including ones on other pages."
 	}
 }

@@ -137,5 +137,21 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "合併僅在 GPX 模式下可用"
+	},
+	"selectedCountWithHidden": {
+		"message": "已選擇 $COUNT$ 項 (其中 $HIDDEN$ 項不在本頁)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "清除選擇"
 	}
 }

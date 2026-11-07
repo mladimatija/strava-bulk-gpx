@@ -137,5 +137,21 @@
 	},
 	"mergeOnlyGpx": {
 		"message": "Zusammenführen ist nur im GPX-Modus verfügbar"
+	},
+	"selectedCountWithHidden": {
+		"message": "$COUNT$ ausgewählt ($HIDDEN$ nicht auf dieser Seite)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "25"
+			},
+			"hidden": {
+				"content": "$2",
+				"example": "20"
+			}
+		}
+	},
+	"clearSelection": {
+		"message": "Auswahl aufheben"
 	}
 }
