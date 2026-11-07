@@ -48,7 +48,7 @@ The **Names** dropdown (remembered between visits) picks how files are named:
 - **ID + title** - `<id>_<title>.gpx`, e.g. `17421562394_Morning Run.gpx`. The id prefix keeps names unique and sorts files in upload order.
 - **Sport folders** - like ID + title, but inside a zip each file goes into a folder per sport (`Run/`, `Ride/`, …). Single-file downloads can't create folders, so they get the ID + title name.
 
-The three formats map to what Strava's own _Export_ menu offers on individual activity pages:
+The three formats are Strava's own exports. Its activity-page menu lists Export GPX and Export Original; TCX is served the same way at `/export_tcx`, just not listed there (this extension adds it - see below):
 
 - **GPX** - the route as standard GPX 1.1. Best for mapping tools (RideWithGPS, Gaia, Komoot).
 - **TCX** - route plus heart rate, cadence, and power streams. Best for Garmin Connect, TrainingPeaks, or any tool that wants the sensor data.
@@ -83,7 +83,7 @@ The extension uses Strava's own native export endpoints:
 - `https://www.strava.com/activities/<id>/export_tcx`
 - `https://www.strava.com/activities/<id>/export_original`
 
-These are the same URLs the _Export GPX / TCX / Original_ links use on individual activity pages. The downloaded files are byte-for-byte identical to what you'd get by clicking those links manually - except merged files, which are built from them, and GPX files saved with **Hide start/end** on, which are trimmed in your browser and named `…_trimmed.gpx` so they can't be mistaken for the originals. Bulk mode is just N concurrent calls to the chosen endpoint, with the responses streamed into a zip in your browser. For the **Original** format the per-file extension comes from the `Content-Disposition` header Strava returns, so a `.fit` from a Garmin and a `.gpx` from a phone end up correctly named in the same zip.
+These are the URLs behind Strava's own _Export GPX_ and _Export Original_ links on individual activity pages (TCX is served the same way, just not listed). The downloaded files are byte-for-byte identical to what you'd get by clicking those links manually - except merged files, which are built from them, and GPX files saved with **Hide start/end** on, which are trimmed in your browser and named `…_trimmed.gpx` so they can't be mistaken for the originals. Bulk mode is just N concurrent calls to the chosen endpoint, with the responses streamed into a zip in your browser. For the **Original** format the per-file extension comes from the `Content-Disposition` header Strava returns, so a `.fit` from a Garmin and a `.gpx` from a phone end up correctly named in the same zip.
 
 ## Install
 
@@ -116,7 +116,8 @@ After a `git pull`, run `npm run build` again and click the reload icon next to 
 3. Use Strava's own search and filters to get the list you want.
 4. Pick a format from the toolbar dropdown (defaults to **GPX**).
 5. Click the per-row button on a single row, or check multiple rows and click **Download selected** in the toolbar.
-6. In GPX mode you can also click **Merge selected into one GPX** to get a single combined `.gpx` instead of a zip.
+6. For a regular backup, click **Select new** and then **Download selected**: it picks only the activities on the page you haven't exported in the chosen format yet.
+7. To get one combined file instead of a zip, click **Merge selected into one GPX** (or **… one TCX** in TCX mode). See _What it does_ for joining activities into one, and for hiding the start and end of GPX tracks.
 
 Rows can only be checked while they're on screen, but the selection survives Strava's pagination: check rows on page 1, go to page 2, check more, and **Download selected** fetches all of them. The selection lives in memory only, so reloading the page clears it.
 
@@ -138,7 +139,7 @@ The project layout:
 
 ```
 .
-├── manifest.json           # MV3 manifest, declares one content-script match
+├── manifest.json           # MV3 manifest: content scripts for My Activities and activity pages
 ├── tsconfig.json           # strict TS config, bundler-style resolution
 ├── vite.config.ts          # @crxjs/vite-plugin + inline manifest version sync
 ├── eslint.config.mjs       # flat config, type-aware TS rules scoped to src/
@@ -150,8 +151,13 @@ The project layout:
 │   └── build-kofi.js       # fetches kofi6.png and emits src/kofi-asset.ts
 └── src/
     ├── content.ts          # mounts the toolbar, observes Strava's React table
-    ├── downloader.ts       # single + bulk download orchestration
+    ├── activity-page.ts    # adds Export TCX to an activity page's "…" menu
+    ├── downloader.ts       # single + bulk download orchestration, merging
     ├── csv.ts              # activities.csv / "Export list" generation
+    ├── history.ts          # export history (chrome.storage.local)
+    ├── trim.ts             # Hide start/end for GPX files
+    ├── xml.ts              # small DOM helpers shared by merge and trim
+    ├── i18n.ts             # typed t() over chrome.i18n, with English fallback
     ├── types.ts            # shared interfaces (ActivityRow, ProgressEvent, …)
     ├── kofi-asset.ts       # generated base64 data URL for the Ko-fi button
     └── styles.css          # toolbar + row styling, sbgx-* namespaced
@@ -186,7 +192,7 @@ npm test                 # Playwright E2E suite (tests/e2e/*.spec.ts)
 npm run test:screenshots # regenerates docs/screenshots/*.png from the same fixture
 ```
 
-The E2E tests load the built extension into a real Chromium instance and intercept the `https://www.strava.com/athlete/training` URL to serve `tests/fixtures/strava-training.html` instead - so Chrome thinks the content script is running on Strava, but the page is our own fake table. No real Strava account needed.
+The E2E tests load the built extension into a real Chromium instance and intercept the `https://www.strava.com/athlete/training` URL to serve `tests/fixtures/strava-training.html` instead - so Chrome thinks the content script is running on Strava, but the page is our own fake table. Activity-page tests do the same for `/activities/<id>` with `tests/fixtures/strava-activity.html`, a copy of the real "…" menu's structure. Export responses are stubbed per test. No real Strava account needed.
 
 `npm run test:screenshots` uses the same fixture to capture the three README images into `docs/screenshots/`. The bulk-mode screenshot slows the mocked `/export_gpx` responses so the spinner state stays visible mid-flight.
 
