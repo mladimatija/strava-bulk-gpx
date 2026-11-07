@@ -8,6 +8,7 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 - **Selection across pages.** Selected activities stay selected while you page, search or filter in Strava's UI, and **Download selected** / **Merge** include them all. The count reads `N selected (M not on this page)`; a new **Clear selection** action drops everything.
 - **Shift-click range selection.** Shift-click a second row checkbox to select or deselect every row in between.
+- **File naming.** A new **Names** dropdown (remembered via `chrome.storage.local`): `Activity ID` (the existing `strava_<id>.gpx`), `ID + title` (`<id>_<title>.gpx`), or `Sport folders` (`<sport>/<id>_<title>.gpx` inside zips).
 
 ### Fixed
 

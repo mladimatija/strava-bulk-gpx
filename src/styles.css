@@ -35,8 +35,8 @@
 	font-variant-numeric: tabular-nums;
 }
 
-/* Format select - sits between the Select-all checkbox and the bulk button.
-   Native <select> styled minimally so it fits the toolbar's line-height. */
+/* Format and Names selects - sit between the Select-all checkbox and the bulk
+   button. Native <select> styled minimally so it fits the toolbar's line-height. */
 .sbgx-format-wrap span {
 	color: #6d7177;
 }

@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "Borrar selección"
+	},
+	"namesLabel": {
+		"message": "Nombres:"
+	},
+	"namesTooltip": {
+		"message": "Cómo se nombran los archivos descargados. Las carpetas por deporte solo se aplican dentro de los ZIP."
+	},
+	"namesId": {
+		"message": "ID de actividad"
+	},
+	"namesTitle": {
+		"message": "ID + título"
+	},
+	"namesSport": {
+		"message": "Carpetas por deporte"
 	}
 }

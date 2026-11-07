@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "Selectie wissen"
+	},
+	"namesLabel": {
+		"message": "Namen:"
+	},
+	"namesTooltip": {
+		"message": "Hoe gedownloade bestanden worden genoemd. Sportmappen gelden alleen in ZIP-bestanden."
+	},
+	"namesId": {
+		"message": "Activiteit-ID"
+	},
+	"namesTitle": {
+		"message": "ID + titel"
+	},
+	"namesSport": {
+		"message": "Sportmappen"
 	}
 }

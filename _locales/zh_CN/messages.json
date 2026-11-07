@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "清除选择"
+	},
+	"namesLabel": {
+		"message": "文件名:"
+	},
+	"namesTooltip": {
+		"message": "下载文件的命名方式。按运动分文件夹仅在 ZIP 中生效。"
+	},
+	"namesId": {
+		"message": "活动 ID"
+	},
+	"namesTitle": {
+		"message": "ID + 标题"
+	},
+	"namesSport": {
+		"message": "按运动分文件夹"
 	}
 }

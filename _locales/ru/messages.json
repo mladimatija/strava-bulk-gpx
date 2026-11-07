@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "Снять выделение"
+	},
+	"namesLabel": {
+		"message": "Имена:"
+	},
+	"namesTooltip": {
+		"message": "Как называются скачанные файлы. Папки по видам спорта применяются только внутри ZIP."
+	},
+	"namesId": {
+		"message": "ID тренировки"
+	},
+	"namesTitle": {
+		"message": "ID + название"
+	},
+	"namesSport": {
+		"message": "Папки по видам спорта"
 	}
 }

@@ -504,3 +504,55 @@ test.describe('selection across pages', () => {
 		await expect(count).toHaveText('1 selected');
 	});
 });
+
+test.describe('file names', () => {
+	test('"ID + title" names zip entries and per-row downloads, and is remembered', async ({ extensionPage }) => {
+		const names = extensionPage.locator('select[data-role="names"]');
+		await expect(names).toHaveValue('id');
+		await names.selectOption('title');
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(names).toHaveValue('title');
+
+		await stubGpxExports(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual([
+			'9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx',
+			'9000000002_Lunch Trail Run.gpx',
+			'9000000003_Morning Run.gpx',
+		]);
+
+		await installAnchorClickCapture(extensionPage);
+		await extensionPage.locator('.sbgx-btn-row').first().click();
+		const clicks = await readCapturedAnchorClicks(extensionPage);
+		expect(clicks.map((c) => c.download)).toEqual(['9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx']);
+	});
+
+	test('"Sport folders" groups zip entries by sport', async ({ extensionPage }) => {
+		await extensionPage.locator('select[data-role="names"]').selectOption('sport');
+		await stubGpxExports(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual([
+			'Run/9000000003_Morning Run.gpx',
+			'Trail Run/9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx',
+			'Trail Run/9000000002_Lunch Trail Run.gpx',
+		]);
+	});
+
+	test('Original with a custom name keeps the uploaded extension', async ({ extensionPage }) => {
+		await extensionPage.route('**/activities/*/export_original', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/octet-stream',
+				headers: { 'Content-Disposition': 'attachment; filename="garmin-upload.fit"' },
+				body: 'FIT',
+			});
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('original');
+		await extensionPage.locator('select[data-role="names"]').selectOption('title');
+		const { name } = await downloadFrom(extensionPage, () => extensionPage.locator('.sbgx-btn-row').first().click());
+		expect(name).toBe('9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.fit');
+	});
+});

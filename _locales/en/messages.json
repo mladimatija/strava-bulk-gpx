@@ -133,5 +133,25 @@
 	"clearSelection": {
 		"message": "Clear selection",
 		"description": "Link-style button next to the selection count. Deselects every activity, including ones on other pages."
+	},
+	"namesLabel": {
+		"message": "Names:",
+		"description": "Label preceding the file-naming dropdown in the toolbar."
+	},
+	"namesTooltip": {
+		"message": "How downloaded files are named. Sport folders only apply inside zips.",
+		"description": "Hover tooltip on the file-naming dropdown."
+	},
+	"namesId": {
+		"message": "Activity ID",
+		"description": "File-naming option: files are named strava_<activity id>.gpx (the default)."
+	},
+	"namesTitle": {
+		"message": "ID + title",
+		"description": "File-naming option: files are named <activity id>_<activity title>.gpx."
+	},
+	"namesSport": {
+		"message": "Sport folders",
+		"description": "File-naming option: like 'ID + title', but inside a zip each file goes into a folder named after its sport (Run/, Ride/, …)."
 	}
 }

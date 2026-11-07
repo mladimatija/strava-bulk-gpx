@@ -60,3 +60,13 @@ export type StatusKind = '' | 'info' | 'ok' | 'warn' | 'err';
  * back to whatever the server suggested.
  */
 export type ExportFormat = 'gpx' | 'tcx' | 'original';
+
+/**
+ * How exported files are named (see `activityFilePath` in downloader.ts):
+ *   - 'id'    → `strava_<id>.gpx`; Original keeps Strava's suggested name
+ *   - 'title' → `<id>_<title>.gpx` - the id prefix keeps names unique and
+ *               sorts them in upload order
+ *   - 'sport' → `<sport>/<id>_<title>.gpx` inside zips; single downloads
+ *               can't create folders, so they get the 'title' name
+ */
+export type NamePattern = 'id' | 'title' | 'sport';

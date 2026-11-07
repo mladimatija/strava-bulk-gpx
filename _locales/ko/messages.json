@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "선택 해제"
+	},
+	"namesLabel": {
+		"message": "파일 이름:"
+	},
+	"namesTooltip": {
+		"message": "다운로드한 파일의 이름 지정 방식입니다. 스포츠별 폴더는 ZIP 안에서만 적용됩니다."
+	},
+	"namesId": {
+		"message": "활동 ID"
+	},
+	"namesTitle": {
+		"message": "ID + 제목"
+	},
+	"namesSport": {
+		"message": "스포츠별 폴더"
 	}
 }

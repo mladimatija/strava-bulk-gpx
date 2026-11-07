@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "Cancella selezione"
+	},
+	"namesLabel": {
+		"message": "Nomi:"
+	},
+	"namesTooltip": {
+		"message": "Come vengono chiamati i file scaricati. Le cartelle per sport valgono solo negli ZIP."
+	},
+	"namesId": {
+		"message": "ID attività"
+	},
+	"namesTitle": {
+		"message": "ID + titolo"
+	},
+	"namesSport": {
+		"message": "Cartelle per sport"
 	}
 }

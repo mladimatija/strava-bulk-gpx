@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "清除選擇"
+	},
+	"namesLabel": {
+		"message": "檔名:"
+	},
+	"namesTooltip": {
+		"message": "下載檔案的命名方式。依運動分資料夾僅在 ZIP 中生效。"
+	},
+	"namesId": {
+		"message": "活動 ID"
+	},
+	"namesTitle": {
+		"message": "ID + 標題"
+	},
+	"namesSport": {
+		"message": "依運動分資料夾"
 	}
 }

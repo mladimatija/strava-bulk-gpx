@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "選択を解除"
+	},
+	"namesLabel": {
+		"message": "ファイル名:"
+	},
+	"namesTooltip": {
+		"message": "ダウンロードするファイルの名前の付け方。スポーツ別フォルダーは ZIP 内でのみ適用されます。"
+	},
+	"namesId": {
+		"message": "アクティビティ ID"
+	},
+	"namesTitle": {
+		"message": "ID + タイトル"
+	},
+	"namesSport": {
+		"message": "スポーツ別フォルダー"
 	}
 }

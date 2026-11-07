@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "Fjern valg"
+	},
+	"namesLabel": {
+		"message": "Navn:"
+	},
+	"namesTooltip": {
+		"message": "Hvordan nedlastede filer navngis. Sportsmapper gjelder bare i ZIP-filer."
+	},
+	"namesId": {
+		"message": "Aktivitets-ID"
+	},
+	"namesTitle": {
+		"message": "ID + tittel"
+	},
+	"namesSport": {
+		"message": "Sportsmapper"
 	}
 }

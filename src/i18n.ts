@@ -50,7 +50,12 @@ export type MessageKey =
 	| 'savedMerged'
 	| 'mergeOnlyGpx'
 	| 'selectedCountWithHidden'
-	| 'clearSelection';
+	| 'clearSelection'
+	| 'namesLabel'
+	| 'namesTooltip'
+	| 'namesId'
+	| 'namesTitle'
+	| 'namesSport';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -84,6 +89,11 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	mergeOnlyGpx: 'Merging is only available in GPX mode',
 	selectedCountWithHidden: '$1 selected ($2 not on this page)',
 	clearSelection: 'Clear selection',
+	namesLabel: 'Names:',
+	namesTooltip: 'How downloaded files are named. Sport folders only apply inside zips.',
+	namesId: 'Activity ID',
+	namesTitle: 'ID + title',
+	namesSport: 'Sport folders',
 };
 
 /**

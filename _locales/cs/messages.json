@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "Zrušit výběr"
+	},
+	"namesLabel": {
+		"message": "Názvy:"
+	},
+	"namesTooltip": {
+		"message": "Jak se pojmenují stažené soubory. Složky podle sportu platí jen uvnitř ZIP."
+	},
+	"namesId": {
+		"message": "ID aktivity"
+	},
+	"namesTitle": {
+		"message": "ID + název"
+	},
+	"namesSport": {
+		"message": "Složky podle sportu"
 	}
 }

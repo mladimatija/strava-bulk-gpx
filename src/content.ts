@@ -14,7 +14,7 @@
 import { downloadSingle, downloadBulk, downloadMergedGpx } from './downloader.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
 import { t } from './i18n.ts';
-import type { ActivityRow, ExportFormat, StatusKind } from './types.ts';
+import type { ActivityRow, ExportFormat, NamePattern, StatusKind } from './types.ts';
 
 const KOFI_URL = 'https://ko-fi.com/D1D51ZGOQK';
 
@@ -44,6 +44,8 @@ interface State {
 	busy: boolean;
 	/** Currently selected export format - drives per-row button text + URLs. */
 	format: ExportFormat;
+	/** How downloaded files are named. */
+	names: NamePattern;
 	/** Row last toggled - the anchor for shift-click range selection. */
 	anchorId: string | null;
 }
@@ -53,30 +55,38 @@ const STATE: State = {
 	toolbar: null,
 	busy: false,
 	format: 'gpx',
+	names: 'id',
 	anchorId: null,
 };
 
 const FORMAT_STORAGE_KEY = 'exportFormat';
+const NAMES_STORAGE_KEY = 'namePattern';
 
 /** Narrow an untrusted stored value to a known format, defaulting to gpx. */
 function parseFormat(value: unknown): ExportFormat {
 	return value === 'tcx' || value === 'original' ? value : 'gpx';
 }
 
-/** Restore the last-used export format; storage failures fall back to gpx. */
-async function loadFormat(): Promise<void> {
+/** Narrow an untrusted stored value to a known name pattern, defaulting to id. */
+function parseNames(value: unknown): NamePattern {
+	return value === 'title' || value === 'sport' ? value : 'id';
+}
+
+/** Restore the last-used format and name pattern; storage failures keep the defaults. */
+async function loadPreferences(): Promise<void> {
 	try {
-		const stored = await chrome.storage.local.get(FORMAT_STORAGE_KEY);
+		const stored = await chrome.storage.local.get([FORMAT_STORAGE_KEY, NAMES_STORAGE_KEY]);
 		STATE.format = parseFormat(stored[FORMAT_STORAGE_KEY]);
+		STATE.names = parseNames(stored[NAMES_STORAGE_KEY]);
 	} catch {
-		// Keep the default - a broken storage area shouldn't block exports.
+		// Keep the defaults - a broken storage area shouldn't block exports.
 	}
 }
 
-/** Persist the chosen format for the next page load (best-effort). */
-function saveFormat(format: ExportFormat): void {
-	chrome.storage.local.set({ [FORMAT_STORAGE_KEY]: format }).catch((err: unknown) => {
-		console.warn('Could not save export format', err);
+/** Persist a toolbar preference for the next page load (best-effort). */
+function savePreference(key: string, value: string): void {
+	chrome.storage.local.set({ [key]: value }).catch((err: unknown) => {
+		console.warn(`Could not save ${key}`, err);
 	});
 }
 
@@ -108,7 +118,7 @@ function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	const id = m[1];
 	const name = (link.textContent ?? '').trim() || `Activity ${id}`;
 	// Sport is usually the first <td> in the row. Best-effort, fine if missing.
-	const sportCell = row.querySelector('td');
+	const sportCell = Array.from(row.cells).find((td) => !td.classList.contains('sbgx-cell'));
 	const sport_type = sportCell ? (sportCell.textContent ?? '').trim() : '';
 	return { id, name, sport_type };
 }
@@ -229,7 +239,7 @@ function injectRow(row: HTMLTableRowElement): void {
 			try {
 				// Read the format from STATE at click time so changing the
 				// selector after rendering immediately affects what gets fetched.
-				await downloadSingle(a, STATE.format);
+				await downloadSingle(a, STATE.format, STATE.names);
 			} catch (err) {
 				const message = err instanceof Error ? err.message : String(err);
 				alert(t('rowDownloadFailed', [a.id, message]));
@@ -269,6 +279,14 @@ function buildToolbar(): HTMLDivElement {
           <option value="gpx">${escapeHtml(t('gpxButton'))}</option>
           <option value="tcx">${escapeHtml(t('formatTcx'))}</option>
           <option value="original">${escapeHtml(t('formatOriginal'))}</option>
+        </select>
+      </label>
+      <label class="sbgx-tool sbgx-format-wrap" title="${escapeHtml(t('namesTooltip'))}">
+        <span>${escapeHtml(t('namesLabel'))}</span>
+        <select class="sbgx-format" data-role="names">
+          <option value="id">${escapeHtml(t('namesId'))}</option>
+          <option value="title">${escapeHtml(t('namesTitle'))}</option>
+          <option value="sport">${escapeHtml(t('namesSport'))}</option>
         </select>
       </label>
       <button class="sbgx-btn sbgx-btn-primary" data-role="bulk" disabled>${escapeHtml(t('downloadSelected'))}</button>
@@ -311,11 +329,18 @@ function buildToolbar(): HTMLDivElement {
 		// devtools we still fall back to gpx rather than crashing later.
 		const next = formatSelect.value;
 		STATE.format = parseFormat(next);
-		saveFormat(STATE.format);
+		savePreference(FORMAT_STORAGE_KEY, STATE.format);
 		refreshRowButtons();
 		// renderToolbarCounts re-derives the merge button's disabled/title
 		// state from STATE.format, so it has to run on every format change.
 		renderToolbarCounts();
+	});
+
+	const namesSelect = toolbarPart<HTMLSelectElement>(toolbar, 'names');
+	namesSelect.value = STATE.names;
+	namesSelect.addEventListener('change', () => {
+		STATE.names = parseNames(namesSelect.value);
+		savePreference(NAMES_STORAGE_KEY, STATE.names);
 	});
 	return toolbar;
 }
@@ -446,6 +471,7 @@ async function handleBulkClick(): Promise<void> {
 	setStatus(t('preparingDownloads', String(activities.length)), 'info', { spinner: true });
 	try {
 		const result = await downloadBulk(activities, STATE.format, {
+			names: STATE.names,
 			onProgress: (ev) => {
 				if (ev.stage === 'downloading') {
 					setStatus(t('downloadingProgress', [String(ev.completed), String(ev.total)]), 'info', { spinner: true });
@@ -519,9 +545,9 @@ function tick(): void {
 }
 
 async function start(): Promise<void> {
-	// Load the saved format first so the toolbar and row buttons render with
-	// it from the start instead of flashing GPX.
-	await loadFormat();
+	// Load saved preferences first so the toolbar and row buttons render with
+	// them from the start instead of flashing the defaults.
+	await loadPreferences();
 	tick();
 	// Strava's React reflows the table on every search / sort / pagination.
 	// A single observer on the body handles all of it; the injection helpers

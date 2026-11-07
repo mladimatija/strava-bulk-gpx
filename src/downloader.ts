@@ -11,23 +11,11 @@
 // host_permissions needed.
 
 import JSZip from 'jszip';
-import type { ActivityRow, BulkResult, ExportFormat, ProgressCallback } from './types.ts';
+import type { ActivityRow, BulkResult, ExportFormat, NamePattern, ProgressCallback } from './types.ts';
 
 /** Build the URL for a given activity + format. */
 function exportUrl(id: string, format: ExportFormat): string {
 	return `/activities/${id}/export_${format}`;
-}
-
-/**
- * Construct the filename we want the file saved as. For GPX/TCX we know the
- * extension up-front (`strava_<id>.gpx` / `.tcx`). For "original" the extension
- * depends on what the user originally uploaded - we'd have to inspect Strava's
- * Content-Disposition header - so we return null and let the browser respect
- * whatever filename the server suggests.
- */
-function suggestedFilename(id: string, format: ExportFormat): string | null {
-	if (format === 'original') return null;
-	return `strava_${id}.${format}`;
 }
 
 /** Tell the browser to download a same-origin URL with our chosen filename. */
@@ -79,9 +67,50 @@ function sanitizeFilename(name: string): string {
 	return name.replace(/[/\\?%*:|"<>]/g, '_').trim() || 'activity';
 }
 
+/** Activity titles can be long; cap them so paths stay manageable. */
+const MAX_SEGMENT_LENGTH = 80;
+
+/**
+ * Turn free text (an activity title or sport) into one safe path segment:
+ * no control characters, collapsed whitespace, capped length, and no
+ * trailing dots/spaces (Windows refuses to create those).
+ */
+function pathSegment(text: string): string {
+	const cleaned = sanitizeFilename(text.replace(/\p{Cc}/gu, ' ').replace(/\s+/g, ' '));
+	return cleaned.slice(0, MAX_SEGMENT_LENGTH).replace(/[. ]+$/, '') || 'activity';
+}
+
 /** Extension of a filename including the dot - `.fit`, `.fit.gz` - or "" when there is none. */
 function fileExtension(name: string): string {
 	return /(\.[a-z0-9]{1,5}(?:\.gz)?)$/i.exec(name)?.[1] ?? '';
+}
+
+/**
+ * Where an activity's file goes: a path inside the zip (possibly with a
+ * sport folder), or - via {@link baseName} - a single download's filename.
+ * `serverName` is Strava's Content-Disposition filename, which carries the
+ * original upload's extension; it's ignored for GPX/TCX.
+ */
+function activityFilePath(
+	activity: ActivityRow,
+	format: ExportFormat,
+	names: NamePattern,
+	serverName: string | null,
+): string {
+	if (names === 'id') {
+		// Original keeps the uploaded file's own name, as it always has.
+		if (format === 'original') return serverName ? sanitizeFilename(serverName) : `strava_${activity.id}`;
+		return `strava_${activity.id}.${format}`;
+	}
+	const ext = format === 'original' ? fileExtension(serverName ?? '') : `.${format}`;
+	const file = `${activity.id}_${pathSegment(activity.name)}${ext}`;
+	const sport = activity.sport_type.trim();
+	return names === 'sport' && sport ? `${pathSegment(sport)}/${file}` : file;
+}
+
+/** Last segment of a zip path - browsers can't create folders from a download. */
+function baseName(path: string): string {
+	return path.slice(path.lastIndexOf('/') + 1);
 }
 
 /**
@@ -99,15 +128,31 @@ function uniquePath(path: string, used: Set<string>): string {
 }
 
 /**
- * Per-row download. Fires a same-origin anchor click - Strava streams the file
- * via the browser's download manager. Returns a resolved promise so callers
- * can `await` without `require-await` complaints; the browser handles the
- * actual writing out of band.
+ * Per-row download. Usually a same-origin anchor click - Strava streams the
+ * file via the browser's download manager, which handles the actual writing
+ * out of band.
+ *
+ * The exception is Original with a custom name pattern: the extension we need
+ * only arrives in the response headers, so we fetch the file and save the blob.
  */
-export function downloadSingle(activity: ActivityRow, format: ExportFormat): Promise<void> {
+export async function downloadSingle(
+	activity: ActivityRow,
+	format: ExportFormat,
+	names: NamePattern = 'id',
+): Promise<void> {
 	const id = String(activity.id);
-	downloadViaAnchor(exportUrl(id, format), suggestedFilename(id, format));
-	return Promise.resolve();
+	if (format !== 'original') {
+		downloadViaAnchor(exportUrl(id, format), baseName(activityFilePath(activity, format, names, null)));
+		return;
+	}
+	if (names === 'id') {
+		downloadViaAnchor(exportUrl(id, format), null);
+		return;
+	}
+	const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin' });
+	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	const serverName = parseContentDispositionFilename(res.headers.get('content-disposition'));
+	downloadBlob(baseName(activityFilePath(activity, format, names, serverName)), await res.blob());
 }
 
 /** Backwards-compatible alias - older callers passed no format and expected GPX. */
@@ -120,6 +165,8 @@ export interface BulkOptions {
 	 * Notified as the download progresses through its stages. See {@link ProgressEvent}.
 	 */
 	onProgress?: ProgressCallback;
+	/** How files are named inside the zip. Defaults to `strava_<id>.<ext>`. */
+	names?: NamePattern;
 }
 
 /**
@@ -139,11 +186,11 @@ export interface BulkOptions {
 export async function downloadBulk(
 	activities: ActivityRow[],
 	format: ExportFormat,
-	{ onProgress }: BulkOptions = {},
+	{ onProgress, names = 'id' }: BulkOptions = {},
 ): Promise<BulkResult> {
 	if (activities.length === 0) return { ok: 0, failed: [] };
 	if (activities.length === 1) {
-		await downloadSingle(activities[0]!, format);
+		await downloadSingle(activities[0]!, format, names);
 		return { ok: 1, failed: [] };
 	}
 
@@ -175,20 +222,14 @@ export async function downloadBulk(
 						failed.push({ id: a.id, reason: `HTTP ${res.status}` });
 					} else {
 						const blob = await res.blob();
-						// GPX/TCX: known extension, deterministic name.
-						// Original: trust the server's filename (typically
-						// includes the original file extension); fall back to
-						// strava_<id> with no extension if it's missing.
-						let entryName: string;
-						if (format === 'original') {
-							const fromHeader = parseContentDispositionFilename(res.headers.get('content-disposition'));
-							entryName = fromHeader ? sanitizeFilename(fromHeader) : `strava_${a.id}`;
-						} else {
-							entryName = `strava_${a.id}.${format}`;
-						}
+						// GPX/TCX: known extension. Original: the server's filename
+						// carries the uploaded file's extension (and, for the 'id'
+						// pattern, the whole name).
+						const serverName =
+							format === 'original' ? parseContentDispositionFilename(res.headers.get('content-disposition')) : null;
 						// JSZip silently replaces an entry with the same name, so two
 						// uploads that share a filename would otherwise lose one file.
-						zip.file(uniquePath(entryName, used), blob);
+						zip.file(uniquePath(activityFilePath(a, format, names, serverName), used), blob);
 					}
 				} catch (e) {
 					const message = e instanceof Error ? e.message : String(e);

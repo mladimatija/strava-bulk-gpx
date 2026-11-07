@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "Effacer la sélection"
+	},
+	"namesLabel": {
+		"message": "Noms :"
+	},
+	"namesTooltip": {
+		"message": "Comment les fichiers téléchargés sont nommés. Les dossiers par sport ne s'appliquent qu'aux ZIP."
+	},
+	"namesId": {
+		"message": "ID d'activité"
+	},
+	"namesTitle": {
+		"message": "ID + titre"
+	},
+	"namesSport": {
+		"message": "Dossiers par sport"
 	}
 }

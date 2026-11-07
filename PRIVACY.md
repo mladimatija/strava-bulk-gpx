@@ -11,13 +11,13 @@ When you visit `https://www.strava.com/athlete/training`, the extension is allow
 - Read and modify the DOM of that page (to add download buttons and a toolbar).
 - Make requests to other URLs on `strava.com` (specifically `/activities/<id>/export_gpx`, `/export_tcx` and `/export_original`) **using your existing logged-in browser session**. These are the same URLs Strava's own "Export" links on each activity page target.
 - Save files to your computer by triggering an ordinary browser download, the same way clicking a download link does (so the file or zip lands in your Downloads folder). It does not use, or request, the `downloads` permission.
-- Store your last-used export format (`GPX`, `TCX` or `Original`) in the browser's local extension storage via the `storage` permission, so it is pre-selected next time. This one value stays on your machine and is never transmitted.
+- Store two toolbar preferences in the browser's local extension storage via the `storage` permission, so they are pre-selected next time: your last-used export format (`GPX`, `TCX` or `Original`) and your file-naming choice (`Activity ID`, `ID + title` or `Sport folders`). These values stay on your machine and are never transmitted.
 
 That's the entire permission surface. The extension does not request access to your cookies as a permission, your browsing history, your other tabs, or any non-Strava domain.
 
 ## What we collect, store, or transmit
 
-**Nothing about you.** The only thing saved is the export-format preference described above, locally. Your selection of activities is kept in memory only and is gone when you leave or reload the page. This extension has no backend, no analytics, no telemetry, no error reporting service, no remote configuration. Every line of code runs locally in your browser. The only network requests it makes are to `www.strava.com`, and they only happen when you click a download button.
+**Nothing about you.** The only things saved are the two toolbar preferences described above, locally. Your selection of activities is kept in memory only and is gone when you leave or reload the page. This extension has no backend, no analytics, no telemetry, no error reporting service, no remote configuration. Every line of code runs locally in your browser. The only network requests it makes are to `www.strava.com`, and they only happen when you click a download button.
 
 Your Strava session cookie, your activity data, your GPX files, your selections - none of it leaves your machine. We never see it because there is no "we" on the server side.
 

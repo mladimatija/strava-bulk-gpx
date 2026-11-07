@@ -153,5 +153,20 @@
 	},
 	"clearSelection": {
 		"message": "Auswahl aufheben"
+	},
+	"namesLabel": {
+		"message": "Namen:"
+	},
+	"namesTooltip": {
+		"message": "Wie heruntergeladene Dateien benannt werden. Sportordner gibt es nur in ZIP-Dateien."
+	},
+	"namesId": {
+		"message": "Aktivitäts-ID"
+	},
+	"namesTitle": {
+		"message": "ID + Titel"
+	},
+	"namesSport": {
+		"message": "Sportordner"
 	}
 }
