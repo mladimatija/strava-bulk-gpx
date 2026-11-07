@@ -163,7 +163,7 @@ The project layout:
     └── styles.css          # toolbar + row styling, sbgx-* namespaced
 ```
 
-The repo's version of truth is `package.json.version`. `vite.config.ts` reads it at build time, strips any SemVer prerelease tail (Chrome's manifest format doesn't allow `-beta.1` etc.), and writes the result into `manifest.json.version`. Don't edit `manifest.json.version` by hand. `npm version patch` is the right way to cut a new release.
+The repo's version of truth is `package.json.version`. `vite.config.ts` reads it at build time, strips any SemVer prerelease tail (Chrome's manifest format doesn't allow `-beta.1` etc.), and writes the result into `manifest.json.version`. Don't edit `manifest.json.version` by hand. To cut a release, follow [Releases in CONTRIBUTING.md](CONTRIBUTING.md#releases): bump in the PR, tag the merge commit after it lands.
 
 ### Localization
 

@@ -66,12 +66,28 @@ Releases are tagged `vMAJOR.MINOR.PATCH`. Pushing a tag triggers `release.yml`, 
 
 `package.json.version` is the source of truth - `manifest.json.version` is overwritten at build time by `vite.config.ts` (a small `toChromeVersion()` helper strips SemVer prerelease suffixes so Chrome's manifest format stays happy), so don't edit it directly.
 
-To cut a release locally:
+To cut a release, bump the version inside the PR and tag only after it's merged - a pushed tag publishes a release, so it must point at reviewed code on `main`:
 
-```bash
-npm version patch    # or minor / major; bumps package.json
-git push --follow-tags
-```
+1. On the PR's branch, bump without tagging and commit it as `chore: bump version to X.Y.Z`:
+
+   ```bash
+   npm version minor --no-git-tag-version   # or patch / major; bumps package.json + package-lock.json
+   ```
+
+   In the same commit, add `## [X.Y.Z] - YYYY-MM-DD` right under `## [Unreleased]` in `CHANGELOG.md` (the entries collected there become that version's), and if `PRIVACY.md` changed in this release, set its effective date.
+
+2. Let CI pass and merge the PR.
+3. Tag the merge commit on `main` and push just that tag:
+
+   ```bash
+   git switch main && git pull
+   git tag vX.Y.Z            # lightweight tag on the merge commit
+   git push origin vX.Y.Z    # triggers release.yml
+   ```
+
+4. Once `release.yml` has published the GitHub Release, upload its `strava-bulk-gpx.zip` to the Chrome Web Store by hand.
+
+Avoid `npm version` without `--no-git-tag-version` (it tags the bump commit on the branch) and `git push --follow-tags` (it pushes that tag, and so publishes a release, before the PR is merged).
 
 ## License
 
