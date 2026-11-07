@@ -175,7 +175,8 @@ function findActivitiesTable(): HTMLTableElement | null {
  * Edit / Share actions). Without a header row, columns are numbered.
  */
 function rowColumns(row: HTMLTableRowElement): ActivityColumn[] {
-	const headers = row.closest('table')?.tHead?.rows[0]?.cells;
+	const headerRow = row.closest('table')?.tHead?.rows[0];
+	const headers = headerRow ? Array.from(headerRow.cells).filter((th) => !th.classList.contains('sbgx-cell')) : null;
 	const cells = Array.from(row.cells).filter((td) => !td.classList.contains('sbgx-cell'));
 	const columns: ActivityColumn[] = [];
 	cells.forEach((td, i) => {
@@ -340,6 +341,29 @@ function injectRow(row: HTMLTableRowElement): void {
 		dlCell.appendChild(btn);
 	}
 	row.appendChild(dlCell);
+}
+
+/**
+ * Give the header row cells matching the ones injectRow adds to each body
+ * row: a leading checkbox column and a trailing button column. Strava's
+ * table uses `table-layout: fixed`, which sizes columns from the header
+ * row - without these, every data cell sat one column right of its header.
+ * Checked per cell rather than flagged per row, so it also recovers if
+ * Strava re-renders the header cells in place.
+ */
+function injectHeader(table: HTMLTableElement): void {
+	for (const row of Array.from(table.tHead?.rows ?? [])) {
+		if (!row.querySelector(':scope > .sbgx-cell-check')) {
+			const th = document.createElement('th');
+			th.className = 'sbgx-cell sbgx-cell-check';
+			row.insertBefore(th, row.firstChild);
+		}
+		if (!row.querySelector(':scope > .sbgx-cell-dl')) {
+			const th = document.createElement('th');
+			th.className = 'sbgx-cell sbgx-cell-dl';
+			row.appendChild(th);
+		}
+	}
 }
 
 function injectAllRows(table: HTMLTableElement): void {
@@ -915,6 +939,7 @@ function tick(): void {
 	const table = findActivitiesTable();
 	if (!table) return;
 	ensureToolbar(table);
+	injectHeader(table);
 	injectAllRows(table);
 	renderToolbarCounts();
 }

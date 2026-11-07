@@ -291,7 +291,8 @@
 	border: 0;
 }
 
-/* Row cells injected into Strava's existing table. */
+/* Cells injected into Strava's existing table - into every body row, and
+   matching ones into the header row so the columns stay aligned. */
 .sbgx-cell {
 	padding: 4px 6px;
 	vertical-align: middle;
@@ -301,7 +302,9 @@
 	width: 28px;
 }
 .sbgx-cell-dl {
-	width: 56px;
+	/* Room for the ✓ plus the widest label ("Original"); Strava's table is
+	   table-layout: fixed, so this sets the column width. */
+	width: 96px;
 	text-align: right;
 }
 /* ✓ beside the row button: this activity was already exported in the

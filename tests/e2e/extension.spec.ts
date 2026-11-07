@@ -90,6 +90,24 @@ test.describe('Strava Bulk GPX extension', () => {
 		await expect(indoorRow.locator('.sbgx-btn-row')).toHaveCount(0);
 	});
 
+	test('header cells line up with the row cells', async ({ extensionPage }) => {
+		// Strava's table sizes its columns from the header row, so the header
+		// needs the same injected cells as each row, or every value sits one
+		// column right of its heading.
+		const lefts = (selector: string) =>
+			extensionPage
+				.locator(selector)
+				.evaluateAll((cells) =>
+					cells
+						.filter((c) => getComputedStyle(c).display !== 'none')
+						.map((c) => Math.round(c.getBoundingClientRect().left)),
+				);
+		const headerLefts = await lefts('thead tr > th');
+		const rowLefts = await lefts('tr[data-sbgx-has-gps="1"] >> nth=0 >> > td');
+		expect(headerLefts).toEqual(rowLefts);
+		await expect(extensionPage.locator('thead th.sbgx-cell')).toHaveCount(2);
+	});
+
 	test('"Select all visible" ticks only GPS rows and updates the count', async ({ extensionPage }) => {
 		const selectAll = extensionPage.locator('.sbgx-select-all-cb');
 		await selectAll.check();

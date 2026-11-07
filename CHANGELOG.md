@@ -13,6 +13,10 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 - **Hide start/end (GPX).** **⋯ → Hide start/end** removes track points within 200 m / 500 m / 1 km of each activity's start and end before saving, since Strava's map-visibility hiding doesn't apply to your own exports. It's a straight-line radius, so mid-route passes near home are hidden too, and the track is split into segments there instead of being drawn across the gap. Trimmed files are named `…_trimmed.gpx`, note the trimming in `<metadata><desc>`, and don't count as exported. Deliberately not remembered: it resets on reload, and a toolbar chip shows while it's on. Applies to row downloads, zips and merges.
 - **⋯ menu** on the toolbar, for rarely touched settings and actions: the GPX merge mode, Hide start/end, marking the activities in an earlier `activities.csv` (ours, or Strava's account archive) as exported, and forgetting the export history (inline two-click confirmation).
 
+### Fixed
+
+- **Column headers lined up with the wrong columns.** Strava's activities table sizes its columns from the header row (`table-layout: fixed`), and the extension's extra checkbox and button cells were only added to the body rows - so on the real page every value sat one column right of its heading ("Run" under Date, the date under Title, …) since 1.0. The header row now gets matching cells.
+
 ## [1.2.0] - 2026-11-07
 
 ### Added
