@@ -6,9 +6,9 @@ This extension is designed so that it cannot, by construction, collect or transm
 
 ## What the extension can access
 
-When you visit `https://www.strava.com/athlete/training`, the extension is allowed to:
+When you visit `https://www.strava.com/athlete/training` or one of your activity pages (`https://www.strava.com/activities/<id>`), the extension is allowed to:
 
-- Read and modify the DOM of that page (to add download buttons and a toolbar).
+- Read and modify the DOM of that page (to add download buttons and a toolbar on My Activities, and an "Export TCX" item to the "…" menu on activity pages - an ordinary link to Strava's own `/export_tcx` URL).
 - Make requests to other URLs on `strava.com` (specifically `/activities/<id>/export_gpx`, `/export_tcx` and `/export_original`) **using your existing logged-in browser session**. These are the same URLs Strava's own "Export" links on each activity page target.
 - Save files to your computer by triggering an ordinary browser download, the same way clicking a download link does (so the file or zip lands in your Downloads folder). It does not use, or request, the `downloads` permission.
 - Store two toolbar preferences in the browser's local extension storage via the `storage` permission, so they are pre-selected next time: your last-used export format (`GPX`, `TCX` or `Original`) and your file-naming choice (`Activity ID`, `ID + title` or `Sport folders`). These values stay on your machine and are never transmitted.

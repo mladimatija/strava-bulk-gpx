@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Morning Run | Run | Strava</title>
+		<!--
+			Minimal stand-in for an activity page (/activities/<id>). Only the
+			"…" actions menu matters: its nesting, the plain <li><a href> items,
+			and their order are copied from a real activity page (Nov 2026).
+			The list stays hidden until the menu button is clicked, as on Strava.
+		-->
+		<style>
+			body {
+				font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+				margin: 0;
+				padding: 40px 56px;
+			}
+			.options {
+				display: none;
+			}
+		</style>
+	</head>
+	<body>
+		<div class="view">
+			<div class="page container">
+				<nav class="sidenav">
+					<div class="actions-menu">
+						<button class="slide-menu drop-down-menu enabled align-bottom">
+							<ul class="options">
+								<li><a href="/activities/9000000001/edit_map_visibility">Edit Map Visibility</a></li>
+								<li><a href="/activities/9000000001/crop">Crop</a></li>
+								<li><a href="/activities/9000000001/split">Split</a></li>
+								<li><a href="/activities/9000000001/route">Save Route</a></li>
+								<li><a href="/activities/9000000001/export_gpx">Export GPX</a></li>
+								<li><a href="/activities/9000000001/export_original">Export Original</a></li>
+								<li><a href="/activities/9000000001/report">Report Activity</a></li>
+								<li><a href="/activities/9000000001/delete">Delete</a></li>
+							</ul>
+						</button>
+					</div>
+				</nav>
+				<h1 class="activity-name">Morning Run</h1>
+			</div>
+		</div>
+	</body>
+</html>

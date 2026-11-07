@@ -216,5 +216,8 @@
 	},
 	"csvFile": {
 		"message": "Fichier"
+	},
+	"exportTcx": {
+		"message": "Exporter TCX"
 	}
 }

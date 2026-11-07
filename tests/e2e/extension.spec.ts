@@ -696,3 +696,39 @@ test.describe('cancel, retry and rate limits', () => {
 		await expect(status).toHaveText('Saved 3 activities.');
 	});
 });
+
+const activityFixture = readFileSync(new URL('../fixtures/strava-activity.html', import.meta.url), 'utf8');
+
+/**
+ * Open the activity-page fixture at /activities/9000000001. With
+ * `own: false` its Export Original item is removed, which is how Strava's
+ * menu looks on activities you can't export.
+ */
+async function openActivityPage(page: Page, { own = true } = {}): Promise<void> {
+	const html = own
+		? activityFixture
+		: activityFixture.replace(/\s*<li><a href="[^"]*\/export_original">[^<]*<\/a><\/li>/, '');
+	await page.route('https://www.strava.com/activities/*', async (route) => {
+		await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: html });
+	});
+	await page.goto('https://www.strava.com/activities/9000000001');
+}
+
+test.describe('activity page', () => {
+	test('adds Export TCX right after Export GPX on your own activity', async ({ extensionPage }) => {
+		await openActivityPage(extensionPage);
+		const tcx = extensionPage.locator('a[href$="/export_tcx"]');
+		await tcx.waitFor({ state: 'attached' });
+		await expect(tcx).toHaveAttribute('href', '/activities/9000000001/export_tcx');
+		const items = await extensionPage.locator('ul.options > li').allTextContents();
+		expect(items.slice(4, 7)).toEqual(['Export GPX', 'Export TCX', 'Export Original']);
+	});
+
+	test('leaves the menu alone on activities without Export Original', async ({ extensionPage }) => {
+		await openActivityPage(extensionPage, { own: false });
+		await extensionPage.locator('a[href$="/export_gpx"]').waitFor({ state: 'attached' });
+		// The script runs at document_idle; give it time to (not) act.
+		await extensionPage.waitForTimeout(500);
+		await expect(extensionPage.locator('a[href$="/export_tcx"]')).toHaveCount(0);
+	});
+});

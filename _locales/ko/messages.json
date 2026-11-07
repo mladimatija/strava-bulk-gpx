@@ -216,5 +216,8 @@
 	},
 	"csvFile": {
 		"message": "파일"
+	},
+	"exportTcx": {
+		"message": "TCX 내보내기"
 	}
 }

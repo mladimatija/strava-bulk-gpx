@@ -4,6 +4,10 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- **Export TCX on activity pages.** Your own activity pages get an **Export TCX** item in Strava's "…" menu, right after Export GPX (Strava serves `/export_tcx` but doesn't list it). Runs as a separate ~1 KB content script on `https://www.strava.com/activities/*`; no new permission.
+
 ## [1.2.0] - 2026-11-07
 
 ### Added

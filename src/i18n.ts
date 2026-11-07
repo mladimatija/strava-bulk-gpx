@@ -65,7 +65,8 @@ export type MessageKey =
 	| 'rateLimited'
 	| 'csvActivityId'
 	| 'csvActivityUrl'
-	| 'csvFile';
+	| 'csvFile'
+	| 'exportTcx';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -114,6 +115,7 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	csvActivityId: 'Activity ID',
 	csvActivityUrl: 'URL',
 	csvFile: 'File',
+	exportTcx: 'Export TCX',
 };
 
 /**

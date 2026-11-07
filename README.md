@@ -52,6 +52,8 @@ The three formats map to what Strava's own _Export_ menu offers on individual ac
 
 Indoor / no-GPS activities don't get a checkbox or a button - there's nothing to export. Everything else - search, sport filter, date filter, sort, pagination - is Strava's own UI. The extension just hooks into whatever's currently on screen.
 
+On your own activity pages (`/activities/<id>`), the extension also adds **Export TCX** to Strava's "…" menu, right after Export GPX. Strava serves TCX at `/activities/<id>/export_tcx` but doesn't list it in that menu.
+
 ## Why it exists
 
 Strava has _Export GPX_ on the individual activity page, and a one-time full-account export buried in account settings. Neither of those is useful when you want:
