@@ -58,7 +58,7 @@ Use the bug report or feature request template (you'll be prompted on https://gi
 2. Open the PR with the PR template filled in.
 3. CI runs `check` + `build`. Green is required for merge.
 4. Reviews are usually within a few days; I do this on the side.
-5. Squash-merge on landing. Keep your branch's commit history clean if you can - it ends up in the squash message.
+5. PRs land as a merge commit, so every commit on your branch ends up on `main` as-is. Keep them focused - one logical change per commit, with a message that says why - and tidy them up before asking for review.
 
 ## Releases
 
