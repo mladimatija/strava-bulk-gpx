@@ -181,6 +181,33 @@
 			}
 		}
 	},
+	"cancel": {
+		"message": "Zrušit"
+	},
+	"cancelled": {
+		"message": "Zrušeno - nic nebylo uloženo."
+	},
+	"retryFailed": {
+		"message": "Zkusit znovu neúspěšné ($COUNT$)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Zobrazit neúspěšné aktivity"
+	},
+	"rateLimited": {
+		"message": "Strava omezuje požadavky - nový pokus za $SECONDS$ s…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
 	"csvActivityId": {
 		"message": "ID aktivity"
 	},

@@ -173,6 +173,32 @@
 	color: #e04500;
 }
 
+/* Failure list after a partly failed run - its own full-width line under the
+   controls (the toolbar wraps), with the Retry button and an expandable list
+   naming each failed activity. */
+.sbgx-failures {
+	flex-basis: 100%;
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	color: #b06a00;
+}
+.sbgx-failures[hidden] {
+	display: none;
+}
+.sbgx-failures summary {
+	cursor: pointer;
+	padding: 6px 0;
+}
+.sbgx-failures ul {
+	margin: 4px 0 0;
+	padding-left: 18px;
+}
+.sbgx-failures a {
+	color: inherit;
+	text-decoration: underline;
+}
+
 /* Ko-fi widget - uses the official kofi6.png asset (bundled as a data URL via
    scripts/build-kofi.js). The image already carries Ko-fi's brand styling,
    so we just need to render it cleanly. */

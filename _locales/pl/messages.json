@@ -181,6 +181,33 @@
 			}
 		}
 	},
+	"cancel": {
+		"message": "Anuluj"
+	},
+	"cancelled": {
+		"message": "Anulowano - nic nie zapisano."
+	},
+	"retryFailed": {
+		"message": "Ponów nieudane ($COUNT$)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Pokaż nieudane aktywności"
+	},
+	"rateLimited": {
+		"message": "Strava ogranicza żądania - ponowna próba za $SECONDS$ s…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
 	"csvActivityId": {
 		"message": "ID aktywności"
 	},

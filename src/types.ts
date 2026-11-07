@@ -50,9 +50,15 @@ export interface BulkResult {
  *   - 'merging'     - emitted once when a merged-GPX run switches from
  *     fetching to parsing/combining the individual `<trk>` blocks into a
  *     single output document.
+ *   - 'throttled'   - Strava answered HTTP 429; every worker pauses for
+ *     `seconds` before retrying. Fetches that settle during the pause
+ *     re-emit it (with the remaining wait) instead of 'downloading'.
  */
 export type ProgressEvent =
-	{ stage: 'downloading'; completed: number; total: number } | { stage: 'zipping' } | { stage: 'merging' };
+	| { stage: 'downloading'; completed: number; total: number }
+	| { stage: 'zipping' }
+	| { stage: 'merging' }
+	| { stage: 'throttled'; seconds: number };
 
 export type ProgressCallback = (event: ProgressEvent) => void;
 

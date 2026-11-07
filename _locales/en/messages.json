@@ -165,6 +165,32 @@
 			"count": { "content": "$1", "example": "5" }
 		}
 	},
+	"cancel": {
+		"message": "Cancel",
+		"description": "Toolbar button shown while a bulk download or merge is running. Stops it without saving anything."
+	},
+	"cancelled": {
+		"message": "Cancelled - nothing was saved.",
+		"description": "Status shown after the user cancels a running bulk download or merge."
+	},
+	"retryFailed": {
+		"message": "Retry $COUNT$ failed",
+		"description": "Button shown after a bulk download where some activities failed. Downloads only those again, as a new file.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "2" }
+		}
+	},
+	"showFailures": {
+		"message": "Show failed activities",
+		"description": "Expandable list under the toolbar after a partly failed run, naming each activity that failed and why."
+	},
+	"rateLimited": {
+		"message": "Strava is limiting requests - retrying in $SECONDS$ s…",
+		"description": "Progress status while Strava has asked us to slow down (HTTP 429). The download continues automatically after the wait.",
+		"placeholders": {
+			"seconds": { "content": "$1", "example": "10" }
+		}
+	},
 	"csvActivityId": {
 		"message": "Activity ID",
 		"description": "Column header in the exported CSV: the numeric Strava activity id."

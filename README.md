@@ -36,6 +36,7 @@ When you open <https://www.strava.com/athlete/training>, the extension:
 - Click **Download selected** with several activities selected → a `.zip` containing one file per activity, plus an `activities.csv` listing each activity's table columns (date, title, time, distance, …) and its file name in the zip. The zip itself is named `strava_<format>_<date>.zip` so different batches don't collide in your Downloads folder.
 - Click **Merge selected into one GPX** → a single `strava_merged_<date>.gpx` containing one `<trk>` per activity, in chronological order. Useful when you want a multi-day trip rendered as one track collection in RideWithGPS / Gaia / Komoot, or archived as a single file. The merge button stays visible in all modes but disables outside GPX with a tooltip explaining why (TCX and Original aren't trivially concatenable).
 - Click **Export list (CSV)** → `strava_activities_<date>.csv` with the selected activities' table columns. No activity files are fetched.
+- While a download or merge runs, **Cancel** stops it without saving anything. If Strava rate-limits the requests (HTTP 429), the extension waits as long as Strava asks and retries. If some activities still fail, the toolbar lists each one with the reason, and for zip downloads offers **Retry N failed** to fetch only those.
 
 The **Names** dropdown (remembered between visits) picks how files are named:
 

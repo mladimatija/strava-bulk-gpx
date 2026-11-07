@@ -11,10 +11,16 @@
 //     table body (pagination, search, sort). Selection state survives via a
 //     module-scope Map keyed by activity id, so a selection can span pages.
 
-import { downloadSingle, downloadBulk, downloadMergedGpx, downloadActivitiesCsv } from './downloader.ts';
+import {
+	downloadSingle,
+	downloadBulk,
+	downloadMergedGpx,
+	downloadActivitiesCsv,
+	type BulkOptions,
+} from './downloader.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
 import { t } from './i18n.ts';
-import type { ActivityColumn, ActivityRow, ExportFormat, NamePattern, StatusKind } from './types.ts';
+import type { ActivityColumn, ActivityRow, ExportFormat, NamePattern, ProgressEvent, StatusKind } from './types.ts';
 
 const KOFI_URL = 'https://ko-fi.com/D1D51ZGOQK';
 
@@ -33,6 +39,12 @@ function escapeHtml(s: string): string {
 		.replace(/'/g, '&#39;');
 }
 
+/** An activity that failed in the last run, with the reason shown to the user. */
+interface FailedActivity {
+	activity: ActivityRow;
+	reason: string;
+}
+
 interface State {
 	/**
 	 * Selected activities by id. Kept across Strava's pagination and searches,
@@ -46,6 +58,14 @@ interface State {
 	format: ExportFormat;
 	/** How downloaded files are named. */
 	names: NamePattern;
+	/** Aborts the in-flight bulk/merge run; null when idle. */
+	abort: AbortController | null;
+	/**
+	 * Failures from the last run, listed under the toolbar. `retryFormat` is
+	 * set for zip runs (retrying fetches only the failed ones); merge runs
+	 * leave it null - re-merging just the failures would drop the rest.
+	 */
+	lastRun: { failed: FailedActivity[]; retryFormat: ExportFormat | null } | null;
 	/** Row last toggled - the anchor for shift-click range selection. */
 	anchorId: string | null;
 }
@@ -56,6 +76,8 @@ const STATE: State = {
 	busy: false,
 	format: 'gpx',
 	names: 'id',
+	abort: null,
+	lastRun: null,
 	anchorId: null,
 };
 
@@ -309,6 +331,7 @@ function buildToolbar(): HTMLDivElement {
       <button class="sbgx-btn sbgx-btn-primary" data-role="bulk" disabled>${escapeHtml(t('downloadSelected'))}</button>
       <button class="sbgx-btn sbgx-btn-secondary" data-role="merge" disabled>${escapeHtml(t('mergeSelected'))}</button>
       <button class="sbgx-btn" data-role="csv" disabled>${escapeHtml(t('exportCsv'))}</button>
+      <button class="sbgx-btn" data-role="cancel" hidden>${escapeHtml(t('cancel'))}</button>
       <span class="sbgx-tool sbgx-count" data-role="count">${escapeHtml(t('selectedCount', '0'))}</span>
       <button class="sbgx-btn sbgx-btn-link" data-role="clear" hidden>${escapeHtml(t('clearSelection'))}</button>
       <span class="sbgx-tool sbgx-status" data-role="status">
@@ -319,6 +342,13 @@ function buildToolbar(): HTMLDivElement {
       <a class="sbgx-kofi" href="${KOFI_URL}" target="_blank" rel="noopener" title="${koFiLabel}">
         <img src="${KOFI_IMAGE}" alt="${koFiLabel}" />
       </a>
+      <div class="sbgx-failures" data-role="failures" hidden>
+        <button class="sbgx-btn" data-role="retry"></button>
+        <details>
+          <summary>${escapeHtml(t('showFailures'))}</summary>
+          <ul data-role="failures-list"></ul>
+        </details>
+      </div>
     `;
 
 	const selectAll = toolbar.querySelector<HTMLInputElement>('.sbgx-select-all-cb')!;
@@ -335,6 +365,8 @@ function buildToolbar(): HTMLDivElement {
 	toolbarPart(toolbar, 'bulk').addEventListener('click', handleBulkClick);
 	toolbarPart(toolbar, 'merge').addEventListener('click', handleMergeClick);
 	toolbarPart(toolbar, 'csv').addEventListener('click', handleCsvClick);
+	toolbarPart(toolbar, 'cancel').addEventListener('click', () => STATE.abort?.abort());
+	toolbarPart(toolbar, 'retry').addEventListener('click', handleRetryClick);
 	toolbarPart(toolbar, 'clear').addEventListener('click', () => {
 		STATE.selected.clear();
 		STATE.anchorId = null;
@@ -389,6 +421,7 @@ function ensureToolbar(table: HTMLTableElement): HTMLDivElement | null {
 	const tb = buildToolbar();
 	parent.insertBefore(tb, table);
 	STATE.toolbar = tb;
+	renderFailures();
 	return tb;
 }
 
@@ -412,6 +445,7 @@ function renderToolbarCounts(): void {
 	csvBtn.disabled = total === 0 || STATE.busy;
 	clearBtn.hidden = total === 0;
 	clearBtn.disabled = STATE.busy;
+	toolbarPart(STATE.toolbar, 'cancel').hidden = !STATE.busy;
 	// Merge is GPX-only - TCX and Original files aren't trivially concatenable
 	// into one document. Rather than hide the button silently (which leaves
 	// users wondering where it went after switching format), keep it visible
@@ -455,6 +489,35 @@ function setStatus(text: string, kind: StatusKind = '', { spinner = false }: { s
 }
 
 /**
+ * Show STATE.lastRun's failures under the toolbar: one line per activity,
+ * linking to it, with the reason - so a partial run says exactly what's
+ * missing, not just the first error. Hidden when there's nothing to show.
+ */
+function renderFailures(): void {
+	if (!STATE.toolbar) return;
+	const run = STATE.lastRun;
+	toolbarPart(STATE.toolbar, 'failures').hidden = !run;
+	if (!run) return;
+
+	const retryBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'retry');
+	retryBtn.hidden = run.retryFormat === null;
+	retryBtn.disabled = STATE.busy;
+	retryBtn.textContent = t('retryFailed', String(run.failed.length));
+
+	const items = run.failed.map(({ activity, reason }) => {
+		const link = document.createElement('a');
+		link.href = `/activities/${activity.id}`;
+		link.target = '_blank';
+		link.rel = 'noopener';
+		link.textContent = activity.name;
+		const li = document.createElement('li');
+		li.append(link, ` - ${reason}`);
+		return li;
+	});
+	toolbarPart(STATE.toolbar, 'failures-list').replaceChildren(...items);
+}
+
+/**
  * Reflect STATE.selected onto every rendered checkbox. Important when two
  * rows share an id (sticky header mirror, etc.) - without this, checking one
  * would leave the duplicate visibly unchecked.
@@ -468,12 +531,16 @@ function syncRowCheckboxes(): void {
 
 /**
  * User-initiated selection change. Clears any leftover post-download status
- * (e.g. "Saved 4 activities.") so the toolbar reflects only the current
- * intent, but leaves in-progress download messages alone.
+ * (e.g. "Saved 4 activities.") and failure list so the toolbar reflects only
+ * the current intent, but leaves in-progress download messages alone.
  */
 function onSelectionChanged(): void {
 	syncRowCheckboxes();
-	if (!STATE.busy) setStatus('');
+	if (!STATE.busy) {
+		setStatus('');
+		STATE.lastRun = null;
+		renderFailures();
+	}
 	renderToolbarCounts();
 }
 
@@ -482,77 +549,88 @@ function collectSelectedActivities(): ActivityRow[] {
 	return [...STATE.selected.values()];
 }
 
-async function handleBulkClick(): Promise<void> {
-	if (STATE.busy) return;
-	const activities = collectSelectedActivities();
-	if (activities.length === 0) return;
-
-	STATE.busy = true;
-	renderToolbarCounts();
-	setStatus(t('preparingDownloads', String(activities.length)), 'info', { spinner: true });
-	try {
-		const result = await downloadBulk(activities, STATE.format, {
-			names: STATE.names,
-			onProgress: (ev) => {
-				if (ev.stage === 'downloading') {
-					setStatus(t('downloadingProgress', [String(ev.completed), String(ev.total)]), 'info', { spinner: true });
-				} else if (ev.stage === 'zipping') {
-					setStatus(t('buildingZip'), 'info', { spinner: true });
-				}
-			},
-		});
-		const firstFailed = result.failed[0];
-		const note = firstFailed
-			? t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason])
-			: t('savedActivities', String(result.ok));
-		setStatus(note, firstFailed ? 'warn' : 'ok');
-	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
-		setStatus(t('downloadFailed', message), 'err');
-	} finally {
-		STATE.busy = false;
-		renderToolbarCounts();
+/** Map a downloader progress event onto the status line. */
+function showProgress(ev: ProgressEvent): void {
+	if (ev.stage === 'downloading') {
+		setStatus(t('downloadingProgress', [String(ev.completed), String(ev.total)]), 'info', { spinner: true });
+	} else if (ev.stage === 'throttled') {
+		setStatus(t('rateLimited', String(ev.seconds)), 'info', { spinner: true });
+	} else if (ev.stage === 'zipping') {
+		setStatus(t('buildingZip'), 'info', { spinner: true });
+	} else {
+		setStatus(t('mergingGpx'), 'info', { spinner: true });
 	}
 }
 
 /**
- * Merge-mode bulk handler. Reuses the same fetch concurrency as
- * {@link handleBulkClick} but emits a single combined .gpx instead of a zip
- * of per-activity files. Only sensible when STATE.format === 'gpx'; the
- * button is hidden otherwise, but we still gate defensively in case the user
- * clicked between format changes.
+ * Shared lifecycle for zip and merge runs: single-flighting via STATE.busy,
+ * the Cancel button, progress, and the terminal outcome - success, partial
+ * success (with the failure list), cancelled, or failed.
  */
-async function handleMergeClick(): Promise<void> {
-	if (STATE.busy) return;
-	if (STATE.format !== 'gpx') return;
-	const activities = collectSelectedActivities();
-	if (activities.length === 0) return;
+async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 'zip' | 'merge'): Promise<void> {
+	if (STATE.busy || activities.length === 0) return;
 
+	const controller = new AbortController();
 	STATE.busy = true;
+	STATE.abort = controller;
+	STATE.lastRun = null;
 	renderToolbarCounts();
+	renderFailures();
 	setStatus(t('preparingDownloads', String(activities.length)), 'info', { spinner: true });
+	const options: BulkOptions = { onProgress: showProgress, signal: controller.signal, names: STATE.names };
 	try {
-		const result = await downloadMergedGpx(activities, {
-			onProgress: (ev) => {
-				if (ev.stage === 'downloading') {
-					setStatus(t('downloadingProgress', [String(ev.completed), String(ev.total)]), 'info', { spinner: true });
-				} else if (ev.stage === 'merging') {
-					setStatus(t('mergingGpx'), 'info', { spinner: true });
-				}
-			},
-		});
+		const result =
+			mode === 'merge' ? await downloadMergedGpx(activities, options) : await downloadBulk(activities, format, options);
 		const firstFailed = result.failed[0];
-		const note = firstFailed
-			? t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason])
-			: t('savedMerged', String(result.ok));
-		setStatus(note, firstFailed ? 'warn' : 'ok');
+		if (firstFailed) {
+			setStatus(t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason]), 'warn');
+			const byId = new Map(activities.map((a) => [a.id, a]));
+			STATE.lastRun = {
+				failed: result.failed.map((f) => ({ activity: byId.get(f.id)!, reason: f.reason })),
+				retryFormat: mode === 'zip' ? format : null,
+			};
+		} else {
+			setStatus(mode === 'merge' ? t('savedMerged', String(result.ok)) : t('savedActivities', String(result.ok)), 'ok');
+		}
 	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
-		setStatus(t('downloadFailed', message), 'err');
+		if (controller.signal.aborted) {
+			setStatus(t('cancelled'), 'warn');
+		} else {
+			const message = err instanceof Error ? err.message : String(err);
+			setStatus(t('downloadFailed', message), 'err');
+		}
 	} finally {
 		STATE.busy = false;
+		STATE.abort = null;
 		renderToolbarCounts();
+		renderFailures();
 	}
+}
+
+function handleBulkClick(): Promise<void> {
+	return runExport(collectSelectedActivities(), STATE.format, 'zip');
+}
+
+/**
+ * Merge-mode bulk handler. Same fetch pool as {@link handleBulkClick} but
+ * emits a single combined .gpx instead of a zip of per-activity files. Only
+ * sensible when STATE.format === 'gpx'; the button is disabled otherwise, but
+ * we still gate defensively in case the user clicked between format changes.
+ */
+function handleMergeClick(): Promise<void> {
+	if (STATE.format !== 'gpx') return Promise.resolve();
+	return runExport(collectSelectedActivities(), 'gpx', 'merge');
+}
+
+/** Re-run a zip run's failures only, in the format that run used. */
+function handleRetryClick(): Promise<void> {
+	const run = STATE.lastRun;
+	if (!run?.retryFormat) return Promise.resolve();
+	return runExport(
+		run.failed.map((f) => f.activity),
+		run.retryFormat,
+		'zip',
+	);
 }
 
 /** List-only export: the selected rows' table columns as CSV, no file fetches. */
@@ -562,6 +640,9 @@ function handleCsvClick(): void {
 	if (activities.length === 0) return;
 	downloadActivitiesCsv(activities);
 	setStatus(t('savedCsv', String(activities.length)), 'ok');
+	// A previous run's failure list no longer describes what just happened.
+	STATE.lastRun = null;
+	renderFailures();
 }
 
 // ---------- Boot + observer ----------

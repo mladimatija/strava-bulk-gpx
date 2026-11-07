@@ -181,6 +181,33 @@
 			}
 		}
 	},
+	"cancel": {
+		"message": "キャンセル"
+	},
+	"cancelled": {
+		"message": "キャンセルしました。何も保存されていません。"
+	},
+	"retryFailed": {
+		"message": "失敗した$COUNT$件を再試行",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "失敗したアクティビティを表示"
+	},
+	"rateLimited": {
+		"message": "Strava がリクエストを制限しています。$SECONDS$ 秒後に再試行します…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
 	"csvActivityId": {
 		"message": "アクティビティ ID"
 	},

@@ -58,6 +58,11 @@ export type MessageKey =
 	| 'namesSport'
 	| 'exportCsv'
 	| 'savedCsv'
+	| 'cancel'
+	| 'cancelled'
+	| 'retryFailed'
+	| 'showFailures'
+	| 'rateLimited'
 	| 'csvActivityId'
 	| 'csvActivityUrl'
 	| 'csvFile';
@@ -101,6 +106,11 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	namesSport: 'Sport folders',
 	exportCsv: 'Export list (CSV)',
 	savedCsv: 'Saved a list of $1 activities.',
+	cancel: 'Cancel',
+	cancelled: 'Cancelled - nothing was saved.',
+	retryFailed: 'Retry $1 failed',
+	showFailures: 'Show failed activities',
+	rateLimited: 'Strava is limiting requests - retrying in $1 s…',
 	csvActivityId: 'Activity ID',
 	csvActivityUrl: 'URL',
 	csvFile: 'File',

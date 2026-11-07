@@ -181,6 +181,33 @@
 			}
 		}
 	},
+	"cancel": {
+		"message": "Отмена"
+	},
+	"cancelled": {
+		"message": "Отменено - ничего не сохранено."
+	},
+	"retryFailed": {
+		"message": "Повторить неудачные ($COUNT$)",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Показать неудачные тренировки"
+	},
+	"rateLimited": {
+		"message": "Strava ограничивает запросы - повтор через $SECONDS$ с…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
 	"csvActivityId": {
 		"message": "ID тренировки"
 	},

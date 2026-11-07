@@ -181,6 +181,33 @@
 			}
 		}
 	},
+	"cancel": {
+		"message": "Annuleren"
+	},
+	"cancelled": {
+		"message": "Geannuleerd - er is niets opgeslagen."
+	},
+	"retryFailed": {
+		"message": "$COUNT$ mislukte opnieuw proberen",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Mislukte activiteiten tonen"
+	},
+	"rateLimited": {
+		"message": "Strava beperkt verzoeken - nieuwe poging over $SECONDS$ s…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
 	"csvActivityId": {
 		"message": "Activiteit-ID"
 	},

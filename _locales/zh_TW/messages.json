@@ -181,6 +181,33 @@
 			}
 		}
 	},
+	"cancel": {
+		"message": "取消"
+	},
+	"cancelled": {
+		"message": "已取消 - 未儲存任何內容。"
+	},
+	"retryFailed": {
+		"message": "重試 $COUNT$ 項失敗",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "顯示失敗的活動"
+	},
+	"rateLimited": {
+		"message": "Strava 正在限制請求 - $SECONDS$ 秒後重試…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
 	"csvActivityId": {
 		"message": "活動 ID"
 	},

@@ -606,3 +606,93 @@ test.describe('CSV', () => {
 		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved a list of 2 activities.');
 	});
 });
+
+test.describe('cancel, retry and rate limits', () => {
+	test('Cancel stops a running bulk download and saves nothing', async ({ extensionPage }) => {
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			await new Promise((r) => setTimeout(r, 3000));
+			// The extension aborts these requests, so fulfilling may throw.
+			await route
+				.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody('slow') })
+				.catch(() => undefined);
+		});
+		let downloads = 0;
+		extensionPage.on('download', () => downloads++);
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		await extensionPage.locator('[data-role="bulk"]').click();
+		const cancel = extensionPage.locator('[data-role="cancel"]');
+		await expect(cancel).toBeVisible();
+		await cancel.click();
+
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Cancelled - nothing was saved.');
+		await expect(cancel).toBeHidden();
+		await expect(extensionPage.locator('[data-role="bulk"]')).toBeEnabled();
+		await extensionPage.waitForTimeout(500);
+		expect(downloads).toBe(0);
+	});
+
+	test('failures are listed, and Retry fetches only those', async ({ extensionPage }) => {
+		let failSecond = true;
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			if (id === '9000000002' && failSecond) {
+				failSecond = false;
+				await route.fulfill({ status: 500, body: '' });
+				return;
+			}
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) });
+		});
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual(['activities.csv', 'strava_9000000001.gpx', 'strava_9000000003.gpx']);
+		const status = extensionPage.locator('[data-role="status-text"]');
+		await expect(status).toHaveText('Saved 2, skipped 1 (HTTP 500)');
+
+		const failures = extensionPage.locator('[data-role="failures"]');
+		await failures.locator('summary').click();
+		await expect(failures.locator('li')).toHaveText(['Lunch Trail Run - HTTP 500']);
+		const retry = extensionPage.locator('[data-role="retry"]');
+		await expect(retry).toHaveText('Retry 1 failed');
+
+		// One activity left → a plain single-file download, which the capture records.
+		await installAnchorClickCapture(extensionPage);
+		await retry.click();
+		await expect(status).toHaveText('Saved 1 activities.');
+		const clicks = await readCapturedAnchorClicks(extensionPage);
+		expect(clicks.map((c) => c.href)).toEqual([expect.stringMatching(/\/activities\/9000000002\/export_gpx$/)]);
+		await expect(failures).toBeHidden();
+	});
+
+	test('a rate-limited request waits for Retry-After, then succeeds', async ({ extensionPage }) => {
+		const hits: Record<string, number> = {};
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			hits[id] = (hits[id] ?? 0) + 1;
+			if (id === '9000000001' && hits[id] === 1) {
+				await route.fulfill({ status: 429, headers: { 'Retry-After': '2' }, body: '' });
+				return;
+			}
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) });
+		});
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const status = extensionPage.locator('[data-role="status-text"]');
+		const started = Date.now();
+		const { bytes } = await downloadFrom(extensionPage, async () => {
+			await extensionPage.locator('[data-role="bulk"]').click();
+			await expect(status).toContainText('Strava is limiting requests - retrying in');
+		});
+
+		expect(Date.now() - started).toBeGreaterThanOrEqual(1900);
+		expect(hits['9000000001']).toBe(2);
+		expect(await zipFileNames(bytes)).toEqual([
+			'activities.csv',
+			'strava_9000000001.gpx',
+			'strava_9000000002.gpx',
+			'strava_9000000003.gpx',
+		]);
+		await expect(status).toHaveText('Saved 3 activities.');
+	});
+});

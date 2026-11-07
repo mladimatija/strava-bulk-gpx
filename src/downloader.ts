@@ -12,7 +12,7 @@
 
 import JSZip from 'jszip';
 import { activitiesCsv } from './csv.ts';
-import type { ActivityRow, BulkResult, ExportFormat, NamePattern, ProgressCallback } from './types.ts';
+import type { ActivityRow, BulkFailure, BulkResult, ExportFormat, NamePattern, ProgressCallback } from './types.ts';
 
 /** Build the URL for a given activity + format. */
 function exportUrl(id: string, format: ExportFormat): string {
@@ -177,8 +177,121 @@ export interface BulkOptions {
 	 * Notified as the download progresses through its stages. See {@link ProgressEvent}.
 	 */
 	onProgress?: ProgressCallback;
+	/** Aborting stops all fetches and rejects the run - nothing gets saved. */
+	signal?: AbortSignal;
 	/** How files are named inside the zip. Defaults to `strava_<id>.<ext>`. */
 	names?: NamePattern;
+}
+
+// Modest concurrency. The export endpoint is comfortable with parallel
+// requests from a logged-in browser session; 3 in flight is a sane balance
+// between throughput and politeness.
+const CONCURRENCY = 3;
+
+/** Retry a throttled (HTTP 429) request at most this many times before giving up on it. */
+const MAX_THROTTLE_RETRIES = 3;
+
+/**
+ * Seconds to wait before retrying a 429: Strava's Retry-After (seconds or an
+ * HTTP date) when present, else exponential backoff (5 s, 10 s, 20 s).
+ * Clamped to 1-60 s so a bad header can't stall the run indefinitely.
+ */
+function retryDelaySeconds(res: Response, attempt: number): number {
+	let seconds = 5 * 2 ** attempt;
+	const header = res.headers.get('retry-after');
+	if (header) {
+		const parsed = /^\s*\d+\s*$/.test(header) ? Number(header) : (Date.parse(header) - Date.now()) / 1000;
+		if (Number.isFinite(parsed)) seconds = parsed;
+	}
+	return Math.min(60, Math.max(1, Math.ceil(seconds)));
+}
+
+/** Wait `ms`, returning early if `signal` aborts (the caller's next fetch then rejects). */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+	return new Promise((resolve) => {
+		const timer = setTimeout(resolve, ms);
+		signal?.addEventListener(
+			'abort',
+			() => {
+				clearTimeout(timer);
+				resolve();
+			},
+			{ once: true },
+		);
+	});
+}
+
+/**
+ * Fetch every activity's export with {@link CONCURRENCY} requests in flight,
+ * handing each successful response to `onResponse` (with the activity's input
+ * index, so callers can keep input order). Emits 'downloading' progress before
+ * the first fetch and after each one settles.
+ *
+ * A 429 pauses the whole pool - once Strava throttles one request the others
+ * would hit the same limit - then retries that activity, up to
+ * {@link MAX_THROTTLE_RETRIES} times before recording it as failed.
+ *
+ * Resolves with the per-activity failures in completion order. Rejects with
+ * the signal's reason if `signal` aborts.
+ */
+async function fetchAll(
+	activities: ActivityRow[],
+	format: ExportFormat,
+	{ onProgress, signal }: BulkOptions,
+	onResponse: (activity: ActivityRow, res: Response, index: number) => Promise<void>,
+): Promise<BulkFailure[]> {
+	const total = activities.length;
+	const failed: BulkFailure[] = [];
+	let completed = 0;
+	let cursor = 0;
+	// Shared across workers: nobody fetches before this timestamp.
+	let resumeAt = 0;
+
+	async function fetchThrottled(id: string): Promise<Response> {
+		for (let attempt = 0; ; attempt++) {
+			const wait = resumeAt - Date.now();
+			if (wait > 0) await sleep(wait, signal);
+			const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin', signal });
+			if (res.status !== 429 || attempt >= MAX_THROTTLE_RETRIES) return res;
+			const seconds = retryDelaySeconds(res, attempt);
+			resumeAt = Math.max(resumeAt, Date.now() + seconds * 1000);
+			onProgress?.({ stage: 'throttled', seconds });
+		}
+	}
+
+	onProgress?.({ stage: 'downloading', completed, total });
+	await Promise.all(
+		Array.from({ length: CONCURRENCY }, async () => {
+			while (cursor < total && !signal?.aborted) {
+				const i = cursor++;
+				const a = activities[i]!;
+				try {
+					const res = await fetchThrottled(a.id);
+					if (!res.ok) {
+						failed.push({ id: a.id, reason: `HTTP ${res.status}` });
+					} else {
+						await onResponse(a, res, i);
+					}
+				} catch (e) {
+					// An abort surfaces here as a rejected fetch/body read -
+					// that's not a per-activity failure, just stop.
+					if (signal?.aborted) return;
+					const message = e instanceof Error ? e.message : String(e);
+					failed.push({ id: a.id, reason: message });
+				}
+				completed++;
+				// While the pool is paused, other workers' in-flight requests
+				// still land - keep showing the wait rather than flipping
+				// straight back to the counter.
+				const pausedFor = Math.ceil((resumeAt - Date.now()) / 1000);
+				onProgress?.(
+					pausedFor > 0 ? { stage: 'throttled', seconds: pausedFor } : { stage: 'downloading', completed, total },
+				);
+			}
+		}),
+	);
+	signal?.throwIfAborted();
+	return failed;
 }
 
 /** Name of the activity summary added to every multi-file zip. */
@@ -192,77 +305,48 @@ const CSV_NAME = 'activities.csv';
  *   - { stage: "downloading", completed, total } - fires immediately and after
  *     every fetch finishes (success or fail), so the caller can keep a counter
  *     in sync.
+ *   - { stage: "throttled", seconds } - Strava rate-limited us; see {@link fetchAll}.
  *   - { stage: "zipping" } - fires once when fetches are done and JSZip starts
  *     assembling. Useful for keeping a spinner alive during what can be a
  *     multi-second client-side step on large batches.
  *
  * Resolves with the count of successes and a list of per-activity failures.
- * Throws only if *every* activity failed.
+ * Throws if *every* activity failed, or if `signal` aborts.
  */
 export async function downloadBulk(
 	activities: ActivityRow[],
 	format: ExportFormat,
-	{ onProgress, names = 'id' }: BulkOptions = {},
+	options: BulkOptions = {},
 ): Promise<BulkResult> {
+	const { onProgress, signal, names = 'id' } = options;
 	if (activities.length === 0) return { ok: 0, failed: [] };
 	if (activities.length === 1) {
 		await downloadSingle(activities[0]!, format, names);
 		return { ok: 1, failed: [] };
 	}
 
-	const total = activities.length;
 	const zip = new JSZip();
 	/** Activity id → path inside the zip, for the CSV's File column. */
 	const files = new Map<string, string>();
 	// Reserve the summary's name so no activity file can overwrite it.
 	const used = new Set<string>([CSV_NAME]);
-	const failed: BulkResult['failed'] = [];
-	let completed = 0;
 
-	onProgress?.({ stage: 'downloading', completed, total });
-
-	// Modest concurrency. The export endpoint is comfortable with parallel
-	// requests from a logged-in browser session; 3 in flight is a sane balance
-	// between throughput and politeness.
-	const concurrency = 3;
-	let cursor = 0;
-	await Promise.all(
-		Array.from({ length: concurrency }, async () => {
-			while (cursor < total) {
-				const i = cursor++;
-				const a = activities[i]!;
-				try {
-					const res = await fetch(exportUrl(a.id, format), {
-						method: 'GET',
-						credentials: 'same-origin',
-					});
-					if (!res.ok) {
-						failed.push({ id: a.id, reason: `HTTP ${res.status}` });
-					} else {
-						const blob = await res.blob();
-						// GPX/TCX: known extension. Original: the server's filename
-						// carries the uploaded file's extension (and, for the 'id'
-						// pattern, the whole name).
-						const serverName =
-							format === 'original' ? parseContentDispositionFilename(res.headers.get('content-disposition')) : null;
-						// JSZip silently replaces an entry with the same name, so two
-						// uploads that share a filename would otherwise lose one file.
-						const path = uniquePath(activityFilePath(a, format, names, serverName), used);
-						zip.file(path, blob);
-						files.set(a.id, path);
-					}
-				} catch (e) {
-					const message = e instanceof Error ? e.message : String(e);
-					failed.push({ id: a.id, reason: message });
-				}
-				completed++;
-				onProgress?.({ stage: 'downloading', completed, total });
-			}
-		}),
-	);
+	const failed = await fetchAll(activities, format, options, async (a, res) => {
+		const blob = await res.blob();
+		// GPX/TCX: known extension. Original: the server's filename carries
+		// the uploaded file's extension (and, for the 'id' pattern, the
+		// whole name).
+		const serverName =
+			format === 'original' ? parseContentDispositionFilename(res.headers.get('content-disposition')) : null;
+		// JSZip silently replaces an entry with the same name, so two uploads
+		// that share a filename would otherwise lose one file.
+		const path = uniquePath(activityFilePath(a, format, names, serverName), used);
+		zip.file(path, blob);
+		files.set(a.id, path);
+	});
 
 	if (files.size === 0) {
-		throw new Error(`All ${total} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
+		throw new Error(`All ${activities.length} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
 	}
 
 	onProgress?.({ stage: 'zipping' });
@@ -278,6 +362,8 @@ export async function downloadBulk(
 		compression: 'DEFLATE',
 		compressionOptions: { level: 6 },
 	});
+	// Cancel may land while JSZip is compressing; honour it before saving.
+	signal?.throwIfAborted();
 	// Zip filename mentions the format, so a user with several batches doesn't
 	// confuse strava_gpx_…zip with strava_tcx_…zip in their Downloads folder.
 	downloadBlob(`strava_${format}_${today()}.zip`, blob);
@@ -394,60 +480,27 @@ function mergeGpxDocuments(sources: MergeSource[]): string {
  * `'merging'` instead of `'zipping'` so the UI can show the right string.
  *
  * Resolves with the count of activities that contributed to the merged file
- * and a list of per-activity failures. Throws only if *every* fetch failed.
+ * and a list of per-activity failures. Throws if *every* fetch failed, or if
+ * `options.signal` aborts.
  */
-export async function downloadMergedGpx(
-	activities: ActivityRow[],
-	{ onProgress }: BulkOptions = {},
-): Promise<BulkResult> {
+export async function downloadMergedGpx(activities: ActivityRow[], options: BulkOptions = {}): Promise<BulkResult> {
 	if (activities.length === 0) return { ok: 0, failed: [] };
 
-	const total = activities.length;
-	const failed: BulkResult['failed'] = [];
 	// Indexed by input position rather than pushed as fetches finish, so the
 	// merge never depends on which response happened to arrive first.
 	const fetched: (MergeSource | undefined)[] = [];
-	let completed = 0;
-
-	onProgress?.({ stage: 'downloading', completed, total });
-
-	// Same concurrency profile as the bulk-zip path - Strava handles three
-	// in-flight requests from a logged-in session comfortably.
-	const concurrency = 3;
-	let cursor = 0;
-	await Promise.all(
-		Array.from({ length: concurrency }, async () => {
-			while (cursor < total) {
-				const i = cursor++;
-				const a = activities[i]!;
-				try {
-					const res = await fetch(exportUrl(a.id, 'gpx'), {
-						method: 'GET',
-						credentials: 'same-origin',
-					});
-					if (!res.ok) {
-						failed.push({ id: a.id, reason: `HTTP ${res.status}` });
-					} else {
-						fetched[i] = { id: a.id, name: a.name, xml: await res.text() };
-					}
-				} catch (e) {
-					const message = e instanceof Error ? e.message : String(e);
-					failed.push({ id: a.id, reason: message });
-				}
-				completed++;
-				onProgress?.({ stage: 'downloading', completed, total });
-			}
-		}),
-	);
-
+	const failed = await fetchAll(activities, 'gpx', options, async (a, res, i) => {
+		fetched[i] = { id: a.id, name: a.name, xml: await res.text() };
+	});
 	const sources = fetched.filter((s): s is MergeSource => s !== undefined);
 
 	if (sources.length === 0) {
-		throw new Error(`All ${total} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
+		throw new Error(`All ${activities.length} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
 	}
 
-	onProgress?.({ stage: 'merging' });
+	options.onProgress?.({ stage: 'merging' });
 	const merged = mergeGpxDocuments(sources);
+	options.signal?.throwIfAborted();
 	const blob = new Blob([merged], { type: 'application/gpx+xml' });
 	downloadBlob(`strava_merged_${today()}.gpx`, blob);
 	return { ok: sources.length, failed };

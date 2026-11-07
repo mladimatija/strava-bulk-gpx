@@ -181,6 +181,33 @@
 			}
 		}
 	},
+	"cancel": {
+		"message": "취소"
+	},
+	"cancelled": {
+		"message": "취소됨 - 저장된 항목이 없습니다."
+	},
+	"retryFailed": {
+		"message": "실패한 $COUNT$개 다시 시도",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "실패한 활동 보기"
+	},
+	"rateLimited": {
+		"message": "Strava가 요청을 제한하고 있습니다 - $SECONDS$초 후 다시 시도…",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
 	"csvActivityId": {
 		"message": "활동 ID"
 	},

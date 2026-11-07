@@ -181,6 +181,33 @@
 			}
 		}
 	},
+	"cancel": {
+		"message": "Abbrechen"
+	},
+	"cancelled": {
+		"message": "Abgebrochen - nichts gespeichert."
+	},
+	"retryFailed": {
+		"message": "$COUNT$ fehlgeschlagene erneut versuchen",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"showFailures": {
+		"message": "Fehlgeschlagene Aktivitäten anzeigen"
+	},
+	"rateLimited": {
+		"message": "Strava begrenzt Anfragen - neuer Versuch in $SECONDS$ s …",
+		"placeholders": {
+			"seconds": {
+				"content": "$1",
+				"example": "10"
+			}
+		}
+	},
 	"csvActivityId": {
 		"message": "Aktivitäts-ID"
 	},
