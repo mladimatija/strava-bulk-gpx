@@ -8,6 +8,7 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 - **Merged GPX track order.** Tracks were written in whatever order the parallel downloads finished; they're now sorted by start time, so a multi-day trip reads day 1 → day N.
 - **Merged GPX schema order.** A source's `<wpt>` waypoints could land after another source's `<trk>`; all waypoints, then routes, then tracks are now emitted across the whole document, as GPX 1.1 requires.
+- **Lost files in Original zips.** Two uploads with the same original filename overwrote each other in the zip; duplicates are now renamed `name-2.fit`, `name-3.fit`, ….
 
 ## [1.1.0] - 2026-11-05
 

@@ -2,6 +2,7 @@
 // content script already mounted (see tests/fixtures/extension.ts).
 
 import { readFileSync } from 'node:fs';
+import JSZip from 'jszip';
 import { test, expect, type Page } from '../fixtures/extension.ts';
 
 interface CapturedClick {
@@ -344,6 +345,15 @@ async function downloadFrom(page: Page, action: () => Promise<void>): Promise<{ 
 	return { name: download.suggestedFilename(), bytes: readFileSync(await download.path()) };
 }
 
+/** Sorted file paths inside a zip (folder entries left out). */
+async function zipFileNames(bytes: Buffer): Promise<string[]> {
+	const zip = await JSZip.loadAsync(bytes);
+	return Object.values(zip.files)
+		.filter((f) => !f.dir)
+		.map((f) => f.name)
+		.sort();
+}
+
 test.describe('merge ordering', () => {
 	test('merged tracks are chronological whatever order the responses arrive in', async ({ extensionPage }) => {
 		// Rows are listed newest first (01, 02, 03); the delays make responses
@@ -373,5 +383,24 @@ test.describe('merge ordering', () => {
 		expect(positions.every((p) => p >= 0)).toBe(true);
 		expect(positions).toEqual([...positions].sort((a, b) => a - b));
 		expect(merged.indexOf('<wpt')).toBeLessThan(merged.indexOf('<trk'));
+	});
+});
+
+test.describe('zip entries', () => {
+	test('Original uploads that share a filename all survive in the zip', async ({ extensionPage }) => {
+		// JSZip silently replaces same-named entries, so without de-duplication
+		// two of these three files would vanish from the archive.
+		await extensionPage.route('**/activities/*/export_original', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/octet-stream',
+				headers: { 'Content-Disposition': 'attachment; filename="activity.fit"' },
+				body: `FIT ${idFromUrl(route.request().url())}`,
+			});
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('original');
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual(['activity-2.fit', 'activity-3.fit', 'activity.fit']);
 	});
 });

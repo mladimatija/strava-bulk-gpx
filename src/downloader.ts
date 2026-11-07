@@ -79,6 +79,25 @@ function sanitizeFilename(name: string): string {
 	return name.replace(/[/\\?%*:|"<>]/g, '_').trim() || 'activity';
 }
 
+/** Extension of a filename including the dot - `.fit`, `.fit.gz` - or "" when there is none. */
+function fileExtension(name: string): string {
+	return /(\.[a-z0-9]{1,5}(?:\.gz)?)$/i.exec(name)?.[1] ?? '';
+}
+
+/**
+ * Claim `path` in `used`, appending -2, -3, … before the extension when it's
+ * taken. Compared case-insensitively, since macOS and Windows file systems
+ * would collide on extraction anyway.
+ */
+function uniquePath(path: string, used: Set<string>): string {
+	const ext = fileExtension(path);
+	const stem = path.slice(0, path.length - ext.length);
+	let candidate = path;
+	for (let n = 2; used.has(candidate.toLowerCase()); n++) candidate = `${stem}-${n}${ext}`;
+	used.add(candidate.toLowerCase());
+	return candidate;
+}
+
 /**
  * Per-row download. Fires a same-origin anchor click - Strava streams the file
  * via the browser's download manager. Returns a resolved promise so callers
@@ -130,6 +149,8 @@ export async function downloadBulk(
 
 	const total = activities.length;
 	const zip = new JSZip();
+	// Zip paths already taken - see uniquePath.
+	const used = new Set<string>();
 	const failed: BulkResult['failed'] = [];
 	let completed = 0;
 
@@ -165,7 +186,9 @@ export async function downloadBulk(
 						} else {
 							entryName = `strava_${a.id}.${format}`;
 						}
-						zip.file(entryName, blob);
+						// JSZip silently replaces an entry with the same name, so two
+						// uploads that share a filename would otherwise lose one file.
+						zip.file(uniquePath(entryName, used), blob);
 					}
 				} catch (e) {
 					const message = e instanceof Error ? e.message : String(e);
