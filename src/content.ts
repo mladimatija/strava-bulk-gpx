@@ -11,18 +11,20 @@
 //     table body (pagination, search, sort). Selection state survives via a
 //     module-scope Map keyed by activity id, so a selection can span pages.
 
-import {
-	downloadSingle,
-	downloadBulk,
-	downloadMergedGpx,
-	downloadActivitiesCsv,
-	type BulkOptions,
-} from './downloader.ts';
+import { downloadSingle, downloadBulk, downloadMerged, downloadActivitiesCsv, type BulkOptions } from './downloader.ts';
 import { activityIdsFromCsv } from './csv.ts';
 import { clearHistory, exportedAt, exportedTotal, loadHistory, recordExports } from './history.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
 import { t } from './i18n.ts';
-import type { ActivityColumn, ActivityRow, ExportFormat, NamePattern, ProgressEvent, StatusKind } from './types.ts';
+import type {
+	ActivityColumn,
+	ActivityRow,
+	ExportFormat,
+	MergeMode,
+	NamePattern,
+	ProgressEvent,
+	StatusKind,
+} from './types.ts';
 
 const KOFI_URL = 'https://ko-fi.com/D1D51ZGOQK';
 
@@ -60,6 +62,8 @@ interface State {
 	format: ExportFormat;
 	/** How downloaded files are named. */
 	names: NamePattern;
+	/** How a GPX merge combines activities (a TCX merge always makes one). */
+	mergeMode: MergeMode;
 	/** Aborts the in-flight bulk/merge run; null when idle. */
 	abort: AbortController | null;
 	/**
@@ -78,6 +82,7 @@ const STATE: State = {
 	busy: false,
 	format: 'gpx',
 	names: 'id',
+	mergeMode: 'tracks',
 	abort: null,
 	lastRun: null,
 	anchorId: null,
@@ -85,6 +90,7 @@ const STATE: State = {
 
 const FORMAT_STORAGE_KEY = 'exportFormat';
 const NAMES_STORAGE_KEY = 'namePattern';
+const MERGE_MODE_STORAGE_KEY = 'mergeMode';
 
 /** Narrow an untrusted stored value to a known format, defaulting to gpx. */
 function parseFormat(value: unknown): ExportFormat {
@@ -96,12 +102,18 @@ function parseNames(value: unknown): NamePattern {
 	return value === 'title' || value === 'sport' ? value : 'id';
 }
 
+/** Narrow an untrusted stored value to a known merge mode, defaulting to tracks. */
+function parseMergeMode(value: unknown): MergeMode {
+	return value === 'single' ? value : 'tracks';
+}
+
 /** Restore the last-used format and name pattern; storage failures keep the defaults. */
 async function loadPreferences(): Promise<void> {
 	try {
-		const stored = await chrome.storage.local.get([FORMAT_STORAGE_KEY, NAMES_STORAGE_KEY]);
+		const stored = await chrome.storage.local.get([FORMAT_STORAGE_KEY, NAMES_STORAGE_KEY, MERGE_MODE_STORAGE_KEY]);
 		STATE.format = parseFormat(stored[FORMAT_STORAGE_KEY]);
 		STATE.names = parseNames(stored[NAMES_STORAGE_KEY]);
+		STATE.mergeMode = parseMergeMode(stored[MERGE_MODE_STORAGE_KEY]);
 	} catch {
 		// Keep the defaults - a broken storage area shouldn't block exports.
 	}
@@ -345,6 +357,13 @@ function buildToolbar(): HTMLDivElement {
       <details class="sbgx-more" data-role="more">
         <summary class="sbgx-btn" title="${escapeHtml(t('moreOptions'))}">⋯</summary>
         <div class="sbgx-menu">
+          <label class="sbgx-menu-field">
+            <span class="sbgx-menu-heading">${escapeHtml(t('mergeModeLabel'))}</span>
+            <select class="sbgx-format" data-role="merge-mode">
+              <option value="tracks">${escapeHtml(t('mergeModeTracks'))}</option>
+              <option value="single">${escapeHtml(t('mergeModeSingle'))}</option>
+            </select>
+          </label>
           <span class="sbgx-menu-heading">${escapeHtml(t('historyHeading'))}</span>
           <button class="sbgx-btn" data-role="history-import"></button>
           <input type="file" accept=".csv,text/csv" data-role="history-file" hidden />
@@ -432,14 +451,23 @@ function buildToolbar(): HTMLDivElement {
 }
 
 /**
- * The "⋯" menu holds rarely used actions - for now, export history:
- * marking activities from an earlier CSV as exported (so existing users
- * don't start with everything "new"), and forgetting the history.
+ * The "⋯" menu holds settings and actions that are rarely touched: how GPX
+ * merges combine activities, and export history - marking activities from
+ * an earlier CSV as exported (so existing users don't start with everything
+ * "new"), and forgetting the history.
  */
 function wireMoreMenu(toolbar: HTMLDivElement): void {
 	const more = toolbarPart<HTMLDetailsElement>(toolbar, 'more');
 	document.addEventListener('click', (e) => {
 		if (more.open && !more.contains(e.target as Node)) more.open = false;
+	});
+
+	const mergeModeSelect = toolbarPart<HTMLSelectElement>(toolbar, 'merge-mode');
+	mergeModeSelect.value = STATE.mergeMode;
+	mergeModeSelect.addEventListener('change', () => {
+		STATE.mergeMode = parseMergeMode(mergeModeSelect.value);
+		savePreference(MERGE_MODE_STORAGE_KEY, STATE.mergeMode);
+		renderToolbarCounts();
 	});
 
 	const fileInput = toolbarPart<HTMLInputElement>(toolbar, 'history-file');
@@ -556,21 +584,32 @@ function renderToolbarCounts(): void {
 	selectNewBtn.title = t('selectNewTitle', label);
 	toolbarPart(STATE.toolbar, 'history-import').textContent = t('historyImport', label);
 	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'history-forget').disabled = exportedTotal() === 0;
-	// Merge is GPX-only - TCX and Original files aren't trivially concatenable
-	// into one document. Rather than hide the button silently (which leaves
-	// users wondering where it went after switching format), keep it visible
-	// but disabled, with a tooltip explaining the constraint. Easier to learn.
+	// GPX and TCX can be merged; Original files (mostly binary FIT) can't.
+	// Rather than hide the button in Original mode (which leaves users
+	// wondering where it went after switching format), keep it visible but
+	// disabled, with a tooltip explaining the constraint. Easier to learn.
+	// The label and tooltip say what the merge will produce.
 	//
 	// Use setAttribute/removeAttribute explicitly - setting `.title = ''` is
 	// inconsistent across Chromium versions about whether the empty `title`
 	// attribute lingers in the DOM, which trips up attribute-based assertions
 	// in the e2e suite.
-	const mergeAvailable = STATE.format === 'gpx';
+	const mergeAvailable = STATE.format !== 'original';
 	mergeBtn.disabled = !mergeAvailable || total === 0 || STATE.busy;
-	if (mergeAvailable) {
-		mergeBtn.removeAttribute('title');
+	const joining = STATE.format === 'gpx' && STATE.mergeMode === 'single';
+	const mergeLabel = STATE.format === 'tcx' ? t('mergeSelectedTcx') : joining ? t('joinSelected') : t('mergeSelected');
+	if (mergeBtn.textContent !== mergeLabel) mergeBtn.textContent = mergeLabel;
+	const mergeTitle = !mergeAvailable
+		? t('mergeNotOriginal')
+		: STATE.format === 'tcx'
+			? t('mergeTcxTitle')
+			: joining
+				? t('joinTitle')
+				: null;
+	if (mergeTitle) {
+		mergeBtn.setAttribute('title', mergeTitle);
 	} else {
-		mergeBtn.setAttribute('title', t('mergeOnlyGpx'));
+		mergeBtn.removeAttribute('title');
 	}
 
 	const allCb = STATE.toolbar.querySelector<HTMLInputElement>('.sbgx-select-all-cb')!;
@@ -687,7 +726,7 @@ function collectSelectedActivities(): ActivityRow[] {
 }
 
 /** Map a downloader progress event onto the status line. */
-function showProgress(ev: ProgressEvent): void {
+function showProgress(ev: ProgressEvent, format: ExportFormat): void {
 	if (ev.stage === 'downloading') {
 		setStatus(t('downloadingProgress', [String(ev.completed), String(ev.total)]), 'info', { spinner: true });
 	} else if (ev.stage === 'throttled') {
@@ -695,7 +734,7 @@ function showProgress(ev: ProgressEvent): void {
 	} else if (ev.stage === 'zipping') {
 		setStatus(t('buildingZip'), 'info', { spinner: true });
 	} else {
-		setStatus(t('mergingGpx'), 'info', { spinner: true });
+		setStatus(format === 'tcx' ? t('mergingTcx') : t('mergingGpx'), 'info', { spinner: true });
 	}
 }
 
@@ -714,10 +753,17 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 	renderToolbarCounts();
 	renderFailures();
 	setStatus(t('preparingDownloads', String(activities.length)), 'info', { spinner: true });
-	const options: BulkOptions = { onProgress: showProgress, signal: controller.signal, names: STATE.names };
+	const options: BulkOptions = {
+		onProgress: (ev) => showProgress(ev, format),
+		signal: controller.signal,
+		names: STATE.names,
+	};
+	const mergeMode = STATE.mergeMode;
 	try {
 		const result =
-			mode === 'merge' ? await downloadMergedGpx(activities, options) : await downloadBulk(activities, format, options);
+			mode === 'merge'
+				? await downloadMerged(activities, format === 'tcx' ? 'tcx' : 'gpx', mergeMode, options)
+				: await downloadBulk(activities, format, options);
 		if (mode === 'zip') {
 			const failedIds = new Set(result.failed.map((f) => f.id));
 			rememberExports(
@@ -734,7 +780,7 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 				retryFormat: mode === 'zip' ? format : null,
 			};
 		} else {
-			setStatus(mode === 'merge' ? t('savedMerged', String(result.ok)) : t('savedActivities', String(result.ok)), 'ok');
+			setStatus(savedMessage(mode, format, mergeMode, result.ok), 'ok');
 		}
 	} catch (err) {
 		if (controller.signal.aborted) {
@@ -751,19 +797,26 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 	}
 }
 
+/** The success message for a fully successful run of `count` activities. */
+function savedMessage(mode: 'zip' | 'merge', format: ExportFormat, mergeMode: MergeMode, count: number): string {
+	if (mode === 'zip') return t('savedActivities', String(count));
+	if (format === 'tcx') return t('savedMergedTcx', String(count));
+	return mergeMode === 'single' ? t('savedJoined', String(count)) : t('savedMerged', String(count));
+}
+
 function handleBulkClick(): Promise<void> {
 	return runExport(collectSelectedActivities(), STATE.format, 'zip');
 }
 
 /**
  * Merge-mode bulk handler. Same fetch pool as {@link handleBulkClick} but
- * emits a single combined .gpx instead of a zip of per-activity files. Only
- * sensible when STATE.format === 'gpx'; the button is disabled otherwise, but
- * we still gate defensively in case the user clicked between format changes.
+ * emits a single combined GPX or TCX instead of a zip of per-activity files.
+ * Not possible for Original; the button is disabled then, but we still gate
+ * defensively in case the user clicked between format changes.
  */
 function handleMergeClick(): Promise<void> {
-	if (STATE.format !== 'gpx') return Promise.resolve();
-	return runExport(collectSelectedActivities(), 'gpx', 'merge');
+	if (STATE.format === 'original') return Promise.resolve();
+	return runExport(collectSelectedActivities(), STATE.format, 'merge');
 }
 
 /** Re-run a zip run's failures only, in the format that run used. */

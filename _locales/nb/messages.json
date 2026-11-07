@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "Sammenslåing er bare tilgjengelig i GPX-modus"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ valgt ($HIDDEN$ ikke på denne siden)",
 		"placeholders": {
@@ -284,5 +281,63 @@
 	},
 	"historyForgotten": {
 		"message": "Eksporthistorikken er tømt."
+	},
+	"mergeModeLabel": {
+		"message": "Slå sammen GPX til"
+	},
+	"mergeModeTracks": {
+		"message": "Separate spor (for kart)"
+	},
+	"mergeModeSingle": {
+		"message": "Én aktivitet (for ny opplasting)"
+	},
+	"joinSelected": {
+		"message": "Slå sammen valgte til én aktivitet"
+	},
+	"joinTitle": {
+		"message": "Ett spor med hver aktivitet som et segment, i tidsrekkefølge - for å laste opp til Strava som én aktivitet. Slett originalene først, ellers kan Strava avvise den som duplikat."
+	},
+	"mergeSelectedTcx": {
+		"message": "Slå sammen valgte til én TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Én aktivitet med hver valgte aktivitet som en runde, i tidsrekkefølge."
+	},
+	"mergeNotOriginal": {
+		"message": "Sammenslåing fungerer i GPX- og TCX-modus, ikke for originalfiler"
+	},
+	"mergingTcx": {
+		"message": "Slår sammen til én TCX…"
+	},
+	"savedJoined": {
+		"message": "Lagret én aktivitet satt sammen av $COUNT$ aktiviteter.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Lagret sammenslått TCX med $COUNT$ aktiviteter.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Kan ikke slå sammen aktiviteter som overlapper i tid: $FIRST$ og $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
 	}
 }

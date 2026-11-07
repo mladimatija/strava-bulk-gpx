@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "Samenvoegen is alleen beschikbaar in GPX-modus"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ geselecteerd ($HIDDEN$ niet op deze pagina)",
 		"placeholders": {
@@ -284,5 +281,63 @@
 	},
 	"historyForgotten": {
 		"message": "Exportgeschiedenis gewist."
+	},
+	"mergeModeLabel": {
+		"message": "GPX samenvoegen tot"
+	},
+	"mergeModeTracks": {
+		"message": "Aparte tracks (voor kaarten)"
+	},
+	"mergeModeSingle": {
+		"message": "Eén activiteit (om opnieuw te uploaden)"
+	},
+	"joinSelected": {
+		"message": "Selectie samenvoegen tot één activiteit"
+	},
+	"joinTitle": {
+		"message": "Eén track met elke activiteit als segment, in tijdsvolgorde - om als één activiteit naar Strava te uploaden. Verwijder eerst de originelen, anders weigert Strava hem mogelijk als duplicaat."
+	},
+	"mergeSelectedTcx": {
+		"message": "Selectie samenvoegen tot één TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Eén activiteit met elke geselecteerde activiteit als ronde, in tijdsvolgorde."
+	},
+	"mergeNotOriginal": {
+		"message": "Samenvoegen werkt in GPX- en TCX-modus, niet voor originele bestanden"
+	},
+	"mergingTcx": {
+		"message": "Samenvoegen tot één TCX…"
+	},
+	"savedJoined": {
+		"message": "Eén activiteit opgeslagen, samengevoegd uit $COUNT$ activiteiten.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Samengevoegde TCX met $COUNT$ activiteiten opgeslagen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Activiteiten die in tijd overlappen kunnen niet worden samengevoegd: $FIRST$ en $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
 	}
 }

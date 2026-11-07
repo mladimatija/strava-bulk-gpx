@@ -48,7 +48,6 @@ export type MessageKey =
 	| 'mergeSelected'
 	| 'mergingGpx'
 	| 'savedMerged'
-	| 'mergeOnlyGpx'
 	| 'selectedCountWithHidden'
 	| 'clearSelection'
 	| 'namesLabel'
@@ -77,7 +76,19 @@ export type MessageKey =
 	| 'historyImportEmpty'
 	| 'historyForget'
 	| 'historyForgetConfirm'
-	| 'historyForgotten';
+	| 'historyForgotten'
+	| 'mergeModeLabel'
+	| 'mergeModeTracks'
+	| 'mergeModeSingle'
+	| 'joinSelected'
+	| 'joinTitle'
+	| 'mergeSelectedTcx'
+	| 'mergeTcxTitle'
+	| 'mergeNotOriginal'
+	| 'mergingTcx'
+	| 'savedJoined'
+	| 'savedMergedTcx'
+	| 'mergeOverlap';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -108,7 +119,6 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	mergeSelected: 'Merge selected into one GPX',
 	mergingGpx: 'Merging into one GPX…',
 	savedMerged: 'Saved merged GPX with $1 activities.',
-	mergeOnlyGpx: 'Merging is only available in GPX mode',
 	selectedCountWithHidden: '$1 selected ($2 not on this page)',
 	clearSelection: 'Clear selection',
 	namesLabel: 'Names:',
@@ -138,6 +148,19 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	historyForget: 'Forget export history',
 	historyForgetConfirm: 'Click again to confirm',
 	historyForgotten: 'Export history cleared.',
+	mergeModeLabel: 'Merge GPX into',
+	mergeModeTracks: 'Separate tracks (for maps)',
+	mergeModeSingle: 'One activity (for re-upload)',
+	joinSelected: 'Join selected into one activity',
+	joinTitle:
+		'One track with each activity as a segment, in time order - for uploading to Strava as a single activity. Delete the originals first, or Strava may reject it as a duplicate.',
+	mergeSelectedTcx: 'Merge selected into one TCX',
+	mergeTcxTitle: 'One activity with each selected activity as a lap, in time order.',
+	mergeNotOriginal: 'Merging works in GPX and TCX modes, not for Original files',
+	mergingTcx: 'Merging into one TCX…',
+	savedJoined: 'Saved one activity joined from $1 activities.',
+	savedMergedTcx: 'Saved merged TCX with $1 activities.',
+	mergeOverlap: "Can't join activities that overlap in time: $1 and $2",
 };
 
 /**

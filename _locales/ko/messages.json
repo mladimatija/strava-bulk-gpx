@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "병합은 GPX 모드에서만 사용할 수 있습니다"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$개 선택됨 (이 페이지 밖 $HIDDEN$개)",
 		"placeholders": {
@@ -284,5 +281,63 @@
 	},
 	"historyForgotten": {
 		"message": "내보내기 기록을 지웠습니다."
+	},
+	"mergeModeLabel": {
+		"message": "GPX 병합 방식"
+	},
+	"mergeModeTracks": {
+		"message": "개별 트랙 (지도용)"
+	},
+	"mergeModeSingle": {
+		"message": "하나의 활동 (다시 업로드용)"
+	},
+	"joinSelected": {
+		"message": "선택 항목을 하나의 활동으로 결합"
+	},
+	"joinTitle": {
+		"message": "각 활동을 시간순 구간으로 담은 하나의 트랙입니다. Strava에 하나의 활동으로 업로드할 때 사용하세요. 중복으로 거부되지 않도록 원본 활동을 먼저 삭제하세요."
+	},
+	"mergeSelectedTcx": {
+		"message": "선택 항목을 하나의 TCX로 병합"
+	},
+	"mergeTcxTitle": {
+		"message": "선택한 각 활동을 시간순 랩으로 담은 하나의 활동입니다."
+	},
+	"mergeNotOriginal": {
+		"message": "병합은 GPX와 TCX 모드에서만 가능하며 원본 파일은 병합할 수 없습니다"
+	},
+	"mergingTcx": {
+		"message": "하나의 TCX로 병합 중…"
+	},
+	"savedJoined": {
+		"message": "$COUNT$개 활동을 결합한 하나의 활동을 저장했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "$COUNT$개 활동이 담긴 병합 TCX를 저장했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "시간이 겹치는 활동은 결합할 수 없습니다: $FIRST$, $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
 	}
 }

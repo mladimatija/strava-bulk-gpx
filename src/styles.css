@@ -204,6 +204,12 @@
 .sbgx-menu .sbgx-btn {
 	text-align: left;
 }
+.sbgx-menu-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	margin-bottom: 4px;
+}
 .sbgx-menu-heading {
 	color: #6d7177;
 	font-size: 12px;

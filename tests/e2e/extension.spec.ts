@@ -208,11 +208,12 @@ test.describe('Strava Bulk GPX extension', () => {
 		expect(click.download).toBeNull();
 	});
 
-	test('merge button stays visible but disables with a tooltip outside GPX mode', async ({ extensionPage }) => {
+	test('merge button adapts to the format and disables with a tooltip for Original', async ({ extensionPage }) => {
 		const mergeBtn = extensionPage.locator('[data-role="merge"]');
+		const format = extensionPage.locator('select[data-role="format"]');
 		// The default format is GPX, so the button starts visible, disabled
 		// (nothing selected yet), and has NO `title` attribute. The content
-		// script explicitly removes the attribute when merge is available,
+		// script explicitly removes the attribute in the default GPX mode,
 		// rather than leaving an empty `title=""` hanging around.
 		await expect(mergeBtn).toBeVisible();
 		await expect(mergeBtn).toBeDisabled();
@@ -222,36 +223,45 @@ test.describe('Strava Bulk GPX extension', () => {
 		// instead of disable) must NOT be present - if it is, dist/ is stale.
 		await expect(mergeBtn).not.toHaveAttribute('hidden', /.*/);
 
-		// Switching to TCX keeps it visible but disabled, with a tooltip
-		// explaining the limitation - more discoverable than hiding silently.
-		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		// TCX merges into one activity; label and tooltip say so.
+		await format.selectOption('tcx');
+		await expect(mergeBtn).toHaveText('Merge selected into one TCX');
+		await expect(mergeBtn).toHaveAttribute(
+			'title',
+			'One activity with each selected activity as a lap, in time order.',
+		);
+
+		// Original can't be merged: still visible, disabled, with a tooltip
+		// explaining why - more discoverable than hiding silently.
+		await format.selectOption('original');
 		await expect(mergeBtn).toBeVisible();
 		await expect(mergeBtn).toBeDisabled();
-		await expect(mergeBtn).toHaveAttribute('title', 'Merging is only available in GPX mode');
-
-		await extensionPage.locator('select[data-role="format"]').selectOption('original');
-		await expect(mergeBtn).toBeDisabled();
-		await expect(mergeBtn).toHaveAttribute('title', 'Merging is only available in GPX mode');
+		await expect(mergeBtn).toHaveAttribute('title', 'Merging works in GPX and TCX modes, not for Original files');
 
 		// Back to GPX - tooltip is removed, button can become enabled once
 		// rows are selected.
-		await extensionPage.locator('select[data-role="format"]').selectOption('gpx');
+		await format.selectOption('gpx');
+		await expect(mergeBtn).toHaveText('Merge selected into one GPX');
 		await expect(mergeBtn).not.toHaveAttribute('title', /.+/);
 	});
 
-	test('merge button stays disabled in non-GPX modes even when rows are selected', async ({ extensionPage }) => {
-		// Regression guard: selecting rows must NOT bypass the GPX-only
+	test('merge button stays disabled for Original even when rows are selected', async ({ extensionPage }) => {
+		// Regression guard: selecting rows must NOT bypass the Original-mode
 		// constraint. Without this check, a user who selected rows in GPX
-		// mode and then switched a format could click merge and trigger
-		// a confusing failure.
+		// mode and then switched format could click merge and trigger a
+		// confusing failure.
 		const mergeBtn = extensionPage.locator('[data-role="merge"]');
+		const format = extensionPage.locator('select[data-role="format"]');
 		await extensionPage.locator('.sbgx-select-all-cb').check();
 		await expect(mergeBtn).toBeEnabled();
 
-		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		await format.selectOption('original');
 		await expect(mergeBtn).toBeDisabled();
 
-		await extensionPage.locator('select[data-role="format"]').selectOption('gpx');
+		await format.selectOption('tcx');
+		await expect(mergeBtn).toBeEnabled();
+
+		await format.selectOption('gpx');
 		await expect(mergeBtn).toBeEnabled();
 	});
 
@@ -801,5 +811,126 @@ test.describe('export history', () => {
 		await expect(done.nth(0)).toBeVisible();
 		await expect(done.nth(1)).toBeHidden();
 		await expect(done.nth(2)).toBeVisible();
+	});
+});
+
+/** A GPX with two timed track points `minutes` apart, starting at `start`, typed as a run. */
+function timedGpx(id: string, start: string, minutes: number): string {
+	const t0 = Date.parse(start);
+	const point = (offset: number) =>
+		`<trkpt lat="45.0" lon="13.0"><time>${new Date(t0 + offset * 60_000).toISOString()}</time></trkpt>`;
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Strava" xmlns="http://www.topografix.com/GPX/1/1"><metadata><time>${start}</time></metadata>
+  <trk><name>activity-${id}</name><type>running</type><trkseg>${point(0)}${point(minutes)}</trkseg></trk>
+</gpx>`;
+}
+
+/** A one-lap TCX activity with a trackpoint per cumulative distance, a minute apart. */
+function tcxBody(sport: string, start: string, distances: number[]): string {
+	const t0 = Date.parse(start);
+	const points = distances
+		.map(
+			(d, i) =>
+				`<Trackpoint><Time>${new Date(t0 + i * 60_000).toISOString()}</Time><DistanceMeters>${d}</DistanceMeters></Trackpoint>`,
+		)
+		.join('');
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"><Activities><Activity Sport="${sport}"><Id>${start}</Id><Lap StartTime="${start}"><TotalTimeSeconds>${(distances.length - 1) * 60}</TotalTimeSeconds><DistanceMeters>${distances.at(-1)}</DistanceMeters><Track>${points}</Track></Lap><Notes>${sport} notes</Notes></Activity></Activities></TrainingCenterDatabase>`;
+}
+
+/** Switch the "⋯" menu's GPX merge setting. */
+async function setMergeMode(page: Page, mode: 'tracks' | 'single'): Promise<void> {
+	await page.locator('[data-role="more"] > summary').click();
+	await page.locator('select[data-role="merge-mode"]').selectOption(mode);
+	await page.locator('[data-role="more"] > summary').click();
+}
+
+test.describe('merge modes', () => {
+	test('"One activity" joins the tracks into one, a segment per activity in time order', async ({ extensionPage }) => {
+		const starts: Record<string, string> = {
+			'9000000001': '2026-05-09T07:00:00.000Z',
+			'9000000002': '2026-05-08T07:00:00.000Z',
+			'9000000003': '2026-05-06T07:00:00.000Z',
+		};
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: timedGpx(id, starts[id]!, 60) });
+		});
+		await setMergeMode(extensionPage, 'single');
+		const mergeBtn = extensionPage.locator('[data-role="merge"]');
+		await expect(mergeBtn).toHaveText('Join selected into one activity');
+		await expect(mergeBtn).toHaveAttribute('title', /for uploading to Strava as a single activity/);
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { name, bytes } = await downloadFrom(extensionPage, () => mergeBtn.click());
+		expect(name).toMatch(/^strava_joined_\d{4}-\d{2}-\d{2}\.gpx$/);
+		const joined = bytes.toString('utf8');
+		expect(joined.match(/<trk[\s>]/g)).toHaveLength(1);
+		expect(joined.match(/<trkseg[\s>]/g)).toHaveLength(3);
+		// Named and typed after the earliest activity; <type> precedes the segments.
+		expect(joined).toContain('<trk><name>activity-9000000003</name><type>running</type><trkseg>');
+		const order = ['2026-05-06', '2026-05-08', '2026-05-09'].map((day) => joined.indexOf(`<time>${day}T07:00`));
+		expect(order.every((i) => i > 0)).toBe(true);
+		expect(order).toEqual([...order].sort((a, b) => a - b));
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText(
+			'Saved one activity joined from 3 activities.',
+		);
+	});
+
+	test('joining refuses activities that overlap in time', async ({ extensionPage }) => {
+		// 02 runs 07:00-08:00; 01 starts at 07:30 the same day.
+		const starts: Record<string, string> = {
+			'9000000001': '2026-05-08T07:30:00.000Z',
+			'9000000002': '2026-05-08T07:00:00.000Z',
+		};
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: timedGpx(id, starts[id]!, 60) });
+		});
+		let downloads = 0;
+		extensionPage.on('download', () => downloads++);
+		await setMergeMode(extensionPage, 'single');
+		await extensionPage.locator('.sbgx-row-cb').nth(0).check();
+		await extensionPage.locator('.sbgx-row-cb').nth(1).check();
+		await extensionPage.locator('[data-role="merge"]').click();
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText(
+			"Failed: Can't join activities that overlap in time: Lunch Trail Run and Traversa v19 feat. Ex Acini Novi Šćapi",
+		);
+		expect(downloads).toBe(0);
+	});
+
+	test('TCX merge makes one activity of every lap, with distances carrying on', async ({ extensionPage }) => {
+		const sources: Record<string, [string, string, number[]]> = {
+			'9000000001': ['Running', '2026-05-09T07:00:00.000Z', [0, 1000, 2000]],
+			'9000000002': ['Running', '2026-05-08T07:00:00.000Z', [0, 500]],
+			'9000000003': ['Biking', '2026-05-06T07:00:00.000Z', [0, 300]],
+		};
+		await extensionPage.route('**/activities/*/export_tcx', async (route) => {
+			const [sport, start, distances] = sources[idFromUrl(route.request().url())]!;
+			await route.fulfill({ status: 200, contentType: 'application/xml', body: tcxBody(sport, start, distances) });
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { name, bytes } = await downloadFrom(extensionPage, () =>
+			extensionPage.locator('[data-role="merge"]').click(),
+		);
+		expect(name).toMatch(/^strava_merged_\d{4}-\d{2}-\d{2}\.tcx$/);
+		const merged = bytes.toString('utf8');
+
+		expect(merged.match(/<Activity[\s>]/g)).toHaveLength(1);
+		expect(merged).toContain('<Activity Sport="Other">');
+		const lapStarts = [...merged.matchAll(/<Lap StartTime="([^"]+)"/g)].map((m) => m[1]);
+		expect(lapStarts).toEqual(['2026-05-06T07:00:00.000Z', '2026-05-08T07:00:00.000Z', '2026-05-09T07:00:00.000Z']);
+		// Trackpoint distances continue across activities (Biking 300 m, then
+		// Running 500 m, then Running 2000 m); lap totals stay per lap.
+		const pointDistances = [...merged.matchAll(/<Trackpoint>.*?<DistanceMeters>([^<]+)<\/DistanceMeters>/g)].map((m) =>
+			Number(m[1]),
+		);
+		expect(pointDistances).toEqual([0, 300, 300, 800, 800, 1800, 2800]);
+		const lapTotals = [...merged.matchAll(/<\/TotalTimeSeconds><DistanceMeters>([^<]+)</g)].map((m) => Number(m[1]));
+		expect(lapTotals).toEqual([300, 500, 2000]);
+		// Laps sit before the base activity's <Notes>, as the schema requires.
+		expect(merged.indexOf('<Notes>')).toBeGreaterThan(merged.lastIndexOf('</Lap>'));
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved merged TCX with 3 activities.');
 	});
 });

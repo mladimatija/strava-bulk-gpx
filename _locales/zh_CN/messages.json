@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "合并仅在 GPX 模式下可用"
-	},
 	"selectedCountWithHidden": {
 		"message": "已选择 $COUNT$ 项 (其中 $HIDDEN$ 项不在本页)",
 		"placeholders": {
@@ -284,5 +281,63 @@
 	},
 	"historyForgotten": {
 		"message": "已清除导出历史。"
+	},
+	"mergeModeLabel": {
+		"message": "GPX 合并方式"
+	},
+	"mergeModeTracks": {
+		"message": "分开的轨迹 (用于地图)"
+	},
+	"mergeModeSingle": {
+		"message": "一个活动 (用于重新上传)"
+	},
+	"joinSelected": {
+		"message": "将所选合并为一个活动"
+	},
+	"joinTitle": {
+		"message": "一条轨迹，每个活动按时间顺序作为一个分段，用于作为单个活动上传到 Strava。请先删除原活动，否则 Strava 可能将其视为重复而拒绝。"
+	},
+	"mergeSelectedTcx": {
+		"message": "合并所选为一个 TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "一个活动，每个所选活动按时间顺序作为一圈。"
+	},
+	"mergeNotOriginal": {
+		"message": "合并仅适用于 GPX 和 TCX 模式，不适用于原始文件"
+	},
+	"mergingTcx": {
+		"message": "正在合并为一个 TCX…"
+	},
+	"savedJoined": {
+		"message": "已保存由 $COUNT$ 项活动合并而成的一个活动。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "已保存包含 $COUNT$ 项活动的合并 TCX。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "无法合并时间重叠的活动: $FIRST$ 和 $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
 	}
 }

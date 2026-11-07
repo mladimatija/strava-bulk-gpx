@@ -105,7 +105,7 @@
 	},
 	"mergeSelected": {
 		"message": "Merge selected into one GPX",
-		"description": "Toolbar button next to 'Download selected'. Fetches every selected activity's GPX and emits a single combined .gpx file (one <trk> per activity). Visible only when the format dropdown is set to GPX, since TCX and Original can't be merged the same way."
+		"description": "Merge button label in GPX mode (separate-tracks setting): fetches every selected activity's GPX and saves one combined .gpx with one <trk> per activity."
 	},
 	"mergingGpx": {
 		"message": "Merging into one GPX…",
@@ -117,10 +117,6 @@
 		"placeholders": {
 			"count": { "content": "$1", "example": "5" }
 		}
-	},
-	"mergeOnlyGpx": {
-		"message": "Merging is only available in GPX mode",
-		"description": "Tooltip on the Merge button when the format dropdown is set to TCX or Original. Explains why the button is disabled (TCX/Original files aren't trivially concatenable into a single document)."
 	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ selected ($HIDDEN$ not on this page)",
@@ -264,5 +260,63 @@
 	"historyForgotten": {
 		"message": "Export history cleared.",
 		"description": "Status after the export history has been forgotten."
+	},
+	"mergeModeLabel": {
+		"message": "Merge GPX into",
+		"description": "Label of the '⋯' menu dropdown choosing what a GPX merge produces: separate tracks, or one activity."
+	},
+	"mergeModeTracks": {
+		"message": "Separate tracks (for maps)",
+		"description": "GPX merge option: one track per activity in one file - for viewing a trip in a mapping tool. The default."
+	},
+	"mergeModeSingle": {
+		"message": "One activity (for re-upload)",
+		"description": "GPX merge option: one track with each activity as a segment - for uploading back to Strava as a single activity."
+	},
+	"joinSelected": {
+		"message": "Join selected into one activity",
+		"description": "Merge button label in GPX mode when the merge setting is 'One activity'."
+	},
+	"joinTitle": {
+		"message": "One track with each activity as a segment, in time order - for uploading to Strava as a single activity. Delete the originals first, or Strava may reject it as a duplicate.",
+		"description": "Tooltip on the merge button in 'One activity' mode."
+	},
+	"mergeSelectedTcx": {
+		"message": "Merge selected into one TCX",
+		"description": "Merge button label in TCX mode."
+	},
+	"mergeTcxTitle": {
+		"message": "One activity with each selected activity as a lap, in time order.",
+		"description": "Tooltip on the merge button in TCX mode."
+	},
+	"mergeNotOriginal": {
+		"message": "Merging works in GPX and TCX modes, not for Original files",
+		"description": "Tooltip on the disabled merge button in Original mode (original uploads are mostly binary FIT files)."
+	},
+	"mergingTcx": {
+		"message": "Merging into one TCX…",
+		"description": "Status while the TCX merge step runs (after all files have been fetched)."
+	},
+	"savedJoined": {
+		"message": "Saved one activity joined from $COUNT$ activities.",
+		"description": "Success message after joining activities into one (GPX, 'One activity' mode).",
+		"placeholders": {
+			"count": { "content": "$1", "example": "3" }
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Saved merged TCX with $COUNT$ activities.",
+		"description": "Success message after a TCX merge.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "3" }
+		}
+	},
+	"mergeOverlap": {
+		"message": "Can't join activities that overlap in time: $FIRST$ and $SECOND$",
+		"description": "Error when activities being joined into one (GPX 'One activity' mode, or a TCX merge) overlap in time. FIRST and SECOND are activity titles.",
+		"placeholders": {
+			"first": { "content": "$1", "example": "Morning Run" },
+			"second": { "content": "$2", "example": "Morning Run (watch)" }
+		}
 	}
 }

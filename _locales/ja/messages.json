@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "統合は GPX モードでのみ利用できます"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$件選択中 (このページ以外に$HIDDEN$件)",
 		"placeholders": {
@@ -284,5 +281,63 @@
 	},
 	"historyForgotten": {
 		"message": "エクスポート履歴を消去しました。"
+	},
+	"mergeModeLabel": {
+		"message": "GPX の統合方法"
+	},
+	"mergeModeTracks": {
+		"message": "別々のトラック (地図用)"
+	},
+	"mergeModeSingle": {
+		"message": "1 つのアクティビティ (再アップロード用)"
+	},
+	"joinSelected": {
+		"message": "選択を 1 つのアクティビティに結合"
+	},
+	"joinTitle": {
+		"message": "各アクティビティをセグメントとして時系列順に並べた 1 本のトラック。Strava に 1 つのアクティビティとしてアップロードするためのものです。重複として拒否されないよう、先に元のアクティビティを削除してください。"
+	},
+	"mergeSelectedTcx": {
+		"message": "選択項目を 1 つの TCX に統合"
+	},
+	"mergeTcxTitle": {
+		"message": "選択した各アクティビティを 1 ラップとして時系列順に並べた 1 つのアクティビティ。"
+	},
+	"mergeNotOriginal": {
+		"message": "統合は GPX と TCX モードで使えます。オリジナルファイルは統合できません"
+	},
+	"mergingTcx": {
+		"message": "1 つの TCX に統合中…"
+	},
+	"savedJoined": {
+		"message": "$COUNT$件のアクティビティを結合した 1 つのアクティビティを保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "$COUNT$件のアクティビティを統合した TCX を保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "時間が重なるアクティビティは結合できません: $FIRST$ と $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
 	}
 }

@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "L'unione è disponibile solo in modalità GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "$COUNT$ selezionati ($HIDDEN$ non in questa pagina)",
 		"placeholders": {
@@ -284,5 +281,63 @@
 	},
 	"historyForgotten": {
 		"message": "Cronologia esportazioni cancellata."
+	},
+	"mergeModeLabel": {
+		"message": "Unisci GPX in"
+	},
+	"mergeModeTracks": {
+		"message": "Tracce separate (per le mappe)"
+	},
+	"mergeModeSingle": {
+		"message": "Un'unica attività (da ricaricare)"
+	},
+	"joinSelected": {
+		"message": "Unisci i selezionati in un'attività"
+	},
+	"joinTitle": {
+		"message": "Una traccia con ogni attività come segmento, in ordine cronologico, da caricare su Strava come un'unica attività. Elimina prima le originali, altrimenti Strava potrebbe rifiutarla come duplicato."
+	},
+	"mergeSelectedTcx": {
+		"message": "Unisci i selezionati in un TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Un'attività con ogni attività selezionata come giro, in ordine cronologico."
+	},
+	"mergeNotOriginal": {
+		"message": "L'unione funziona in modalità GPX e TCX, non con i file originali"
+	},
+	"mergingTcx": {
+		"message": "Unione in un TCX…"
+	},
+	"savedJoined": {
+		"message": "Salvata un'attività unita da $COUNT$ attività.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "TCX unito salvato con $COUNT$ attività.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Impossibile unire attività che si sovrappongono nel tempo: $FIRST$ e $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
 	}
 }

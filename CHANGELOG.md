@@ -8,6 +8,8 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 - **Export TCX on activity pages.** Your own activity pages get an **Export TCX** item in Strava's "…" menu, right after Export GPX (Strava serves `/export_tcx` but doesn't list it). Runs as a separate ~1 KB content script on `https://www.strava.com/activities/*`; no new permission.
 - **Export history and Select new.** Activities exported through a zip or a row button are remembered per format in `chrome.storage.local`: a ✓ appears beside the row button (tooltip shows the date), and a new **Select new** button selects only the rows not exported yet in the current format - a weekly backup is Select new → Download selected. Merges, list exports and failed downloads don't count.
+- **Join into one activity (GPX).** A new **⋯ → Merge GPX into → One activity** setting (remembered) turns the merge button into **Join selected into one activity**: `strava_joined_<date>.gpx` has one track with a segment per activity, in time order - the shape to upload back to Strava as a single activity. Activities that overlap in time are refused.
+- **TCX merge.** The merge button now works in TCX mode: one activity whose laps are every selected activity's laps, in time order, with trackpoint distances carrying on and mixed sports set to "Other". Several `<Activity>` elements in one file would be schema-valid, but Strava and Garmin Connect only import one activity per TCX reliably. The button is now disabled only in Original mode.
 - **⋯ menu** on the toolbar, for rarely used actions: mark the activities in an earlier `activities.csv` (ours, or Strava's account archive) as exported, and forget the export history (inline two-click confirmation).
 
 ## [1.2.0] - 2026-11-07

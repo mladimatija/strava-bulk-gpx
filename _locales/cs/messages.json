@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "Slučování je dostupné pouze v režimu GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "Vybráno: $COUNT$ ($HIDDEN$ mimo tuto stránku)",
 		"placeholders": {
@@ -284,5 +281,63 @@
 	},
 	"historyForgotten": {
 		"message": "Historie exportů vymazána."
+	},
+	"mergeModeLabel": {
+		"message": "Sloučit GPX do"
+	},
+	"mergeModeTracks": {
+		"message": "Samostatných tras (pro mapy)"
+	},
+	"mergeModeSingle": {
+		"message": "Jedné aktivity (pro opětovné nahrání)"
+	},
+	"joinSelected": {
+		"message": "Spojit vybrané do jedné aktivity"
+	},
+	"joinTitle": {
+		"message": "Jedna trasa, každá aktivita jako samostatný úsek v časovém pořadí - pro nahrání do Stravy jako jedna aktivita. Nejprve smažte původní aktivity, jinak je Strava může odmítnout jako duplikát."
+	},
+	"mergeSelectedTcx": {
+		"message": "Sloučit vybrané do jednoho TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Jedna aktivita, každá vybraná aktivita jako jedno kolo, v časovém pořadí."
+	},
+	"mergeNotOriginal": {
+		"message": "Slučování funguje v režimu GPX a TCX, ne pro originální soubory"
+	},
+	"mergingTcx": {
+		"message": "Slučuji do jednoho TCX…"
+	},
+	"savedJoined": {
+		"message": "Uložena jedna aktivita spojená z $COUNT$ aktivit.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Uloženo sloučené TCX s $COUNT$ aktivitami.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Nelze spojit aktivity, které se časově překrývají: $FIRST$ a $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
 	}
 }

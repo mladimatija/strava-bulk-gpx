@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "Объединение доступно только в режиме GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "Выбрано: $COUNT$ (не на этой странице: $HIDDEN$)",
 		"placeholders": {
@@ -284,5 +281,63 @@
 	},
 	"historyForgotten": {
 		"message": "История экспорта очищена."
+	},
+	"mergeModeLabel": {
+		"message": "Объединять GPX в"
+	},
+	"mergeModeTracks": {
+		"message": "Отдельные треки (для карт)"
+	},
+	"mergeModeSingle": {
+		"message": "Одну тренировку (для повторной загрузки)"
+	},
+	"joinSelected": {
+		"message": "Соединить выбранные в одну тренировку"
+	},
+	"joinTitle": {
+		"message": "Один трек, где каждая тренировка - отдельный сегмент, по времени. Для загрузки в Strava как одной тренировки. Сначала удалите исходные, иначе Strava может отклонить файл как дубликат."
+	},
+	"mergeSelectedTcx": {
+		"message": "Объединить выбранные в один TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Одна тренировка, где каждая выбранная тренировка - круг, по времени."
+	},
+	"mergeNotOriginal": {
+		"message": "Объединение работает в режимах GPX и TCX, но не для оригинальных файлов"
+	},
+	"mergingTcx": {
+		"message": "Объединение в один TCX…"
+	},
+	"savedJoined": {
+		"message": "Сохранена одна тренировка, соединённая из тренировок: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Сохранён объединённый TCX, тренировок: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Нельзя соединить тренировки, пересекающиеся по времени: $FIRST$ и $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
 	}
 }

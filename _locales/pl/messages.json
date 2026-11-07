@@ -135,9 +135,6 @@
 			}
 		}
 	},
-	"mergeOnlyGpx": {
-		"message": "Łączenie dostępne tylko w trybie GPX"
-	},
 	"selectedCountWithHidden": {
 		"message": "Zaznaczono: $COUNT$ (poza tą stroną: $HIDDEN$)",
 		"placeholders": {
@@ -284,5 +281,63 @@
 	},
 	"historyForgotten": {
 		"message": "Historia eksportu wyczyszczona."
+	},
+	"mergeModeLabel": {
+		"message": "Łącz GPX w"
+	},
+	"mergeModeTracks": {
+		"message": "Osobne ślady (do map)"
+	},
+	"mergeModeSingle": {
+		"message": "Jedną aktywność (do ponownego przesłania)"
+	},
+	"joinSelected": {
+		"message": "Połącz zaznaczone w jedną aktywność"
+	},
+	"joinTitle": {
+		"message": "Jeden ślad z każdą aktywnością jako segmentem, w kolejności czasowej - do przesłania na Stravę jako jedna aktywność. Najpierw usuń oryginały, inaczej Strava może go odrzucić jako duplikat."
+	},
+	"mergeSelectedTcx": {
+		"message": "Połącz zaznaczone w jeden TCX"
+	},
+	"mergeTcxTitle": {
+		"message": "Jedna aktywność z każdą zaznaczoną aktywnością jako okrążeniem, w kolejności czasowej."
+	},
+	"mergeNotOriginal": {
+		"message": "Łączenie działa w trybie GPX i TCX, nie dla plików oryginalnych"
+	},
+	"mergingTcx": {
+		"message": "Łączenie w jeden TCX…"
+	},
+	"savedJoined": {
+		"message": "Zapisano jedną aktywność połączoną z aktywności: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"savedMergedTcx": {
+		"message": "Zapisano połączony TCX z aktywnościami: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "3"
+			}
+		}
+	},
+	"mergeOverlap": {
+		"message": "Nie można połączyć aktywności nakładających się w czasie: $FIRST$ i $SECOND$",
+		"placeholders": {
+			"first": {
+				"content": "$1",
+				"example": "Morning Run"
+			},
+			"second": {
+				"content": "$2",
+				"example": "Morning Run (watch)"
+			}
+		}
 	}
 }
