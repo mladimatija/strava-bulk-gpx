@@ -339,5 +339,32 @@
 				"example": "Morning Run (watch)"
 			}
 		}
+	},
+	"trimLabel": {
+		"message": "Skrýt začátek/konec (jen GPX)"
+	},
+	"trimOff": {
+		"message": "Vypnuto"
+	},
+	"trimTitle": {
+		"message": "Před uložením odstraní body trasy blízko začátku a konce každé aktivity, aby sdílené soubory neprozradily, odkud vyrážíte. Oříznuté soubory končí na _trimmed a už nejsou totožné s exportem ze Stravy. Po opětovném načtení stránky se nastavení vypne."
+	},
+	"trimChip": {
+		"message": "Skrývám $RADIUS$ na začátku a konci",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Vypnout"
+	},
+	"trimOnlyGpx": {
+		"message": "Dostupné jen v režimu GPX"
+	},
+	"trimAllHidden": {
+		"message": "celá trasa leží ve skryté vzdálenosti"
 	}
 }

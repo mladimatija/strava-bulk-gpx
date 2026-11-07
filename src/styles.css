@@ -173,6 +173,27 @@
 	color: #e04500;
 }
 
+/* Shown while Hide start/end applies: files are being modified, so say so
+   where it can't be missed. The ✕ turns it off. */
+.sbgx-trim-chip {
+	gap: 4px;
+	padding: 2px 4px 2px 8px;
+	border-radius: 10px;
+	background: #fff4e5;
+	color: #b06a00;
+	font-weight: 600;
+}
+.sbgx-trim-chip[hidden] {
+	display: none;
+}
+.sbgx-trim-off {
+	border: 0;
+	background: none;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
 /* "⋯" menu for rarely used actions (export history). A <details> keeps it
    dependency-free: the summary is the button, the panel drops down below. */
 .sbgx-more {
@@ -188,7 +209,9 @@
 .sbgx-menu {
 	position: absolute;
 	top: calc(100% + 4px);
-	left: 0;
+	/* Opens leftwards from the button: the "⋯" sits mid-toolbar, and a
+	   rightward panel would spill past the toolbar's edge. */
+	right: 0;
 	z-index: 10;
 	display: flex;
 	flex-direction: column;

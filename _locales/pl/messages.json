@@ -339,5 +339,32 @@
 				"example": "Morning Run (watch)"
 			}
 		}
+	},
+	"trimLabel": {
+		"message": "Ukryj początek/koniec (tylko GPX)"
+	},
+	"trimOff": {
+		"message": "Wyłączone"
+	},
+	"trimTitle": {
+		"message": "Przed zapisem usuwa punkty śladu blisko początku i końca każdej aktywności, aby udostępniane pliki nie pokazywały, skąd startujesz. Przycięte pliki kończą się na _trimmed i nie są już identyczne z eksportem ze Stravy. Resetuje się po przeładowaniu strony."
+	},
+	"trimChip": {
+		"message": "Ukrywanie $RADIUS$ na początku i końcu",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Wyłącz"
+	},
+	"trimOnlyGpx": {
+		"message": "Dostępne tylko w trybie GPX"
+	},
+	"trimAllHidden": {
+		"message": "cały ślad mieści się w ukrytej odległości"
 	}
 }

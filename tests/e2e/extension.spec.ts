@@ -934,3 +934,93 @@ test.describe('merge modes', () => {
 		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved merged TCX with 3 activities.');
 	});
 });
+
+/**
+ * A GPX running east along 45°N, one point per longitude offset (degrees
+ * east of 13°). At that latitude 0.001° of longitude is ~79 m.
+ */
+function lineGpx(id: string, offsets: number[]): string {
+	const points = offsets.map((o) => `<trkpt lat="45" lon="${(13 + o).toFixed(4)}"></trkpt>`).join('');
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Strava" xmlns="http://www.topografix.com/GPX/1/1"><metadata><time>2026-05-09T07:00:00Z</time></metadata><trk><name>activity-${id}</name><trkseg>${points}</trkseg></trk></gpx>`;
+}
+
+// Out 4 points, back past the start, then away to the end. With 200 m,
+// offsets ≤ 0.0025 from either end are hidden - including the mid-route
+// pass near the start, which cuts the track in two.
+const OUT_AND_BACK = [
+	0, 0.001, 0.002, 0.003, 0.004, 0.003, 0.002, 0.001, 0.002, 0.003, 0.004, 0.005, 0.006, 0.007, 0.008, 0.009, 0.01,
+];
+
+/** Pick a Hide start/end radius ('0' = off) in the "⋯" menu. */
+async function setTrim(page: Page, radius: '0' | '200' | '500' | '1000'): Promise<void> {
+	await page.locator('[data-role="more"] > summary').click();
+	await page.locator('select[data-role="trim"]').selectOption(radius);
+	await page.locator('[data-role="more"] > summary').click();
+}
+
+test.describe('hide start/end', () => {
+	test('trims near the start and end, splits where the track passes near them, and marks the file', async ({
+		extensionPage,
+	}) => {
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: lineGpx(id, OUT_AND_BACK) });
+		});
+		await setTrim(extensionPage, '200');
+		const chip = extensionPage.locator('[data-role="trim-chip"]');
+		await expect(chip).toHaveText(/Hiding 200 m at start and end/);
+
+		const { name, bytes } = await downloadFrom(extensionPage, () =>
+			extensionPage.locator('.sbgx-btn-row').first().click(),
+		);
+		expect(name).toBe('strava_9000000001_trimmed.gpx');
+		const gpx = bytes.toString('utf8');
+		const kept = [...gpx.matchAll(/lon="([^"]+)"/g)].map((m) => (Number(m[1]) - 13).toFixed(3));
+		expect(kept).toEqual(['0.003', '0.004', '0.003', '0.003', '0.004', '0.005', '0.006', '0.007']);
+		expect(gpx.match(/<trkseg[\s>]/g)).toHaveLength(2);
+		expect(gpx).toContain(
+			"<metadata><desc>Start and end hidden (200 m) by Strava Bulk GPX Export - not Strava's original export.</desc><time>",
+		);
+		// A trimmed file isn't a backup: no ✓.
+		await extensionPage.waitForTimeout(300);
+		await expect(extensionPage.locator('.sbgx-done').first()).toBeHidden();
+
+		// Not remembered: a reload turns it off.
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(chip).toBeHidden();
+		await expect(extensionPage.locator('select[data-role="trim"]')).toHaveValue('0');
+	});
+
+	test('trimmed zips are marked and skip history; a fully hidden track fails; GPX only', async ({ extensionPage }) => {
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: lineGpx(id, OUT_AND_BACK) });
+		});
+		await setTrim(extensionPage, '200');
+		await extensionPage.locator('.sbgx-row-cb').nth(0).check();
+		await extensionPage.locator('.sbgx-row-cb').nth(1).check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual([
+			'activities.csv',
+			'strava_9000000001_trimmed.gpx',
+			'strava_9000000002_trimmed.gpx',
+		]);
+		const status = extensionPage.locator('[data-role="status-text"]');
+		await expect(status).toHaveText('Saved 2 activities.');
+		await expect(extensionPage.locator('.sbgx-done').first()).toBeHidden();
+
+		// 1 km covers this whole ~790 m track.
+		await setTrim(extensionPage, '1000');
+		await extensionPage.locator('[data-role="bulk"]').click();
+		await expect(status).toHaveText(
+			'Failed: All 2 downloads failed. First error: the whole track is within the hidden distance',
+		);
+
+		// TCX files aren't trimmed: the chip goes and the setting disables.
+		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		await expect(extensionPage.locator('[data-role="trim-chip"]')).toBeHidden();
+		await expect(extensionPage.locator('select[data-role="trim"]')).toBeDisabled();
+	});
+});

@@ -64,6 +64,12 @@ interface State {
 	names: NamePattern;
 	/** How a GPX merge combines activities (a TCX merge always makes one). */
 	mergeMode: MergeMode;
+	/**
+	 * Hide start/end radius in metres, 0 = off. Deliberately not saved: a
+	 * remembered trim would silently alter later archive backups, so it
+	 * resets on every page load and shows a toolbar chip while on.
+	 */
+	trim: number;
 	/** Aborts the in-flight bulk/merge run; null when idle. */
 	abort: AbortController | null;
 	/**
@@ -83,6 +89,7 @@ const STATE: State = {
 	format: 'gpx',
 	names: 'id',
 	mergeMode: 'tracks',
+	trim: 0,
 	abort: null,
 	lastRun: null,
 	anchorId: null,
@@ -105,6 +112,25 @@ function parseNames(value: unknown): NamePattern {
 /** Narrow an untrusted stored value to a known merge mode, defaulting to tracks. */
 function parseMergeMode(value: unknown): MergeMode {
 	return value === 'single' ? value : 'tracks';
+}
+
+/** Hide start/end radii offered in the "⋯" menu, in metres. */
+const TRIM_RADII = [200, 500, 1000];
+
+/** Narrow a trim select value to an offered radius, or 0 (off). */
+function parseTrim(value: string): number {
+	const radius = Number(value);
+	return TRIM_RADII.includes(radius) ? radius : 0;
+}
+
+/** "200 m", "1 km". */
+function radiusLabel(metres: number): string {
+	return metres >= 1000 ? `${metres / 1000} km` : `${metres} m`;
+}
+
+/** The trim radius that applies right now - trimming is GPX-only. */
+function effectiveTrim(): number {
+	return STATE.format === 'gpx' ? STATE.trim : 0;
 }
 
 /** Restore the last-used format and name pattern; storage failures keep the defaults. */
@@ -298,9 +324,11 @@ function injectRow(row: HTMLTableRowElement): void {
 			// Read the format from STATE at click time so changing the
 			// selector after rendering immediately affects what gets fetched.
 			const format = STATE.format;
+			const trim = effectiveTrim();
 			try {
-				await downloadSingle(a, format, STATE.names);
-				rememberExports([a.id], format);
+				await downloadSingle(a, format, STATE.names, trim);
+				// A trimmed file isn't a backup of the activity.
+				if (trim === 0) rememberExports([a.id], format);
 			} catch (err) {
 				const message = err instanceof Error ? err.message : String(err);
 				alert(t('rowDownloadFailed', [a.id, message]));
@@ -364,6 +392,13 @@ function buildToolbar(): HTMLDivElement {
               <option value="single">${escapeHtml(t('mergeModeSingle'))}</option>
             </select>
           </label>
+          <label class="sbgx-menu-field" title="${escapeHtml(t('trimTitle'))}">
+            <span class="sbgx-menu-heading">${escapeHtml(t('trimLabel'))}</span>
+            <select class="sbgx-format" data-role="trim">
+              <option value="0">${escapeHtml(t('trimOff'))}</option>
+              ${TRIM_RADII.map((r) => `<option value="${r}">${radiusLabel(r)}</option>`).join('')}
+            </select>
+          </label>
           <span class="sbgx-menu-heading">${escapeHtml(t('historyHeading'))}</span>
           <button class="sbgx-btn" data-role="history-import"></button>
           <input type="file" accept=".csv,text/csv" data-role="history-file" hidden />
@@ -373,6 +408,10 @@ function buildToolbar(): HTMLDivElement {
       <button class="sbgx-btn" data-role="cancel" hidden>${escapeHtml(t('cancel'))}</button>
       <span class="sbgx-tool sbgx-count" data-role="count">${escapeHtml(t('selectedCount', '0'))}</span>
       <button class="sbgx-btn sbgx-btn-link" data-role="clear" hidden>${escapeHtml(t('clearSelection'))}</button>
+      <span class="sbgx-tool sbgx-trim-chip" data-role="trim-chip" hidden>
+        <span data-role="trim-chip-text"></span>
+        <button class="sbgx-trim-off" data-role="trim-off" title="${escapeHtml(t('trimTurnOff'))}">✕</button>
+      </span>
       <span class="sbgx-tool sbgx-status" data-role="status">
         <span class="sbgx-spinner" data-role="spinner" hidden></span>
         <span class="sbgx-status-text" data-role="status-text"></span>
@@ -452,9 +491,10 @@ function buildToolbar(): HTMLDivElement {
 
 /**
  * The "⋯" menu holds settings and actions that are rarely touched: how GPX
- * merges combine activities, and export history - marking activities from
- * an earlier CSV as exported (so existing users don't start with everything
- * "new"), and forgetting the history.
+ * merges combine activities; hiding the start/end of GPX tracks (whose chip
+ * sits on the toolbar, so it can't go unnoticed); and export history -
+ * marking activities from an earlier CSV as exported (so existing users
+ * don't start with everything "new"), and forgetting the history.
  */
 function wireMoreMenu(toolbar: HTMLDivElement): void {
 	const more = toolbarPart<HTMLDetailsElement>(toolbar, 'more');
@@ -467,6 +507,18 @@ function wireMoreMenu(toolbar: HTMLDivElement): void {
 	mergeModeSelect.addEventListener('change', () => {
 		STATE.mergeMode = parseMergeMode(mergeModeSelect.value);
 		savePreference(MERGE_MODE_STORAGE_KEY, STATE.mergeMode);
+		renderToolbarCounts();
+	});
+
+	const trimSelect = toolbarPart<HTMLSelectElement>(toolbar, 'trim');
+	trimSelect.value = String(STATE.trim);
+	trimSelect.addEventListener('change', () => {
+		STATE.trim = parseTrim(trimSelect.value);
+		renderToolbarCounts();
+	});
+	toolbarPart(toolbar, 'trim-off').addEventListener('click', () => {
+		STATE.trim = 0;
+		trimSelect.value = '0';
 		renderToolbarCounts();
 	});
 
@@ -584,6 +636,19 @@ function renderToolbarCounts(): void {
 	selectNewBtn.title = t('selectNewTitle', label);
 	toolbarPart(STATE.toolbar, 'history-import').textContent = t('historyImport', label);
 	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'history-forget').disabled = exportedTotal() === 0;
+
+	// Trimming changes the files, so while it applies a chip says so on the
+	// toolbar itself, not just inside the "⋯" menu.
+	const trim = effectiveTrim();
+	toolbarPart(STATE.toolbar, 'trim-chip').hidden = trim === 0;
+	toolbarPart(STATE.toolbar, 'trim-chip-text').textContent = trim > 0 ? t('trimChip', radiusLabel(trim)) : '';
+	const trimSelect = toolbarPart<HTMLSelectElement>(STATE.toolbar, 'trim');
+	trimSelect.disabled = STATE.format !== 'gpx';
+	if (trimSelect.disabled) {
+		trimSelect.setAttribute('title', t('trimOnlyGpx'));
+	} else {
+		trimSelect.removeAttribute('title');
+	}
 	// GPX and TCX can be merged; Original files (mostly binary FIT) can't.
 	// Rather than hide the button in Original mode (which leaves users
 	// wondering where it went after switching format), keep it visible but
@@ -757,6 +822,7 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 		onProgress: (ev) => showProgress(ev, format),
 		signal: controller.signal,
 		names: STATE.names,
+		trimRadius: effectiveTrim(),
 	};
 	const mergeMode = STATE.mergeMode;
 	try {
@@ -764,7 +830,8 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 			mode === 'merge'
 				? await downloadMerged(activities, format === 'tcx' ? 'tcx' : 'gpx', mergeMode, options)
 				: await downloadBulk(activities, format, options);
-		if (mode === 'zip') {
+		// Trimmed files aren't backups of the activities, so they don't count.
+		if (mode === 'zip' && !options.trimRadius) {
 			const failedIds = new Set(result.failed.map((f) => f.id));
 			rememberExports(
 				activities.filter((a) => !failedIds.has(a.id)).map((a) => a.id),

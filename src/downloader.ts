@@ -13,6 +13,7 @@
 import JSZip from 'jszip';
 import { activitiesCsv } from './csv.ts';
 import { t } from './i18n.ts';
+import { markTrimmed, trimGpx } from './trim.ts';
 import type {
 	ActivityRow,
 	BulkFailure,
@@ -22,6 +23,7 @@ import type {
 	NamePattern,
 	ProgressCallback,
 } from './types.ts';
+import { childrenNamed, serializeXml } from './xml.ts';
 
 /** Build the URL for a given activity + format. */
 function exportUrl(id: string, format: ExportFormat): string {
@@ -123,6 +125,11 @@ function activityFilePath(
 	return names === 'sport' && sport ? `${pathSegment(sport)}/${file}` : file;
 }
 
+/** `strava_1.gpx` → `strava_1_trimmed.gpx`: a trimmed file is no longer Strava's own export. */
+function trimmedName(path: string): string {
+	return path.replace(/\.gpx$/, '_trimmed.gpx');
+}
+
 /** Last segment of a zip path - browsers can't create folders from a download. */
 function baseName(path: string): string {
 	return path.slice(path.lastIndexOf('/') + 1);
@@ -147,15 +154,25 @@ function uniquePath(path: string, used: Set<string>): string {
  * file via the browser's download manager, which handles the actual writing
  * out of band.
  *
- * The exception is Original with a custom name pattern: the extension we need
- * only arrives in the response headers, so we fetch the file and save the blob.
+ * Two exceptions fetch the file and save the blob instead: GPX with
+ * `trimRadius` (it has to be trimmed first), and Original with a custom name
+ * pattern (the extension we need only arrives in the response headers).
  */
 export async function downloadSingle(
 	activity: ActivityRow,
 	format: ExportFormat,
 	names: NamePattern = 'id',
+	trimRadius = 0,
 ): Promise<void> {
 	const id = String(activity.id);
+	if (format === 'gpx' && trimRadius > 0) {
+		const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin' });
+		if (!res.ok) throw new Error(`HTTP ${res.status}`);
+		const xml = trimGpx(await res.text(), trimRadius);
+		const name = trimmedName(baseName(activityFilePath(activity, format, names, null)));
+		downloadBlob(name, new Blob([xml], { type: 'application/gpx+xml' }));
+		return;
+	}
 	if (format !== 'original') {
 		downloadViaAnchor(exportUrl(id, format), baseName(activityFilePath(activity, format, names, null)));
 		return;
@@ -190,6 +207,12 @@ export interface BulkOptions {
 	signal?: AbortSignal;
 	/** How files are named inside the zip. Defaults to `strava_<id>.<ext>`. */
 	names?: NamePattern;
+	/**
+	 * Hide start/end: drop GPX points within this many metres of each
+	 * activity's start and end (see trim.ts). 0 or absent = off; ignored for
+	 * TCX and Original.
+	 */
+	trimRadius?: number;
 }
 
 // Modest concurrency. The export endpoint is comfortable with parallel
@@ -327,10 +350,11 @@ export async function downloadBulk(
 	format: ExportFormat,
 	options: BulkOptions = {},
 ): Promise<BulkResult> {
-	const { onProgress, signal, names = 'id' } = options;
+	const { onProgress, signal, names = 'id', trimRadius = 0 } = options;
+	const trim = format === 'gpx' && trimRadius > 0;
 	if (activities.length === 0) return { ok: 0, failed: [] };
 	if (activities.length === 1) {
-		await downloadSingle(activities[0]!, format, names);
+		await downloadSingle(activities[0]!, format, names, trimRadius);
 		return { ok: 1, failed: [] };
 	}
 
@@ -341,7 +365,11 @@ export async function downloadBulk(
 	const used = new Set<string>([CSV_NAME]);
 
 	const failed = await fetchAll(activities, format, options, async (a, res) => {
-		const blob = await res.blob();
+		// A track trimmed down to nothing throws here, which records this
+		// activity as failed with that reason.
+		const blob = trim
+			? new Blob([trimGpx(await res.text(), trimRadius)], { type: 'application/gpx+xml' })
+			: await res.blob();
 		// GPX/TCX: known extension. Original: the server's filename carries
 		// the uploaded file's extension (and, for the 'id' pattern, the
 		// whole name).
@@ -349,7 +377,8 @@ export async function downloadBulk(
 			format === 'original' ? parseContentDispositionFilename(res.headers.get('content-disposition')) : null;
 		// JSZip silently replaces an entry with the same name, so two uploads
 		// that share a filename would otherwise lose one file.
-		const path = uniquePath(activityFilePath(a, format, names, serverName), used);
+		const named = activityFilePath(a, format, names, serverName);
+		const path = uniquePath(trim ? trimmedName(named) : named, used);
 		zip.file(path, blob);
 		files.set(a.id, path);
 	});
@@ -399,11 +428,6 @@ interface ParsedSource {
 	doc: Document;
 	start: number;
 	end: number;
-}
-
-/** Direct children of `parent` with the given local name, whatever their namespace prefix. */
-function childrenNamed(parent: Element, localName: string): Element[] {
-	return Array.from(parent.children).filter((el) => el.localName === localName);
 }
 
 /**
@@ -498,15 +522,15 @@ function joinTracks(outDoc: Document, parsed: ParsedSource[]): Element {
  *
  * `mode` decides what happens to the tracks: 'tracks' keeps one `<trk>` per
  * activity; 'single' joins them into one (see {@link joinTracks}) and refuses
- * overlapping activities.
+ * overlapping activities. A `trimRadius` > 0 means the sources were trimmed;
+ * the merged file then carries the same note in its metadata.
  *
  * If a source `<trk>` has no `<name>` child, we inject one using the activity
  * title, so the merged file is still readable in tools like Garmin BaseCamp
  * that list tracks by name.
  */
-function mergeGpxDocuments(sources: MergeSource[], mode: MergeMode): string {
+function mergeGpxDocuments(sources: MergeSource[], mode: MergeMode, trimRadius: number): string {
 	const parser = new DOMParser();
-	const serializer = new XMLSerializer();
 
 	const outDoc = parser.parseFromString(
 		`<?xml version="1.0" encoding="UTF-8"?>` +
@@ -551,7 +575,8 @@ function mergeGpxDocuments(sources: MergeSource[], mode: MergeMode): string {
 		}
 	}
 
-	return `<?xml version="1.0" encoding="UTF-8"?>\n${serializer.serializeToString(outDoc)}`;
+	if (trimRadius > 0) markTrimmed(outDoc, trimRadius);
+	return serializeXml(outDoc);
 }
 
 /** A TCX document's (first) activity. */
@@ -623,7 +648,7 @@ function mergeTcxDocuments(sources: MergeSource[]): string {
 		covered = offset + distanceCovered(source);
 	}
 
-	return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(base.doc)}`;
+	return serializeXml(base.doc);
 }
 
 /**
@@ -634,6 +659,9 @@ function mergeTcxDocuments(sources: MergeSource[]): string {
  *   - GPX, 'single' → one `<trk>` with a segment per activity
  *     (`strava_joined_<date>.gpx`): to upload back to Strava as one activity.
  *   - TCX → one activity with a lap per activity (`strava_merged_<date>.tcx`).
+ *
+ * With `options.trimRadius` (GPX only) every source is trimmed before merging
+ * and the file name gets a `_trimmed` suffix.
  *
  * Progress events mirror {@link downloadBulk} but the post-fetch stage is
  * `'merging'` instead of `'zipping'` so the UI can show the right string.
@@ -654,8 +682,10 @@ export async function downloadMerged(
 	// Indexed by input position rather than pushed as fetches finish, so the
 	// merge never depends on which response happened to arrive first.
 	const fetched: (MergeSource | undefined)[] = [];
+	const trimRadius = format === 'gpx' ? (options.trimRadius ?? 0) : 0;
 	const failed = await fetchAll(activities, format, options, async (a, res, i) => {
-		fetched[i] = { id: a.id, name: a.name, xml: await res.text() };
+		const xml = await res.text();
+		fetched[i] = { id: a.id, name: a.name, xml: trimRadius > 0 ? trimGpx(xml, trimRadius) : xml };
 	});
 	const sources = fetched.filter((s): s is MergeSource => s !== undefined);
 
@@ -664,13 +694,14 @@ export async function downloadMerged(
 	}
 
 	options.onProgress?.({ stage: 'merging' });
-	const merged = format === 'tcx' ? mergeTcxDocuments(sources) : mergeGpxDocuments(sources, mode);
+	const merged = format === 'tcx' ? mergeTcxDocuments(sources) : mergeGpxDocuments(sources, mode, trimRadius);
 	options.signal?.throwIfAborted();
 	if (format === 'tcx') {
 		downloadBlob(`strava_merged_${today()}.tcx`, new Blob([merged], { type: 'application/vnd.garmin.tcx+xml' }));
 	} else {
 		const kind = mode === 'single' ? 'joined' : 'merged';
-		downloadBlob(`strava_${kind}_${today()}.gpx`, new Blob([merged], { type: 'application/gpx+xml' }));
+		const name = `strava_${kind}_${today()}${trimRadius > 0 ? '_trimmed' : ''}.gpx`;
+		downloadBlob(name, new Blob([merged], { type: 'application/gpx+xml' }));
 	}
 	return { ok: sources.length, failed };
 }

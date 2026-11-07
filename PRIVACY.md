@@ -30,6 +30,8 @@ When you click a row's download button, or **Download selected** / **Merge selec
 2. Strava streams each file back, byte-for-byte the same file you'd get from clicking that link manually.
 3. The browser writes the file (or a zip of multiple files, plus an `activities.csv` summary built from the table you're looking at) to your Downloads folder.
 
+If **Hide start/end** is on, GPX files are trimmed in your browser before they're saved; nothing about that is sent anywhere.
+
 **Export list (CSV)** makes no network requests at all: it saves the columns already shown in Strava's table for the activities you selected.
 
 Strava is the only third party. Their privacy policy applies to those requests: <https://www.strava.com/legal/privacy>.

@@ -339,5 +339,32 @@
 				"example": "Morning Run (watch)"
 			}
 		}
+	},
+	"trimLabel": {
+		"message": "시작/종료 지점 숨기기 (GPX 전용)"
+	},
+	"trimOff": {
+		"message": "끔"
+	},
+	"trimTitle": {
+		"message": "저장하기 전에 각 활동의 시작·종료 지점 근처 트랙 포인트를 제거하여 공유한 파일에서 출발 위치가 드러나지 않게 합니다. 잘린 파일은 이름이 _trimmed로 끝나며 Strava 내보내기와 더 이상 같지 않습니다. 페이지를 새로 고치면 꺼집니다."
+	},
+	"trimChip": {
+		"message": "시작·종료 $RADIUS$ 숨김",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "끄기"
+	},
+	"trimOnlyGpx": {
+		"message": "GPX 모드에서만 사용할 수 있습니다"
+	},
+	"trimAllHidden": {
+		"message": "트랙 전체가 숨김 범위 안에 있습니다"
 	}
 }

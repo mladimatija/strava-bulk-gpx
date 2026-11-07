@@ -339,5 +339,32 @@
 				"example": "Morning Run (watch)"
 			}
 		}
+	},
+	"trimLabel": {
+		"message": "Start/Ende ausblenden (nur GPX)"
+	},
+	"trimOff": {
+		"message": "Aus"
+	},
+	"trimTitle": {
+		"message": "Entfernt vor dem Speichern Trackpunkte nahe Start und Ende jeder Aktivität, damit geteilte Dateien nicht zeigen, wo du startest. Gekürzte Dateien enden auf _trimmed und sind nicht mehr identisch mit Stravas Export. Wird beim Neuladen der Seite zurückgesetzt."
+	},
+	"trimChip": {
+		"message": "$RADIUS$ an Start und Ende ausgeblendet",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "Ausschalten"
+	},
+	"trimOnlyGpx": {
+		"message": "Nur im GPX-Modus verfügbar"
+	},
+	"trimAllHidden": {
+		"message": "der ganze Track liegt im ausgeblendeten Bereich"
 	}
 }

@@ -339,5 +339,32 @@
 				"example": "Morning Run (watch)"
 			}
 		}
+	},
+	"trimLabel": {
+		"message": "隱藏起點/終點 (僅 GPX)"
+	},
+	"trimOff": {
+		"message": "關閉"
+	},
+	"trimTitle": {
+		"message": "儲存前移除每個活動起點與終點附近的軌跡點，讓你分享的檔案不會暴露出發地點。裁剪後的檔名以 _trimmed 結尾，不再與 Strava 的匯出完全相同。重新載入頁面後會關閉。"
+	},
+	"trimChip": {
+		"message": "正在隱藏起點與終點的 $RADIUS$",
+		"placeholders": {
+			"radius": {
+				"content": "$1",
+				"example": "200 m"
+			}
+		}
+	},
+	"trimTurnOff": {
+		"message": "關閉"
+	},
+	"trimOnlyGpx": {
+		"message": "僅在 GPX 模式下可用"
+	},
+	"trimAllHidden": {
+		"message": "整條軌跡都在隱藏範圍內"
 	}
 }

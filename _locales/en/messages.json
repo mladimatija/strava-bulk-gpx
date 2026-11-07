@@ -318,5 +318,36 @@
 			"first": { "content": "$1", "example": "Morning Run" },
 			"second": { "content": "$2", "example": "Morning Run (watch)" }
 		}
+	},
+	"trimLabel": {
+		"message": "Hide start/end (GPX only)",
+		"description": "Label of the '⋯' menu dropdown that removes track points near each activity's start and end before saving (Off / 200 m / 500 m / 1 km)."
+	},
+	"trimOff": {
+		"message": "Off",
+		"description": "'Hide start/end' option: no trimming (the default)."
+	},
+	"trimTitle": {
+		"message": "Removes track points near each activity's start and end before saving, so files you share don't show where you start. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
+		"description": "Tooltip on the 'Hide start/end' setting. Keep '_trimmed' as-is (it's part of the file name)."
+	},
+	"trimChip": {
+		"message": "Hiding $RADIUS$ at start and end",
+		"description": "Toolbar chip shown while 'Hide start/end' applies. RADIUS is a distance like '200 m' or '1 km'.",
+		"placeholders": {
+			"radius": { "content": "$1", "example": "200 m" }
+		}
+	},
+	"trimTurnOff": {
+		"message": "Turn off",
+		"description": "Tooltip on the ✕ in the 'Hiding … at start and end' chip."
+	},
+	"trimOnlyGpx": {
+		"message": "Only available in GPX mode",
+		"description": "Tooltip on the disabled 'Hide start/end' setting in TCX and Original modes."
+	},
+	"trimAllHidden": {
+		"message": "the whole track is within the hidden distance",
+		"description": "Failure reason (lowercase, shown in parentheses or after a dash) when 'Hide start/end' would remove every point of an activity."
 	}
 }

@@ -88,7 +88,14 @@ export type MessageKey =
 	| 'mergingTcx'
 	| 'savedJoined'
 	| 'savedMergedTcx'
-	| 'mergeOverlap';
+	| 'mergeOverlap'
+	| 'trimLabel'
+	| 'trimOff'
+	| 'trimTitle'
+	| 'trimChip'
+	| 'trimTurnOff'
+	| 'trimOnlyGpx'
+	| 'trimAllHidden';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -161,6 +168,14 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	savedJoined: 'Saved one activity joined from $1 activities.',
 	savedMergedTcx: 'Saved merged TCX with $1 activities.',
 	mergeOverlap: "Can't join activities that overlap in time: $1 and $2",
+	trimLabel: 'Hide start/end (GPX only)',
+	trimOff: 'Off',
+	trimTitle:
+		"Removes track points near each activity's start and end before saving, so files you share don't show where you start. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
+	trimChip: 'Hiding $1 at start and end',
+	trimTurnOff: 'Turn off',
+	trimOnlyGpx: 'Only available in GPX mode',
+	trimAllHidden: 'the whole track is within the hidden distance',
 };
 
 /**
