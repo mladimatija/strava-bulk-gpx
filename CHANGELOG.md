@@ -4,6 +4,8 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-07
+
 ### Added
 
 - **Selection across pages.** Selected activities stay selected while you page, search or filter in Strava's UI, and **Download selected** / **Merge** / **Export list** include them all. The count reads `N selected (M not on this page)`; a new **Clear selection** action drops everything.

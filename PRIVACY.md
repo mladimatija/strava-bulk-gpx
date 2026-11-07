@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective date:** 2026-05-14
+**Effective date:** 2026-11-07
 
 This extension is designed so that it cannot, by construction, collect or transmit your data to anyone except Strava itself. Read this page to understand exactly how that works.
 
