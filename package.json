@@ -34,7 +34,7 @@
 	"devDependencies": {
 		"@crxjs/vite-plugin": "^3.0.0",
 		"@eslint/js": "^10.0.1",
-		"@playwright/test": "^1.62.1",
+		"@playwright/test": "^1.65.0",
 		"@types/chrome": "^0.3.7",
 		"@types/node": "^26.2.0",
 		"eslint": "^10.8.1",
