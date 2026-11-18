@@ -95,6 +95,11 @@ interface State {
 	lastRun: { failed: FailedActivity[]; retryFormat: ExportFormat | null } | null;
 	/** Row last toggled - the anchor for shift-click range selection. */
 	anchorId: string | null;
+	/**
+	 * A zip part waiting for its "Save part N" click (see waitForPartClick);
+	 * null when none is.
+	 */
+	pendingPart: { n: number; save: () => void } | null;
 }
 
 const STATE: State = {
@@ -111,6 +116,7 @@ const STATE: State = {
 	abort: null,
 	lastRun: null,
 	anchorId: null,
+	pendingPart: null,
 };
 
 const FORMAT_STORAGE_KEY = 'exportFormat';
@@ -563,6 +569,7 @@ function buildToolbar(): HTMLDivElement {
         </div>
       </details>
       <button class="sbgx-btn" data-role="cancel" hidden>${escapeHtml(t('cancel'))}</button>
+      <button class="sbgx-btn sbgx-btn-primary" data-role="save-part" hidden></button>
       <span class="sbgx-tool sbgx-count" data-role="count">${escapeHtml(t('selectedCount', '0'))}</span>
       <button class="sbgx-btn sbgx-btn-link" data-role="clear" hidden>${escapeHtml(t('clearSelection'))}</button>
       <span class="sbgx-tool sbgx-trim-chip" data-role="trim-chip" hidden>
@@ -610,6 +617,7 @@ function buildToolbar(): HTMLDivElement {
 	toolbarPart(toolbar, 'merge').addEventListener('click', handleMergeClick);
 	toolbarPart(toolbar, 'csv').addEventListener('click', handleCsvClick);
 	toolbarPart(toolbar, 'cancel').addEventListener('click', () => STATE.abort?.abort());
+	toolbarPart(toolbar, 'save-part').addEventListener('click', () => STATE.pendingPart?.save());
 	toolbarPart(toolbar, 'retry').addEventListener('click', handleRetryClick);
 	toolbarPart(toolbar, 'clear').addEventListener('click', () => {
 		STATE.selected.clear();
@@ -819,6 +827,9 @@ function renderToolbarCounts(): void {
 	clearBtn.hidden = total === 0;
 	clearBtn.disabled = STATE.busy;
 	toolbarPart(STATE.toolbar, 'cancel').hidden = !STATE.busy;
+	const savePart = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'save-part');
+	savePart.hidden = !STATE.pendingPart;
+	savePart.textContent = STATE.pendingPart ? t('savePart', String(STATE.pendingPart.n)) : '';
 
 	// "Select new" only has work to do when an unselected row on this page
 	// hasn't been exported in the current format yet.
@@ -1017,6 +1028,36 @@ function showProgress(ev: ProgressEvent, format: ExportFormat): void {
 }
 
 /**
+ * Show "Save part N" and resolve when it's clicked: Chrome lets a page start
+ * one download without a click and holds back or blocks the rest, so every
+ * zip part after the first is saved from a click of its own (see
+ * BulkOptions.confirmPart). Rejects if the run is cancelled meanwhile.
+ */
+function waitForPartClick(n: number, signal: AbortSignal): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const finish = (): void => {
+			STATE.pendingPart = null;
+			signal.removeEventListener('abort', onAbort);
+			renderToolbarCounts();
+		};
+		const onAbort = (): void => {
+			finish();
+			reject(signal.reason instanceof Error ? signal.reason : new Error(t('cancelled')));
+		};
+		signal.addEventListener('abort', onAbort, { once: true });
+		STATE.pendingPart = {
+			n,
+			save: () => {
+				finish();
+				resolve();
+			},
+		};
+		setStatus(t('partReady', String(n)), 'info');
+		renderToolbarCounts();
+	});
+}
+
+/**
  * Shared lifecycle for zip and merge runs: single-flighting via STATE.busy,
  * the Cancel button, progress, and the terminal outcome - success, partial
  * success (with the failure list), cancelled, or failed.
@@ -1045,6 +1086,7 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 			// Trimmed files aren't backups of the activities, so they don't count.
 			if (trimRadius === 0) rememberExports(ids, format);
 		},
+		confirmPart: (n) => waitForPartClick(n, controller.signal),
 	};
 	const mergeMode = STATE.mergeMode;
 	try {

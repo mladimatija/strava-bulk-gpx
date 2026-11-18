@@ -493,5 +493,23 @@
 	},
 	"trimCustomUnit": {
 		"message": "Eenheid"
+	},
+	"savePart": {
+		"message": "Deel $NUMBER$ opslaan",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP-deel $NUMBER$ is klaar - klik op Deel $NUMBER$ opslaan (Chrome staat maar één download zonder klik toe).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

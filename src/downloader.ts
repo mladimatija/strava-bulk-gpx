@@ -255,7 +255,10 @@ export interface BulkOptions {
 	 * Notified as the download progresses through its stages. See {@link ProgressEvent}.
 	 */
 	onProgress?: ProgressCallback;
-	/** Aborting stops all fetches and rejects the run - nothing gets saved. */
+	/**
+	 * Aborting stops all fetches and rejects the run. Nothing more is saved -
+	 * but zip parts saved before then stay saved (see `onSaved`).
+	 */
 	signal?: AbortSignal;
 	/** How files are named inside the zip. Defaults to `strava_<id>.<ext>`. */
 	names?: NamePattern;
@@ -278,6 +281,15 @@ export interface BulkOptions {
 	 * or the run is cancelled.
 	 */
 	onSaved?: (ids: string[]) => void;
+	/**
+	 * Split zips only: called before saving a part when the run has already
+	 * saved one, resolving once the user has clicked to save it. Chrome lets
+	 * a page start one download without a click and holds back or blocks the
+	 * rest, so each later part needs its own click; until then, fetching
+	 * waits, so at most one full part sits in memory. Without it, parts are
+	 * saved straight away.
+	 */
+	confirmPart?: (n: number) => Promise<void>;
 }
 
 // Modest concurrency. The export endpoint is comfortable with parallel
@@ -400,22 +412,21 @@ interface ZipPart {
 	zip: JSZip;
 	/** Activity id → path inside the zip, for the CSV's File column. */
 	files: Map<string, string>;
-	/** Paths taken, lower-cased (see {@link uniquePath}). */
-	used: Set<string>;
 	/** Bytes of the files added so far, before compression. */
 	bytes: number;
 }
 
 function newZipPart(): ZipPart {
-	// Reserve the summary's name so no activity file can overwrite it.
-	return { zip: new JSZip(), files: new Map(), used: new Set([CSV_NAME]), bytes: 0 };
+	return { zip: new JSZip(), files: new Map(), bytes: 0 };
 }
 
 /**
  * Bulk download. One id → one file (no zip). Multiple ids → zip, with an
  * `activities.csv` summary of that zip's files next to them. With
  * `options.splitBytes`, several zips (`…_part1.zip`, `…_part2.zip`, …), each
- * saved as soon as it's full.
+ * saved as soon as it's full - from the second on, once the user clicks
+ * (`options.confirmPart`). File names are unique across all of a run's
+ * zips, since a backup's parts are usually extracted into one folder.
  *
  * Emits progress as a discriminated event:
  *   - { stage: "downloading", completed, total } - fires immediately and after
@@ -426,16 +437,17 @@ function newZipPart(): ZipPart {
  *     for keeping a spinner alive during what can be a multi-second
  *     client-side step on large batches.
  *
- * Resolves with the count of successes, a list of per-activity failures and
- * the number of zips saved. Throws if *every* activity failed, or if `signal`
- * aborts - zip parts saved before that stay saved (see `options.onSaved`).
+ * Resolves with the count of activities saved, a list of per-activity
+ * failures (including those of a zip part that couldn't be saved) and the
+ * number of zips saved. Throws if nothing was saved, or if `signal` aborts -
+ * zip parts saved before that stay saved (see `options.onSaved`).
  */
 export async function downloadBulk(
 	activities: ActivityRow[],
 	format: ExportFormat,
 	options: BulkOptions = {},
 ): Promise<BulkResult> {
-	const { onProgress, signal, names = 'id', trimRadius = 0, splitBytes = 0, onSaved } = options;
+	const { onProgress, signal, names = 'id', trimRadius = 0, splitBytes = 0, onSaved, confirmPart } = options;
 	const trim = format !== 'original' && trimRadius > 0;
 	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
 	if (activities.length === 1) {
@@ -444,32 +456,67 @@ export async function downloadBulk(
 		return { ok: 1, failed: [], parts: 1 };
 	}
 
-	let part = newZipPart();
-	let saved = 0;
-	let ok = 0;
 	// Zip filename mentions the format, so a user with several batches doesn't
 	// confuse strava_gpx_…zip with strava_tcx_…zip in their Downloads folder.
-	const zipName = (n: number | null): string => `strava_${format}_${today()}${n ? `_part${n}` : ''}.zip`;
+	// One date per run, so the parts of a run that crosses midnight match.
+	const date = today();
+	const zipName = (n: number | null): string => `strava_${format}_${date}${n ? `_part${n}` : ''}.zip`;
+	// Paths taken in any of the run's zips, lower-cased (see uniquePath).
+	// The summary's name is reserved so no activity file can overwrite it.
+	const used = new Set<string>([CSV_NAME]);
+	let part = newZipPart();
+	/** Parts numbered so far: a part's number is fixed when it's set aside. */
+	let numbered = 0;
+	let saved = 0;
+	let ok = 0;
+	/** Activities in zip parts that couldn't be saved. */
+	const lost: BulkFailure[] = [];
+	/** Set-aside parts being saved, one at a time. */
+	let saving: Promise<void> = Promise.resolve();
 
-	async function saveZip(full: ZipPart, name: string): Promise<void> {
-		onProgress?.({ stage: 'zipping' });
-		full.zip.file(
-			CSV_NAME,
-			activitiesCsv(
-				activities.filter((a) => full.files.has(a.id)),
-				full.files,
-			),
-		);
-		const blob = await full.zip.generateAsync({
-			type: 'blob',
-			compression: 'DEFLATE',
-			compressionOptions: { level: 6 },
-		});
-		// Cancel may land while JSZip is compressing; honour it before saving.
-		signal?.throwIfAborted();
-		downloadBlob(name, blob);
-		saved++;
-		onSaved?.([...full.files.keys()]);
+	/**
+	 * Build and save one zip - part `n`, or the run's only zip when null.
+	 * A part that fails for any reason but Cancel (JSZip running out of
+	 * memory, say) is lost on its own: its activities become failures. The
+	 * only zip's failure fails the run.
+	 */
+	async function saveZip(full: ZipPart, n: number | null): Promise<void> {
+		try {
+			onProgress?.({ stage: 'zipping' });
+			full.zip.file(
+				CSV_NAME,
+				activitiesCsv(
+					activities.filter((a) => full.files.has(a.id)),
+					full.files,
+				),
+			);
+			const blob = await full.zip.generateAsync({
+				type: 'blob',
+				compression: 'DEFLATE',
+				compressionOptions: { level: 6 },
+			});
+			// Cancel may land while JSZip is compressing; honour it before saving.
+			signal?.throwIfAborted();
+			if (saved > 0 && n !== null) {
+				await confirmPart?.(n);
+				signal?.throwIfAborted();
+			}
+			downloadBlob(zipName(n), blob);
+			saved++;
+			onSaved?.([...full.files.keys()]);
+		} catch (e) {
+			if (signal?.aborted || n === null) throw e;
+			const reason = e instanceof Error ? e.message : String(e);
+			for (const id of full.files.keys()) lost.push({ id, reason });
+			ok -= full.files.size;
+		}
+	}
+
+	/** Number a full part and queue it for saving. */
+	function setAside(full: ZipPart): Promise<void> {
+		const n = ++numbered;
+		saving = saving.then(() => saveZip(full, n));
+		return saving;
 	}
 
 	const failed = await fetchAll(activities, format, options, async (a, res) => {
@@ -482,28 +529,35 @@ export async function downloadBulk(
 		// the uploaded file's extension (and, for the 'id' pattern, the
 		// whole name).
 		const serverName = format === 'original' ? await originalFileName(res, blob, a.id) : null;
-		// Full: save this zip and start the next one. The swap happens before
-		// the await, so other workers already add to the new part meanwhile.
+		// While a full part is being saved - or waits for its click - hold
+		// on, so at most one full part sits in memory.
+		await saving;
+		// Full: set this zip aside and start the next one.
 		if (splitBytes > 0 && part.files.size > 0 && part.bytes + blob.size > splitBytes) {
 			const full = part;
 			part = newZipPart();
-			await saveZip(full, zipName(saved + 1));
+			await setAside(full);
 		}
 		// JSZip silently replaces an entry with the same name, so two uploads
 		// that share a filename would otherwise lose one file.
 		const named = activityFilePath(a, format, names, serverName);
-		const path = uniquePath(trim ? trimmedName(named) : named, part.used);
+		const path = uniquePath(trim ? trimmedName(named) : named, used);
 		part.zip.file(path, blob);
 		part.files.set(a.id, path);
 		part.bytes += blob.size;
 		ok++;
 	});
 
-	if (ok === 0) {
-		throw new Error(`All ${activities.length} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
+	await saving;
+	if (part.files.size > 0) {
+		if (numbered > 0) await setAside(part);
+		else await saveZip(part, null);
 	}
-	if (part.files.size > 0) await saveZip(part, zipName(saved > 0 ? saved + 1 : null));
-	return { ok, failed, parts: saved };
+	const allFailed = [...failed, ...lost];
+	if (saved === 0) {
+		throw new Error(`All ${activities.length} downloads failed. First error: ${allFailed[0]?.reason ?? 'unknown'}`);
+	}
+	return { ok, failed: allFailed, parts: saved };
 }
 
 /** Backwards-compatible alias - older callers passed no format and expected GPX. */

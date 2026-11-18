@@ -493,5 +493,23 @@
 	},
 	"trimCustomUnit": {
 		"message": "Единица"
+	},
+	"savePart": {
+		"message": "Сохранить часть $NUMBER$",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "Часть ZIP $NUMBER$ готова - нажмите «Сохранить часть $NUMBER$» (Chrome разрешает без нажатия только одну загрузку).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

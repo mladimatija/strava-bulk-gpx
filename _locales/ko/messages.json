@@ -493,5 +493,23 @@
 	},
 	"trimCustomUnit": {
 		"message": "단위"
+	},
+	"savePart": {
+		"message": "파트 $NUMBER$ 저장",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP 파트 $NUMBER$이(가) 준비되었습니다. 파트 $NUMBER$ 저장을 클릭하세요 (Chrome은 클릭 없이 다운로드를 하나만 허용합니다).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

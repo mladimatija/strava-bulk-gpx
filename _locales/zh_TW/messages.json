@@ -493,5 +493,23 @@
 	},
 	"trimCustomUnit": {
 		"message": "單位"
+	},
+	"savePart": {
+		"message": "儲存第 $NUMBER$ 部分",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP 第 $NUMBER$ 部分已就緒 - 請點選「儲存第 $NUMBER$ 部分」 (Chrome 只允許一次無需點選的下載)。",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

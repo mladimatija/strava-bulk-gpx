@@ -1215,7 +1215,18 @@ test.describe('date names and split zips', () => {
 		});
 		await extensionPage.locator('.sbgx-select-all-cb').check();
 		await extensionPage.locator('[data-role="bulk"]').click();
-		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved 3 activities in 2 zips.');
+		// Part 1 saves by itself; Chrome wants a click for every later one,
+		// and fetching waits until then.
+		await expect.poll(() => downloads.length).toBe(1);
+		const status = extensionPage.locator('[data-role="status-text"]');
+		const savePart = extensionPage.locator('[data-role="save-part"]');
+		await expect(status).toHaveText(
+			'Zip part 2 is ready - click Save part 2 (Chrome allows only one download without a click).',
+		);
+		await expect(savePart).toHaveText('Save part 2');
+		await savePart.click();
+		await expect(status).toHaveText('Saved 3 activities in 2 zips.');
+		await expect(savePart).toBeHidden();
 		await expect.poll(() => downloads.length).toBe(2);
 
 		downloads.sort((a, b) => a.name.localeCompare(b.name));
@@ -1284,16 +1295,22 @@ test.describe('hide start/end in TCX', () => {
  * `chrome.storage` exists - the page's own world can't reach extension
  * storage. Used to plant stored state the UI can't produce on demand.
  */
-async function evaluateInContentScript(page: Page, expression: string): Promise<void> {
+async function evaluateInContentScript(page: Page, expression: string): Promise<unknown> {
 	const cdp = await page.context().newCDPSession(page);
 	const contexts: { id: number; origin: string }[] = [];
 	cdp.on('Runtime.executionContextCreated', (e) => contexts.push(e.context));
 	await cdp.send('Runtime.enable');
 	const world = contexts.find((c) => c.origin.startsWith('chrome-extension://'));
 	if (!world) throw new Error('No content-script world on this page');
-	const result = await cdp.send('Runtime.evaluate', { expression, contextId: world.id, awaitPromise: true });
+	const result = await cdp.send('Runtime.evaluate', {
+		expression,
+		contextId: world.id,
+		awaitPromise: true,
+		returnByValue: true,
+	});
 	if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
 	await cdp.detach();
+	return result.result.value;
 }
 
 /** A saved selection of the fixture's first two rows, `ageMs` old. */
@@ -1302,6 +1319,8 @@ function savedSelection(ageMs: number): string {
 		{ id: '9000000001', name: 'Traversa', sport_type: 'Trail Run', date: '2026-05-09', hasGps: true, columns: [] },
 		// Saved before `date` and `hasGps` existed.
 		{ id: '9000000002', name: 'Lunch Trail Run', sport_type: 'Trail Run', columns: [] },
+		// Selected in Original mode; restored in GPX mode, it's dropped.
+		{ id: '9000000004', name: 'Evening Workout', sport_type: 'Workout', date: null, hasGps: false, columns: [] },
 		// Malformed: dropped.
 		{ id: 'not-a-number', name: 'x', sport_type: '' },
 	];
@@ -1309,7 +1328,9 @@ function savedSelection(ageMs: number): string {
 }
 
 test.describe('saved selection', () => {
-	test('is restored within a day, and malformed rows are dropped', async ({ extensionPage }) => {
+	test('is restored within a day; malformed rows, and rows the format can’t export, are dropped', async ({
+		extensionPage,
+	}) => {
 		await evaluateInContentScript(extensionPage, savedSelection(23 * 60 * 60 * 1000));
 		await extensionPage.reload();
 		await extensionPage.waitForSelector('.sbgx-toolbar');
@@ -1539,6 +1560,143 @@ test.describe('hide start/end, custom distance', () => {
 	});
 });
 
+test.describe('saved selection, after exports and page walks', () => {
+	test('a fully exported zip forgets the saved selection; a partial one keeps it', async ({ extensionPage }) => {
+		const count = extensionPage.locator('[data-role="count"]');
+		let failSecond = true;
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			if (id === '9000000002' && failSecond) {
+				await route.fulfill({ status: 500, body: '' });
+				return;
+			}
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) });
+		});
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved 2, skipped 1 (HTTP 500)');
+		// Saving is batched; give it a moment.
+		await extensionPage.waitForTimeout(600);
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(count).toHaveText('3 selected');
+
+		failSecond = false;
+		await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved 3 activities.');
+		// Still selected on screen - say, for another format…
+		await expect(count).toHaveText('3 selected');
+		await extensionPage.waitForTimeout(600);
+		// …but a reload doesn't bring the exported batch back.
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(count).toHaveText('0 selected');
+	});
+
+	test('Select all pages saves the selection once, not on every page', async ({ extensionPage }) => {
+		await evaluateInContentScript(
+			extensionPage,
+			`globalThis.selectionWrites = 0;
+			chrome.storage.onChanged.addListener((changes) => { if ('selection' in changes) globalThis.selectionWrites++; });`,
+		);
+		const pages = [1, 2].map((p) => fakeRowsHtml([{ id: `900000010${p}`, sport: 'Run', title: `Page ${p}` }]));
+		await installFakePager(extensionPage, ['', ...pages], 0, { delayMs: 400 });
+		await extensionPage.locator('[data-role="select-pages"]').click();
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Added 5 activities from 3 pages.');
+		await extensionPage.waitForTimeout(600);
+		expect(await evaluateInContentScript(extensionPage, 'globalThis.selectionWrites')).toBe(1);
+	});
+});
+
+test.describe('split zips, names and failures', () => {
+	/** Use a split size of `bytes` (MB values below 1 aren't offered, so add one). */
+	async function splitAt(page: Page, bytes: number): Promise<void> {
+		await page.locator('[data-role="more"] > summary').click();
+		await page.locator('select[data-role="split"]').evaluate((select: HTMLSelectElement, mb: number) => {
+			select.add(new Option('tiny', String(mb)));
+			select.value = String(mb);
+			select.dispatchEvent(new Event('change'));
+		}, bytes / 1_000_000);
+		await page.locator('[data-role="more"] > summary').click();
+	}
+
+	/** Every download the page makes, in order, with its zip's file names. */
+	function collectZips(page: Page): { name: string; files: string[] }[] {
+		const zips: { name: string; files: string[] }[] = [];
+		page.on('download', async (download) => {
+			const entry = { name: download.suggestedFilename(), files: [] as string[] };
+			zips.push(entry);
+			entry.files = await zipFileNames(readFileSync(await download.path()));
+		});
+		return zips;
+	}
+
+	test('file names are unique across all of a run’s zips', async ({ extensionPage }) => {
+		await extensionPage.route('**/activities/*/export_original', async (route) => {
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/octet-stream',
+				headers: { 'Content-Disposition': 'attachment; filename="activity.fit"' },
+				body: 'FIT',
+			});
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('original');
+		await splitAt(extensionPage, 1);
+		const zips = collectZips(extensionPage);
+		for (const i of [0, 1, 2]) await extensionPage.locator('.sbgx-row-cb').nth(i).check();
+		await extensionPage.locator('[data-role="bulk"]').click();
+		const savePart = extensionPage.locator('[data-role="save-part"]');
+		await savePart.click();
+		await savePart.click();
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved 3 activities in 3 zips.');
+		await expect.poll(() => zips.filter((z) => z.files.length > 0).length).toBe(3);
+		expect(zips.map((z) => z.name.replace(/^.*_(part\d)\.zip$/, '$1'))).toEqual(['part1', 'part2', 'part3']);
+		const fits = zips.flatMap((z) => z.files.filter((f) => f.endsWith('.fit'))).sort();
+		expect(fits).toEqual(['activity-2.fit', 'activity-3.fit', 'activity.fit']);
+	});
+
+	test('a part that can’t be saved lists its activities as failed; numbering carries on', async ({ extensionPage }) => {
+		// The activities arrive in order, one per part.
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await new Promise((r) => setTimeout(r, { '9000000001': 0, '9000000002': 200 }[id] ?? 400));
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) });
+		});
+		// The second zip fails to save (as when JSZip runs out of memory).
+		await evaluateInContentScript(
+			extensionPage,
+			`(() => {
+				const real = URL.createObjectURL.bind(URL);
+				let calls = 0;
+				URL.createObjectURL = (blob) => {
+					if (++calls === 2) throw new Error('out of memory');
+					return real(blob);
+				};
+			})()`,
+		);
+		await splitAt(extensionPage, 300);
+		const zips = collectZips(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		await extensionPage.locator('[data-role="bulk"]').click();
+		const savePart = extensionPage.locator('[data-role="save-part"]');
+		await expect(savePart).toHaveText('Save part 2');
+		await savePart.click();
+		await expect(savePart).toHaveText('Save part 3');
+		await savePart.click();
+
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved 2, skipped 1 (out of memory)');
+		const failures = extensionPage.locator('[data-role="failures"]');
+		await failures.locator('summary').click();
+		await expect(failures.locator('li')).toHaveText(['Lunch Trail Run - out of memory']);
+		await expect(extensionPage.locator('[data-role="retry"]')).toHaveText('Retry 1 failed');
+		await expect.poll(() => zips.length).toBe(2);
+		expect(zips.map((z) => z.name.replace(/^.*_(part\d)\.zip$/, '$1'))).toEqual(['part1', 'part3']);
+		// Only saved parts count as exported.
+		await expect(extensionPage.locator('tr[data-sbgx-id="9000000002"] .sbgx-done')).toBeHidden();
+		await expect(extensionPage.locator('tr[data-sbgx-id="9000000003"] .sbgx-done')).toBeVisible();
+	});
+});
+
 test.describe('single downloads', () => {
 	test('a GPX that comes back as a web page is reported, not saved', async ({ extensionPage }) => {
 		// Distance but no GPS track - a treadmill run, say.
@@ -1571,5 +1729,24 @@ test.describe('single downloads', () => {
 		await extensionPage.locator('.sbgx-row-cb').nth(1).check();
 		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
 		expect(await zipFileNames(bytes)).toEqual(['activities.csv', 'strava_9000000001.fit', 'strava_9000000002.fit']);
+	});
+});
+
+test.describe('hide start/end, custom distance, rebuilt toolbar', () => {
+	test('a rebuilt toolbar still shows the custom distance in use', async ({ extensionPage }) => {
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await extensionPage.locator('select[data-role="trim"]').selectOption('custom');
+		await extensionPage.locator('[data-role="trim-value"]').fill('650');
+		await extensionPage.locator('select[data-role="trim-unit"]').selectOption('ft');
+		await extensionPage.locator('[data-role="more"] > summary').click();
+
+		// Strava re-rendering the toolbar's container takes the toolbar with it.
+		await extensionPage.locator('.sbgx-toolbar').evaluate((toolbar) => toolbar.remove());
+		await extensionPage.locator('.sbgx-toolbar').waitFor();
+		await expect(extensionPage.locator('[data-role="trim-chip"]')).toHaveText(/Hiding 650 ft at start and end/);
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await expect(extensionPage.locator('select[data-role="trim"]')).toHaveValue('custom');
+		await expect(extensionPage.locator('[data-role="trim-value"]')).toHaveValue('650');
+		await expect(extensionPage.locator('select[data-role="trim-unit"]')).toHaveValue('ft');
 	});
 });

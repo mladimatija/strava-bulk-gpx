@@ -493,5 +493,23 @@
 	},
 	"trimCustomUnit": {
 		"message": "Enhet"
+	},
+	"savePart": {
+		"message": "Lagre del $NUMBER$",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP-del $NUMBER$ er klar - klikk Lagre del $NUMBER$ (Chrome tillater bare én nedlasting uten klikk).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

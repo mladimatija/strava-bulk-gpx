@@ -493,5 +493,23 @@
 	},
 	"trimCustomUnit": {
 		"message": "Unidade"
+	},
+	"savePart": {
+		"message": "Salvar parte $NUMBER$",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "A parte $NUMBER$ do ZIP está pronta - clique em Salvar parte $NUMBER$ (o Chrome só permite um download sem clique).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

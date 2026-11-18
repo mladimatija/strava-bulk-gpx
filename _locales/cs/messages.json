@@ -493,5 +493,23 @@
 	},
 	"trimCustomUnit": {
 		"message": "Jednotka"
+	},
+	"savePart": {
+		"message": "Uložit část $NUMBER$",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "Část ZIP $NUMBER$ je připravená - klikněte na Uložit část $NUMBER$ (Chrome bez kliknutí povolí jen jedno stahování).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

@@ -461,5 +461,19 @@
 	"trimCustomUnit": {
 		"message": "Unit",
 		"description": "Accessible label of the unit dropdown (m / ft) next to the custom distance input."
+	},
+	"savePart": {
+		"message": "Save part $NUMBER$",
+		"description": "Toolbar button shown while a zip part waits to be saved. NUMBER is the part's number (2, 3, …).",
+		"placeholders": {
+			"number": { "content": "$1", "example": "2" }
+		}
+	},
+	"partReady": {
+		"message": "Zip part $NUMBER$ is ready - click Save part $NUMBER$ (Chrome allows only one download without a click).",
+		"description": "Status while a zip part waits for its Save part button: Chrome allows a site only one download without a click. Keep the button's wording (savePart) the same here.",
+		"placeholders": {
+			"number": { "content": "$1", "example": "2" }
+		}
 	}
 }

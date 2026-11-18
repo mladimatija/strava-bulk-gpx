@@ -493,5 +493,23 @@
 	},
 	"trimCustomUnit": {
 		"message": "単位"
+	},
+	"savePart": {
+		"message": "パート $NUMBER$ を保存",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP のパート $NUMBER$ の準備ができました。「パート $NUMBER$ を保存」をクリックしてください (Chrome ではクリックなしのダウンロードは 1 件だけです)。",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

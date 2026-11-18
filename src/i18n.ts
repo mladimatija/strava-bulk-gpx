@@ -116,7 +116,9 @@ export type MessageKey =
 	| 'csvDate'
 	| 'trimCustom'
 	| 'trimCustomValue'
-	| 'trimCustomUnit';
+	| 'trimCustomUnit'
+	| 'savePart'
+	| 'partReady';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -221,6 +223,8 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	trimCustom: 'Custom…',
 	trimCustomValue: 'Distance',
 	trimCustomUnit: 'Unit',
+	savePart: 'Save part $1',
+	partReady: 'Zip part $1 is ready - click Save part $1 (Chrome allows only one download without a click).',
 };
 
 /**
