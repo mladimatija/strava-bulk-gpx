@@ -6,61 +6,6 @@ import JSZip from 'jszip';
 import { test, expect, type Page } from '../fixtures/extension.ts';
 import { fakeRowsHtml, installFakePager, type FakeRow } from '../fixtures/pages.ts';
 
-interface CapturedClick {
-	href: string;
-	download: string | null;
-}
-
-declare global {
-	interface Window {
-		__sbgxClicks?: CapturedClick[];
-	}
-}
-
-/**
- * Install a capture-phase click listener that records every `<a>` click on
- * the page and suppresses the real default action (navigation / download).
- *
- * Why an event listener instead of monkey-patching `prototype.click`:
- * Chrome extension content scripts run in an isolated JavaScript world with
- * their own copies of every prototype. When our content script (in its own
- * world) calls `a.click()`, it looks up `click` on the *isolated-world*
- * `HTMLAnchorElement.prototype`. A patch installed via `page.evaluate()`
- * runs in the *page world* and never gets hit. DOM events, by contrast,
- * are shared infrastructure - a capture-phase listener on `document` sees
- * clicks dispatched from either world, and `preventDefault` cancels the
- * anchor's default download regardless of where the click originated.
- *
- * This sidesteps all the real-download flakiness on this Chromium/Playwright
- * combo (page.route() bypasses, missing waitForRequest events, post-redirect
- * download.url() values, hung context teardown).
- */
-async function installAnchorClickCapture(page: Page): Promise<void> {
-	await page.evaluate(() => {
-		window.__sbgxClicks = [];
-		document.addEventListener(
-			'click',
-			(e: Event) => {
-				const target = e.target;
-				if (target instanceof HTMLAnchorElement) {
-					window.__sbgxClicks?.push({
-						href: target.href,
-						download: target.getAttribute('download'),
-					});
-					e.preventDefault();
-					e.stopImmediatePropagation();
-				}
-			},
-			true,
-		);
-	});
-}
-
-/** Read whatever {@link installAnchorClickCapture} captured. */
-async function readCapturedAnchorClicks(page: Page): Promise<CapturedClick[]> {
-	return page.evaluate(() => window.__sbgxClicks ?? []);
-}
-
 test.describe('Strava Bulk GPX extension', () => {
 	test('mounts the toolbar above the activities table', async ({ extensionPage }) => {
 		const toolbar = extensionPage.locator('.sbgx-toolbar');
@@ -137,24 +82,19 @@ test.describe('Strava Bulk GPX extension', () => {
 		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('1 selected');
 	});
 
-	test('single-row GPX button targets export_gpx with the right id and filename', async ({ extensionPage }) => {
-		// Rather than triggering a real download (which on this Chromium /
-		// Playwright combo is flaky around page.route() interception, the
-		// download event, and context teardown), monkey-patch
-		// HTMLAnchorElement.prototype.click so the synthetic anchor that
-		// downloader.ts creates is captured-but-not-actually-clicked. We
-		// then inspect what our extension *asked the browser to do*: the
-		// href and the `download` attribute - exactly the two things this
-		// test cares about. No real network, no real download, no flakes.
-		await installAnchorClickCapture(extensionPage);
-
-		await extensionPage.locator('.sbgx-btn-row').first().click();
-
-		const clicks = await readCapturedAnchorClicks(extensionPage);
-		expect(clicks).toHaveLength(1);
-		const click = clicks[0]!;
-		expect(click.href).toMatch(/\/activities\/9000000001\/export_gpx$/);
-		expect(click.download).toBe('strava_9000000001.gpx');
+	test('single-row GPX button saves export_gpx under the right filename', async ({ extensionPage }) => {
+		const requested: string[] = [];
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			requested.push(route.request().url());
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody('9000000001') });
+		});
+		const { name, bytes } = await downloadFrom(extensionPage, () =>
+			extensionPage.locator('.sbgx-btn-row').first().click(),
+		);
+		expect(name).toBe('strava_9000000001.gpx');
+		// Byte-identical to Strava's export.
+		expect(bytes.toString('utf8')).toBe(gpxBody('9000000001'));
+		expect(requested).toEqual([expect.stringMatching(/\/activities\/9000000001\/export_gpx$/)]);
 	});
 
 	test('format selector defaults to GPX with three options visible', async ({ extensionPage }) => {
@@ -192,26 +132,20 @@ test.describe('Strava Bulk GPX extension', () => {
 		await expect(firstRowBtn).toHaveText('GPX');
 	});
 
-	test('per-row button targets export_tcx when TCX format is selected', async ({ extensionPage }) => {
-		// Same capture-not-click approach as the GPX test - we want to know
-		// what URL/filename our extension asked for, not exercise Chromium's
-		// download stack.
-		await installAnchorClickCapture(extensionPage);
-
+	test('per-row button saves export_tcx when TCX format is selected', async ({ extensionPage }) => {
+		const requested: string[] = [];
+		await extensionPage.route('**/activities/*/export_tcx', async (route) => {
+			requested.push(route.request().url());
+			await route.fulfill({ status: 200, contentType: 'application/xml', body: '<TrainingCenterDatabase/>' });
+		});
 		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
-		await extensionPage.locator('.sbgx-btn-row').first().click();
-
-		const clicks = await readCapturedAnchorClicks(extensionPage);
-		expect(clicks).toHaveLength(1);
-		const click = clicks[0]!;
-		expect(click.href).toMatch(/\/activities\/9000000001\/export_tcx$/);
-		expect(click.download).toBe('strava_9000000001.tcx');
+		const { name } = await downloadFrom(extensionPage, () => extensionPage.locator('.sbgx-btn-row').first().click());
+		expect(name).toBe('strava_9000000001.tcx');
+		expect(requested).toEqual([expect.stringMatching(/\/activities\/9000000001\/export_tcx$/)]);
 	});
 
 	test('per-row button fetches export_original and keeps the uploaded file name', async ({ extensionPage }) => {
-		// Original is fetched rather than linked: an activity without an
-		// uploaded file redirects, and an anchor would navigate away to it.
-		// With the default names, the file keeps the name Strava gives it.
+		// With the default names, an Original file keeps the name Strava gives it.
 		const requested: string[] = [];
 		await extensionPage.route('**/activities/*/export_original', async (route) => {
 			requested.push(route.request().url());
@@ -575,10 +509,8 @@ test.describe('file names', () => {
 			'activities.csv',
 		]);
 
-		await installAnchorClickCapture(extensionPage);
-		await extensionPage.locator('.sbgx-btn-row').first().click();
-		const clicks = await readCapturedAnchorClicks(extensionPage);
-		expect(clicks.map((c) => c.download)).toEqual(['9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx']);
+		const { name } = await downloadFrom(extensionPage, () => extensionPage.locator('.sbgx-btn-row').first().click());
+		expect(name).toBe('9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx');
 	});
 
 	test('"Sport folders" groups zip entries by sport', async ({ extensionPage }) => {
@@ -702,12 +634,10 @@ test.describe('cancel, retry and rate limits', () => {
 		const retry = extensionPage.locator('[data-role="retry"]');
 		await expect(retry).toHaveText('Retry 1 failed');
 
-		// One activity left → a plain single-file download, which the capture records.
-		await installAnchorClickCapture(extensionPage);
-		await retry.click();
+		// One activity left → a plain single-file download.
+		const { name } = await downloadFrom(extensionPage, () => retry.click());
+		expect(name).toBe('strava_9000000002.gpx');
 		await expect(status).toHaveText('Saved 1 activities.');
-		const clicks = await readCapturedAnchorClicks(extensionPage);
-		expect(clicks.map((c) => c.href)).toEqual([expect.stringMatching(/\/activities\/9000000002\/export_gpx$/)]);
 		await expect(failures).toBeHidden();
 	});
 
@@ -846,8 +776,8 @@ test.describe('export history', () => {
 	});
 
 	test('per-row downloads are remembered across reloads, and Forget clears them', async ({ extensionPage }) => {
-		await installAnchorClickCapture(extensionPage);
-		await extensionPage.locator('.sbgx-btn-row').first().click();
+		await stubGpxExports(extensionPage);
+		await downloadFrom(extensionPage, () => extensionPage.locator('.sbgx-btn-row').first().click());
 		const done = extensionPage.locator('.sbgx-done').first();
 		await expect(done).toBeVisible();
 
@@ -1606,5 +1536,40 @@ test.describe('hide start/end, custom distance', () => {
 		await extensionPage.locator('select[data-role="format"]').selectOption('original');
 		await expect(value).toBeDisabled();
 		await expect(unit).toBeDisabled();
+	});
+});
+
+test.describe('single downloads', () => {
+	test('a GPX that comes back as a web page is reported, not saved', async ({ extensionPage }) => {
+		// Distance but no GPS track - a treadmill run, say.
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<html></html>' });
+		});
+		let downloads = 0;
+		extensionPage.on('download', () => downloads++);
+		const alerts: string[] = [];
+		extensionPage.once('dialog', (dialog) => {
+			alerts.push(dialog.message());
+			void dialog.dismiss();
+		});
+		await extensionPage.locator('.sbgx-btn-row').first().click();
+		await expect.poll(() => alerts).toEqual(["Couldn't download 9000000001: Strava has no GPX file for this activity"]);
+		expect(downloads).toBe(0);
+		await expect(extensionPage.locator('.sbgx-done').first()).toBeHidden();
+	});
+
+	test('an Original without a usable file name gets its extension from its bytes', async ({ extensionPage }) => {
+		const fit = Buffer.from([14, 16, 0, 0, 0, 0, 0, 0, ...Buffer.from('.FIT')]);
+		await extensionPage.route('**/activities/*/export_original', async (route) => {
+			await route.fulfill({ status: 200, contentType: 'application/octet-stream', body: fit });
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('original');
+		const single = await downloadFrom(extensionPage, () => extensionPage.locator('.sbgx-btn-row').first().click());
+		expect(single.name).toBe('strava_9000000001.fit');
+
+		await extensionPage.locator('.sbgx-row-cb').nth(0).check();
+		await extensionPage.locator('.sbgx-row-cb').nth(1).check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual(['activities.csv', 'strava_9000000001.fit', 'strava_9000000002.fit']);
 	});
 });

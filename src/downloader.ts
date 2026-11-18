@@ -68,18 +68,6 @@ function xmlType(format: 'gpx' | 'tcx'): string {
 	return format === 'gpx' ? 'application/gpx+xml' : 'application/vnd.garmin.tcx+xml';
 }
 
-/** Tell the browser to download a same-origin URL with our chosen filename. */
-function downloadViaAnchor(href: string, filename: string | null): void {
-	const a = document.createElement('a');
-	a.href = href;
-	if (filename) a.download = filename;
-	// If filename is null (original-format case), omit the download attribute
-	// so the browser uses the Content-Disposition the server returns.
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
-}
-
 /** Tell the browser to download a Blob with our chosen filename. */
 function downloadBlob(filename: string, blob: Blob): void {
 	const url = URL.createObjectURL(blob);
@@ -98,23 +86,30 @@ function today(): string {
 }
 
 /**
- * Parse a `Content-Disposition: attachment; filename="…"` header. Handles both
- * the bare `filename=` form and the RFC 5987 `filename*=UTF-8''…` form Strava
- * sometimes emits for non-ASCII activity titles.
+ * Parse a `Content-Disposition: attachment; filename="…"` header: the
+ * RFC 5987 `filename*=<charset>'<lang>'…` form Strava sometimes emits for
+ * non-ASCII activity titles (UTF-8, or else read byte by byte as
+ * ISO-8859-1), then the plain `filename=` form, quoted (with `\"` escapes)
+ * or bare.
  */
-function parseContentDispositionFilename(value: string | null): string | null {
+export function parseContentDispositionFilename(value: string | null): string | null {
 	if (!value) return null;
-	// Try the UTF-8-encoded form first (filename*=UTF-8''…), then the plain form.
-	const rfc5987 = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(value);
-	if (rfc5987?.[1]) {
+	const extended = /filename\*\s*=\s*([\w!#$&+.^`|~-]+)'[^']*'([^;]+)/i.exec(value);
+	if (extended?.[1] && extended[2]) {
+		const [, charset, encoded] = extended;
 		try {
-			return decodeURIComponent(rfc5987[1]).trim() || null;
+			const decoded = /^utf-?8$/i.test(charset)
+				? decodeURIComponent(encoded)
+				: encoded.replace(/%([0-9a-f]{2})/gi, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)));
+			if (decoded.trim()) return decoded.trim();
 		} catch {
 			/* fall through to the plain form */
 		}
 	}
-	const plain = /filename\s*=\s*"?([^";]+)"?/i.exec(value);
-	return plain?.[1]?.trim() ?? null;
+	const quoted = /filename\s*=\s*"((?:[^"\\]|\\.)*)"/i.exec(value);
+	if (quoted?.[1]) return quoted[1].replace(/\\(.)/g, '$1').trim() || null;
+	// Starts with a non-space, so the trimmed name is never empty.
+	return /filename\s*=\s*([^;"\s][^;"]*)/i.exec(value)?.[1]?.trim() ?? null;
 }
 
 /** Sanitize a server-suggested filename so it's safe to use as a zip entry. */
@@ -141,6 +136,32 @@ function fileExtension(name: string): string {
 }
 
 /**
+ * The extension an Original upload's bytes point to, for when Strava's
+ * Content-Disposition doesn't give one: `.fit` (".FIT" at byte 8, per the
+ * FIT header), `.gz`, `.gpx` / `.tcx` by root element, or "" when unknown.
+ */
+export async function sniffExtension(blob: Blob): Promise<string> {
+	const head = new Uint8Array(await blob.slice(0, 512).arrayBuffer());
+	if (head[0] === 0x1f && head[1] === 0x8b) return '.gz';
+	if (String.fromCharCode(...head.slice(8, 12)) === '.FIT') return '.fit';
+	const text = new TextDecoder().decode(head);
+	if (/<gpx[\s>]/.test(text)) return '.gpx';
+	if (/<TrainingCenterDatabase[\s>]/.test(text)) return '.tcx';
+	return '';
+}
+
+/**
+ * An Original upload's file name: Strava's Content-Disposition name, with an
+ * extension sniffed from the bytes when it has none - or `strava_<id>` plus
+ * that extension when there's no usable header.
+ */
+async function originalFileName(res: Response, blob: Blob, id: string): Promise<string> {
+	const name = parseContentDispositionFilename(res.headers.get('content-disposition'));
+	if (name && fileExtension(name)) return name;
+	return `${name ?? `strava_${id}`}${await sniffExtension(blob)}`;
+}
+
+/**
  * Where an activity's file goes: a path inside the zip (possibly with a
  * sport folder), or - via {@link baseName} - a single download's filename.
  * `serverName` is Strava's Content-Disposition filename, which carries the
@@ -153,7 +174,7 @@ function activityFilePath(
 	serverName: string | null,
 ): string {
 	if (names === 'id') {
-		// Original keeps the uploaded file's own name, as it always has.
+		// Original keeps the uploaded file's own name (see originalFileName).
 		if (format === 'original') return serverName ? sanitizeFilename(serverName) : `strava_${activity.id}`;
 		return `strava_${activity.id}.${format}`;
 	}
@@ -190,16 +211,11 @@ function uniquePath(path: string, used: Set<string>): string {
 }
 
 /**
- * Per-row download. For GPX and TCX, a same-origin anchor click - Strava
- * streams the file via the browser's download manager, which handles the
- * actual writing out of band.
- *
- * Two cases fetch the file and save the blob instead: a trimmed GPX or TCX
- * (it has to be trimmed first), and Original. Original files exist for
- * activities without GPS only when a file was uploaded; an anchor to a
- * missing one would navigate away to the page Strava redirects to, where a
- * fetch can report it. The fetch also delivers the Content-Disposition name
- * the custom name patterns need.
+ * Per-row download: fetch the export, check that it's a file
+ * ({@link exportProblem}), and save it under our name - trimmed first when
+ * `trimRadius` is set. Fetching rather than linking is what lets a missing
+ * export be reported: Strava answers one with a redirect to a web page,
+ * which an anchor would save as the file (or navigate to).
  */
 export async function downloadSingle(
 	activity: ActivityRow,
@@ -207,21 +223,20 @@ export async function downloadSingle(
 	names: NamePattern = 'id',
 	trimRadius = 0,
 ): Promise<void> {
-	const id = String(activity.id);
-	if (format !== 'original' && trimRadius > 0) {
-		const res = await fetchExport(id, format);
+	const res = await fetchExport(activity.id, format);
+	if (format === 'original') {
+		const blob = await res.blob();
+		const serverName = await originalFileName(res, blob, activity.id);
+		downloadBlob(baseName(activityFilePath(activity, format, names, serverName)), blob);
+		return;
+	}
+	const name = baseName(activityFilePath(activity, format, names, null));
+	if (trimRadius > 0) {
 		const xml = trimExport(await res.text(), format, trimRadius);
-		const name = trimmedName(baseName(activityFilePath(activity, format, names, null)));
-		downloadBlob(name, new Blob([xml], { type: xmlType(format) }));
+		downloadBlob(trimmedName(name), new Blob([xml], { type: xmlType(format) }));
 		return;
 	}
-	if (format !== 'original') {
-		downloadViaAnchor(exportUrl(id, format), baseName(activityFilePath(activity, format, names, null)));
-		return;
-	}
-	const res = await fetchExport(id, format);
-	const serverName = parseContentDispositionFilename(res.headers.get('content-disposition'));
-	downloadBlob(baseName(activityFilePath(activity, format, names, serverName)), await res.blob());
+	downloadBlob(name, await res.blob());
 }
 
 /** Backwards-compatible alias - older callers passed no format and expected GPX. */
@@ -463,6 +478,10 @@ export async function downloadBulk(
 		const blob = trim
 			? new Blob([trimExport(await res.text(), format, trimRadius)], { type: xmlType(format) })
 			: await res.blob();
+		// GPX/TCX: known extension. Original: the server's filename carries
+		// the uploaded file's extension (and, for the 'id' pattern, the
+		// whole name).
+		const serverName = format === 'original' ? await originalFileName(res, blob, a.id) : null;
 		// Full: save this zip and start the next one. The swap happens before
 		// the await, so other workers already add to the new part meanwhile.
 		if (splitBytes > 0 && part.files.size > 0 && part.bytes + blob.size > splitBytes) {
@@ -470,11 +489,6 @@ export async function downloadBulk(
 			part = newZipPart();
 			await saveZip(full, zipName(saved + 1));
 		}
-		// GPX/TCX: known extension. Original: the server's filename carries
-		// the uploaded file's extension (and, for the 'id' pattern, the
-		// whole name).
-		const serverName =
-			format === 'original' ? parseContentDispositionFilename(res.headers.get('content-disposition')) : null;
 		// JSZip silently replaces an entry with the same name, so two uploads
 		// that share a filename would otherwise lose one file.
 		const named = activityFilePath(a, format, names, serverName);
