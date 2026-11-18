@@ -391,5 +391,36 @@
 	},
 	"notLoggedIn": {
 		"message": "未登录 Strava"
+	},
+	"splitLabel": {
+		"message": "ZIP 拆分大小"
+	},
+	"splitNever": {
+		"message": "不拆分"
+	},
+	"splitTitle": {
+		"message": "大型下载会保存为多个 ZIP (…_part1.zip、…_part2.zip)，每个装满后立即保存，避免大型备份耗尽浏览器内存。大小按压缩前的文件计算。"
+	},
+	"cancelledAfterParts": {
+		"message": "已取消 - 已保存 $COUNT$ 个 ZIP 分卷。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "已将 $COUNT$ 项活动保存到 $PARTS$ 个 ZIP 中。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
 	}
 }

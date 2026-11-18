@@ -1098,8 +1098,11 @@ test.describe('hide start/end', () => {
 			'Failed: All 2 downloads failed. First error: the whole track is within the hidden distance',
 		);
 
-		// TCX files aren't trimmed: the chip goes and the setting disables.
+		// TCX is trimmed too; Original files aren't: the chip goes and the
+		// setting disables.
 		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		await expect(extensionPage.locator('[data-role="trim-chip"]')).toBeVisible();
+		await extensionPage.locator('select[data-role="format"]').selectOption('original');
 		await expect(extensionPage.locator('[data-role="trim-chip"]')).toBeHidden();
 		await expect(extensionPage.locator('select[data-role="trim"]')).toBeDisabled();
 		await expect(extensionPage.locator('select[data-role="trim"]')).toHaveAttribute(

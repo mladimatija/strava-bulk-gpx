@@ -391,5 +391,36 @@
 	},
 	"notLoggedIn": {
 		"message": "Strava にログインしていません"
+	},
+	"splitLabel": {
+		"message": "ZIP を分割するサイズ"
+	},
+	"splitNever": {
+		"message": "分割しない"
+	},
+	"splitTitle": {
+		"message": "大きなダウンロードは複数の ZIP (…_part1.zip、…_part2.zip) に分け、いっぱいになるたびに保存します。大きなバックアップでブラウザーのメモリが不足しないようにするためです。サイズは圧縮前のファイルで数えます。"
+	},
+	"cancelledAfterParts": {
+		"message": "キャンセルしました。ZIP の$COUNT$個のパートは保存済みです。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "$COUNT$件のアクティビティを$PARTS$個の ZIP に保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
 	}
 }

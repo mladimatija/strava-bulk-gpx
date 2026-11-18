@@ -368,5 +368,32 @@
 	"notLoggedIn": {
 		"message": "not logged in to Strava",
 		"description": "Failure reason (lowercase) when Strava redirects an export to its login page."
+	},
+	"splitLabel": {
+		"message": "Split zips after",
+		"description": "Heading of the '⋯' menu setting that splits large bulk downloads into several zips. Followed by a size, e.g. '500 MB', or 'Never'."
+	},
+	"splitNever": {
+		"message": "Never",
+		"description": "'Split zips after' option: always save one zip."
+	},
+	"splitTitle": {
+		"message": "Large downloads are saved as several zips (…_part1.zip, …_part2.zip), each as soon as it's full, so a big backup doesn't run your browser out of memory. Sizes count the files before compression.",
+		"description": "Tooltip on the 'Split zips after' setting. Keep '_part1.zip' / '_part2.zip' verbatim - they are part of the file names."
+	},
+	"cancelledAfterParts": {
+		"message": "Cancelled - $COUNT$ zip parts were already saved.",
+		"description": "Shown when a split bulk download is cancelled after some zips were already saved.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "2" }
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "Saved $COUNT$ activities in $PARTS$ zips.",
+		"description": "Terminal success message for a bulk download that was split into several zips.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "1200" },
+			"parts": { "content": "$2", "example": "3" }
+		}
 	}
 }

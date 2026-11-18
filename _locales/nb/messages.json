@@ -391,5 +391,36 @@
 	},
 	"notLoggedIn": {
 		"message": "ikke logget inn på Strava"
+	},
+	"splitLabel": {
+		"message": "Del ZIP-filer etter"
+	},
+	"splitNever": {
+		"message": "Aldri"
+	},
+	"splitTitle": {
+		"message": "Store nedlastinger lagres som flere ZIP-filer (…_part1.zip, …_part2.zip), hver så snart den er full, så en stor sikkerhetskopi ikke bruker opp nettleserens minne. Størrelsen regnes av filene før komprimering."
+	},
+	"cancelledAfterParts": {
+		"message": "Avbrutt - $COUNT$ ZIP-deler var allerede lagret.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "$COUNT$ aktiviteter lagret i $PARTS$ ZIP-filer.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
 	}
 }

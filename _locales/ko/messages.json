@@ -391,5 +391,36 @@
 	},
 	"notLoggedIn": {
 		"message": "Strava에 로그인되어 있지 않음"
+	},
+	"splitLabel": {
+		"message": "ZIP 분할 크기"
+	},
+	"splitNever": {
+		"message": "분할 안 함"
+	},
+	"splitTitle": {
+		"message": "큰 다운로드는 여러 ZIP(…_part1.zip, …_part2.zip)으로 나누어 각각 가득 차는 즉시 저장하므로, 큰 백업으로 브라우저 메모리가 부족해지지 않습니다. 크기는 압축 전 파일 기준입니다."
+	},
+	"cancelledAfterParts": {
+		"message": "취소됨 - ZIP 파트 $COUNT$개는 이미 저장되었습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "활동 $COUNT$개를 ZIP $PARTS$개에 저장했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
 	}
 }

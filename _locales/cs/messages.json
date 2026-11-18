@@ -391,5 +391,36 @@
 	},
 	"notLoggedIn": {
 		"message": "nejste přihlášeni do Stravy"
+	},
+	"splitLabel": {
+		"message": "Rozdělit ZIP po"
+	},
+	"splitNever": {
+		"message": "Nikdy"
+	},
+	"splitTitle": {
+		"message": "Velká stahování se uloží jako několik ZIP souborů (…_part1.zip, …_part2.zip), každý hned, jak se naplní, aby velká záloha nevyčerpala paměť prohlížeče. Velikost se počítá ze souborů před kompresí."
+	},
+	"cancelledAfterParts": {
+		"message": "Zrušeno - $COUNT$ částí ZIP už bylo uloženo.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "Uloženo $COUNT$ aktivit v $PARTS$ souborech ZIP.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
 	}
 }

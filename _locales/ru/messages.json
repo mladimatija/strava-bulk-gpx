@@ -391,5 +391,36 @@
 	},
 	"notLoggedIn": {
 		"message": "вход в Strava не выполнен"
+	},
+	"splitLabel": {
+		"message": "Делить ZIP после"
+	},
+	"splitNever": {
+		"message": "Никогда"
+	},
+	"splitTitle": {
+		"message": "Большие загрузки сохраняются в нескольких ZIP (…_part1.zip, …_part2.zip), каждый сразу, как заполнится, чтобы большой резервной копии хватило памяти браузера. Размер считается по файлам до сжатия."
+	},
+	"cancelledAfterParts": {
+		"message": "Отменено - уже сохранено частей ZIP: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "Сохранено тренировок: $COUNT$ (ZIP-файлов: $PARTS$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
 	}
 }

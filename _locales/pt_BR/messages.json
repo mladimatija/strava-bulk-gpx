@@ -391,5 +391,36 @@
 	},
 	"notLoggedIn": {
 		"message": "você não está conectado ao Strava"
+	},
+	"splitLabel": {
+		"message": "Dividir ZIPs após"
+	},
+	"splitNever": {
+		"message": "Nunca"
+	},
+	"splitTitle": {
+		"message": "Downloads grandes são salvos em vários ZIPs (…_part1.zip, …_part2.zip), cada um assim que fica cheio, para que um backup grande não esgote a memória do navegador. O tamanho conta os arquivos antes da compressão."
+	},
+	"cancelledAfterParts": {
+		"message": "Cancelado - $COUNT$ partes do ZIP já tinham sido salvas.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "$COUNT$ atividades salvas em $PARTS$ ZIPs.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
 	}
 }

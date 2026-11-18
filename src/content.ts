@@ -10,7 +10,8 @@
 //     format: GPX and TCX need GPS data (distance > 0), Original doesn't.
 //   - A MutationObserver re-runs the injection whenever Strava replaces the
 //     table body (pagination, search, sort). Selection state survives via a
-//     module-scope Map keyed by activity id, so a selection can span pages.
+//     module-scope Map keyed by activity id, so a selection can span pages -
+//     and selection.ts saves it, so it survives a reload too.
 
 import { downloadSingle, downloadBulk, downloadMerged, downloadActivitiesCsv, type BulkOptions } from './downloader.ts';
 import { activityIdsFromCsv } from './csv.ts';
@@ -71,6 +72,15 @@ interface State {
 	 * resets on every page load and shows a toolbar chip while on.
 	 */
 	trim: number;
+	/** The radius as the user chose it, for the chip: "500 m", "650 ft". */
+	trimLabel: string;
+	/** Start a new zip after this many MB of files, 0 = never split. */
+	splitMb: number;
+	/**
+	 * Day/month order of the table's dates, once any row settles it (see
+	 * dates.ts). Not saved: it's re-learned from the rows on every load.
+	 */
+	dateOrder: DateOrder | null;
 	/** Aborts the in-flight bulk/merge run; null when idle. */
 	abort: AbortController | null;
 	/**
@@ -91,6 +101,7 @@ const STATE: State = {
 	names: 'id',
 	mergeMode: 'tracks',
 	trim: 0,
+	dateOrder: null,
 	abort: null,
 	lastRun: null,
 	anchorId: null,
@@ -107,7 +118,7 @@ function parseFormat(value: unknown): ExportFormat {
 
 /** Narrow an untrusted stored value to a known name pattern, defaulting to id. */
 function parseNames(value: unknown): NamePattern {
-	return value === 'title' || value === 'sport' ? value : 'id';
+	return value === 'title' || value === 'sport' || value === 'date' ? value : 'id';
 }
 
 /** Narrow an untrusted stored value to a known merge mode, defaulting to tracks. */
@@ -129,7 +140,7 @@ function radiusLabel(metres: number): string {
 	return metres >= 1000 ? `${metres / 1000} km` : `${metres} m`;
 }
 
-/** The trim radius that applies right now - trimming is GPX-only. */
+/** The trim radius that applies right now - Original files aren't trimmed. */
 function effectiveTrim(): number {
 	return STATE.format === 'gpx' ? STATE.trim : 0;
 }
@@ -137,10 +148,16 @@ function effectiveTrim(): number {
 /** Restore the last-used format and name pattern; storage failures keep the defaults. */
 async function loadPreferences(): Promise<void> {
 	try {
-		const stored = await chrome.storage.local.get([FORMAT_STORAGE_KEY, NAMES_STORAGE_KEY, MERGE_MODE_STORAGE_KEY]);
+		const stored = await chrome.storage.local.get([
+			FORMAT_STORAGE_KEY,
+			NAMES_STORAGE_KEY,
+			MERGE_MODE_STORAGE_KEY,
+			SPLIT_STORAGE_KEY,
+		]);
 		STATE.format = parseFormat(stored[FORMAT_STORAGE_KEY]);
 		STATE.names = parseNames(stored[NAMES_STORAGE_KEY]);
 		STATE.mergeMode = parseMergeMode(stored[MERGE_MODE_STORAGE_KEY]);
+		STATE.splitMb = parseSplit(stored[SPLIT_STORAGE_KEY] ?? 500);
 	} catch {
 		// Keep the defaults - a broken storage area shouldn't block exports.
 	}
@@ -188,7 +205,36 @@ function rowColumns(row: HTMLTableRowElement): ActivityColumn[] {
 	return columns;
 }
 
-/** Pull { id, name, sport_type, columns } from a rendered table row, or null. */
+/** A date as Strava's Date column shows it: "17/11/2026", "2026/11/17", "17.11.2026", … */
+const DATE_TEXT = /\d{1,4}\s?[./\-年]\s?\d{1,2}\s?[./\-月]\s?\d{1,4}/;
+
+/** The locale Strava renders the page in, for weekday names in dates. */
+function pageLocale(): string {
+	return document.documentElement.lang || navigator.language;
+}
+
+/** Text of the row's Date cell: Strava's `col-date` cell, else the first cell that reads as a date. */
+function dateText(row: HTMLTableRowElement): string | null {
+	const cells = Array.from(row.cells).filter((td) => !td.classList.contains('sbgx-cell'));
+	const cell =
+		cells.find((td) => td.classList.contains('col-date')) ?? cells.find((td) => DATE_TEXT.test(td.textContent ?? ''));
+	return cell ? (cell.textContent ?? '').trim() : null;
+}
+
+/** Learn the table's day/month order from the first row whose date settles it. */
+function learnDateOrder(table: HTMLTableElement): void {
+	if (STATE.dateOrder) return;
+	for (const row of Array.from(table.tBodies[0]?.rows ?? [])) {
+		const text = dateText(row);
+		const order = text && dateOrderOf(text, pageLocale());
+		if (order) {
+			STATE.dateOrder = order;
+			return;
+		}
+	}
+}
+
+/** Pull { id, name, sport_type, date, hasGps, columns } from a rendered table row, or null. */
 function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	const link = row.querySelector<HTMLAnchorElement>('a[href*="/activities/"]');
 	if (!link) return null;
@@ -251,9 +297,24 @@ function visibleSelectableRows(): HTMLTableRowElement[] {
 
 // ---------- Selection ----------
 
+	return { id, name, sport_type, hasGps: rowHasGps(row), columns: rowColumns(row) };
 function setSelected(activity: ActivityRow, selected: boolean): void {
 	if (selected) STATE.selected.set(activity.id, activity);
 	else STATE.selected.delete(activity.id);
+	persistSelection();
+}
+
+/**
+ * Select the selectable rows on this page - with `onlyNew`, just those not
+ * yet exported in the current format. Off-page picks stay as they are.
+ */
+function selectVisible(onlyNew: boolean): void {
+	for (const row of visibleSelectableRows()) {
+		const id = row.dataset.sbgxId;
+		if (!id || (onlyNew && exportedAt(id, STATE.format) !== null)) continue;
+		const a = activityFromRow(row);
+		if (a) setSelected(a, true);
+	}
 }
 
 /**
@@ -415,6 +476,8 @@ function buildToolbar(): HTMLDivElement {
         <span>${escapeHtml(t('selectAllVisible'))}</span>
       </label>
       <button class="sbgx-btn sbgx-btn-link" data-role="select-new">${escapeHtml(t('selectNew'))}</button>
+      <button class="sbgx-btn sbgx-btn-link" data-role="select-pages" title="${escapeHtml(t('selectAllPagesTitle'))}">${escapeHtml(t('selectAllPages'))}</button>
+      <button class="sbgx-btn sbgx-btn-link" data-role="select-new-pages">${escapeHtml(t('selectNewAllPages'))}</button>
       <label class="sbgx-tool sbgx-format-wrap">
         <span>${escapeHtml(t('formatLabel'))}</span>
         <select class="sbgx-format" data-role="format">
@@ -429,6 +492,7 @@ function buildToolbar(): HTMLDivElement {
           <option value="id">${escapeHtml(t('namesId'))}</option>
           <option value="title">${escapeHtml(t('namesTitle'))}</option>
           <option value="sport">${escapeHtml(t('namesSport'))}</option>
+          <option value="date">${escapeHtml(t('namesDate'))}</option>
         </select>
       </label>
       <button class="sbgx-btn sbgx-btn-primary" data-role="bulk" disabled>${escapeHtml(t('downloadSelected'))}</button>
@@ -503,6 +567,8 @@ function buildToolbar(): HTMLDivElement {
 		}
 		onSelectionChanged();
 	});
+	toolbarPart(toolbar, 'select-pages').addEventListener('click', () => void handleSelectPages(false));
+	toolbarPart(toolbar, 'select-new-pages').addEventListener('click', () => void handleSelectPages(true));
 
 	toolbarPart(toolbar, 'bulk').addEventListener('click', handleBulkClick);
 	toolbarPart(toolbar, 'merge').addEventListener('click', handleMergeClick);
@@ -512,6 +578,7 @@ function buildToolbar(): HTMLDivElement {
 	toolbarPart(toolbar, 'clear').addEventListener('click', () => {
 		STATE.selected.clear();
 		STATE.anchorId = null;
+		persistSelection();
 		onSelectionChanged();
 	});
 
@@ -544,8 +611,9 @@ function buildToolbar(): HTMLDivElement {
 
 /**
  * The "⋯" menu holds settings and actions that are rarely touched: how GPX
- * merges combine activities; hiding the start/end of GPX tracks (whose chip
- * sits on the toolbar, so it can't go unnoticed); and export history -
+ * merges combine activities; hiding the start/end of GPX and TCX tracks
+ * (whose chip sits on the toolbar, so it can't go unnoticed); when to split
+ * large zips; and export history -
  * marking activities from an earlier CSV as exported (so existing users
  * don't start with everything "new"), and forgetting the history.
  */
@@ -553,6 +621,12 @@ function wireMoreMenu(toolbar: HTMLDivElement): void {
 	const more = toolbarPart<HTMLDetailsElement>(toolbar, 'more');
 	document.addEventListener('click', (e) => {
 		if (more.open && !more.contains(e.target as Node)) more.open = false;
+	});
+	// The menu opens leftwards, unless the toolbar has wrapped the "⋯" too
+	// close to the left edge for it to fit.
+	const menu = more.querySelector<HTMLElement>('.sbgx-menu')!;
+	more.addEventListener('toggle', () => {
+		if (more.open) menu.classList.toggle('sbgx-menu-right', more.getBoundingClientRect().right < menu.offsetWidth);
 	});
 
 	const mergeModeSelect = toolbarPart<HTMLSelectElement>(toolbar, 'merge-mode');
@@ -563,8 +637,36 @@ function wireMoreMenu(toolbar: HTMLDivElement): void {
 		renderToolbarCounts();
 	});
 
+	const splitSelect = toolbarPart<HTMLSelectElement>(toolbar, 'split');
+	splitSelect.value = String(STATE.splitMb);
+	splitSelect.addEventListener('change', () => {
+		STATE.splitMb = parseSplit(splitSelect.value);
+		savePreference(SPLIT_STORAGE_KEY, String(STATE.splitMb));
+	});
+
 	const trimSelect = toolbarPart<HTMLSelectElement>(toolbar, 'trim');
+	const custom = toolbarPart(toolbar, 'trim-custom');
+	const customValue = toolbarPart<HTMLInputElement>(toolbar, 'trim-value');
+	const customUnit = toolbarPart<HTMLSelectElement>(toolbar, 'trim-unit');
 	trimSelect.value = String(STATE.trim);
+	customUnit.value = defaultLengthUnit(navigator.language);
+	// Apply whichever radius the menu shows. A custom distance is the
+	// number as typed, in the unit picked - switching the unit doesn't
+	// convert the number, it changes what it means. No valid number = off.
+	const applyTrim = (): void => {
+		custom.hidden = trimSelect.value !== 'custom';
+		if (custom.hidden) {
+			STATE.trim = parseTrim(trimSelect.value);
+			STATE.trimLabel = radiusLabel(STATE.trim);
+		} else {
+			const value = customValue.valueAsNumber;
+			const unit: LengthUnit = customUnit.value === 'ft' ? 'ft' : 'm';
+			const valid = Number.isFinite(value) && value > 0;
+			STATE.trim = valid ? value * (unit === 'ft' ? METRES_PER_FOOT : 1) : 0;
+			STATE.trimLabel = valid ? lengthLabel(value, unit, navigator.language) : '';
+		}
+		renderToolbarCounts();
+	};
 	trimSelect.addEventListener('change', () => {
 		STATE.trim = parseTrim(trimSelect.value);
 		renderToolbarCounts();
@@ -697,9 +799,13 @@ function renderToolbarCounts(): void {
 	toolbarPart(STATE.toolbar, 'trim-chip').hidden = trim === 0;
 	toolbarPart(STATE.toolbar, 'trim-chip-text').textContent = trim > 0 ? t('trimChip', radiusLabel(trim)) : '';
 	const trimSelect = toolbarPart<HTMLSelectElement>(STATE.toolbar, 'trim');
-	trimSelect.disabled = STATE.format !== 'gpx';
+	trimSelect.disabled = STATE.format === 'original';
+	toolbarPart<HTMLInputElement>(STATE.toolbar, 'trim-value').disabled = trimSelect.disabled;
+	toolbarPart<HTMLSelectElement>(STATE.toolbar, 'trim-unit').disabled = trimSelect.disabled;
 	if (trimSelect.disabled) {
-		trimSelect.setAttribute('title', t('trimOnlyGpx'));
+ * merges combine activities; hiding the start/end of GPX tracks (whose chip
+ * sits on the toolbar, so it can't go unnoticed); when to split large zips;
+ * and export history -
 	} else {
 		trimSelect.removeAttribute('title');
 	}
@@ -890,7 +996,13 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 		onProgress: (ev) => showProgress(ev, format),
 		signal: controller.signal,
 		names: STATE.names,
-		trimRadius: effectiveTrim(),
+		trimRadius,
+		splitBytes: STATE.splitMb * 1_000_000,
+		onSaved: (ids) => {
+			savedParts++;
+			// Trimmed files aren't backups of the activities, so they don't count.
+			if (trimRadius === 0) rememberExports(ids, format);
+		},
 	};
 	const mergeMode = STATE.mergeMode;
 	try {
@@ -989,15 +1101,16 @@ function tick(): void {
 }
 
 async function start(): Promise<void> {
-	// Load saved preferences and the export history first so the toolbar and
-	// row buttons render with them from the start instead of flashing the
-	// defaults.
-	await Promise.all([
+	// Load saved preferences, the export history and the selection first so
+	// the toolbar and row buttons render with them from the start instead of
+	// flashing the defaults.
+	const [, , saved] = await Promise.all([
 		loadPreferences(),
 		loadHistory(() => {
 			renderExportBadges();
 			renderToolbarCounts();
 		}),
+		loadSelection(),
 	]);
 	tick();
 	// Strava's React reflows the table on every search / sort / pagination.

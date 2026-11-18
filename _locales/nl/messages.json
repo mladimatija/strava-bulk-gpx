@@ -391,5 +391,36 @@
 	},
 	"notLoggedIn": {
 		"message": "niet ingelogd bij Strava"
+	},
+	"splitLabel": {
+		"message": "ZIP-bestanden splitsen na"
+	},
+	"splitNever": {
+		"message": "Nooit"
+	},
+	"splitTitle": {
+		"message": "Grote downloads worden als meerdere ZIP-bestanden opgeslagen (…_part1.zip, …_part2.zip), elk zodra het vol is, zodat een grote back-up het geheugen van je browser niet opmaakt. De grootte telt de bestanden vóór compressie."
+	},
+	"cancelledAfterParts": {
+		"message": "Geannuleerd - $COUNT$ ZIP-delen waren al opgeslagen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "$COUNT$ activiteiten opgeslagen in $PARTS$ ZIP-bestanden.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
 	}
 }

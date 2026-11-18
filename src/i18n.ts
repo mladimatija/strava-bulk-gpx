@@ -98,7 +98,12 @@ export type MessageKey =
 	| 'trimAllHidden'
 	| 'noGpsDeselected'
 	| 'exportUnavailable'
-	| 'notLoggedIn';
+	| 'notLoggedIn'
+	| 'splitLabel'
+	| 'splitNever'
+	| 'splitTitle'
+	| 'cancelledAfterParts'
+	| 'savedActivitiesParts';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -182,6 +187,12 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	noGpsDeselected: 'Deselected $1 activities without GPS - they have no $2 export, only Original.',
 	exportUnavailable: 'Strava has no $1 file for this activity',
 	notLoggedIn: 'not logged in to Strava',
+	splitLabel: 'Split zips after',
+	splitNever: 'Never',
+	splitTitle:
+		"Large downloads are saved as several zips (…_part1.zip, …_part2.zip), each as soon as it's full, so a big backup doesn't run your browser out of memory. Sizes count the files before compression.",
+	cancelledAfterParts: 'Cancelled - $1 zip parts were already saved.',
+	savedActivitiesParts: 'Saved $1 activities in $2 zips.',
 };
 
 /**

@@ -42,6 +42,8 @@ export interface BulkResult {
 	ok: number;
 	/** Per-activity failures, in completion order. */
 	failed: BulkFailure[];
+	/** How many zips were saved - more than 1 when a large download was split. */
+	parts: number;
 }
 
 /**

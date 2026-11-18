@@ -157,7 +157,9 @@ function activityFilePath(
 		return `strava_${activity.id}.${format}`;
 	}
 	const ext = format === 'original' ? fileExtension(serverName ?? '') : `.${format}`;
-	const file = `${activity.id}_${pathSegment(activity.name)}${ext}`;
+	// Without a date, fall back to the id: it keeps the name unique.
+	const prefix = names === 'date' && activity.date ? activity.date : activity.id;
+	const file = `${prefix}_${pathSegment(activity.name)}${ext}`;
 	const sport = activity.sport_type.trim();
 	return names === 'sport' && sport ? `${pathSegment(sport)}/${file}` : file;
 }
@@ -244,7 +246,7 @@ export interface BulkOptions {
 	/**
 	 * Hide start/end: drop GPX points within this many metres of each
 	 * activity's start and end (see trim.ts). 0 or absent = off; ignored for
-	 * TCX and Original.
+	 * Original.
 	 */
 	trimRadius?: number;
 	/**
@@ -377,6 +379,22 @@ async function fetchAll(
 /** Name of the activity summary added to every multi-file zip. */
 const CSV_NAME = 'activities.csv';
 
+/** One zip being filled: its entries, and the activities they belong to. */
+interface ZipPart {
+	zip: JSZip;
+	/** Activity id → path inside the zip, for the CSV's File column. */
+	files: Map<string, string>;
+	/** Paths taken, lower-cased (see {@link uniquePath}). */
+	used: Set<string>;
+	/** Bytes of the files added so far, before compression. */
+	bytes: number;
+}
+
+function newZipPart(): ZipPart {
+	// Reserve the summary's name so no activity file can overwrite it.
+	return { zip: new JSZip(), files: new Map(), used: new Set([CSV_NAME]), bytes: 0 };
+}
+
 /**
  * Bulk download. One id → one file (no zip). Multiple ids → zip, with an
  * `activities.csv` summary next to the files.
@@ -399,9 +417,9 @@ export async function downloadBulk(
 	format: ExportFormat,
 	options: BulkOptions = {},
 ): Promise<BulkResult> {
-	const { onProgress, signal, names = 'id', trimRadius = 0 } = options;
-	const trim = format === 'gpx' && trimRadius > 0;
-	if (activities.length === 0) return { ok: 0, failed: [] };
+	const { onProgress, signal, names = 'id', trimRadius = 0, splitBytes = 0, onSaved } = options;
+	const trim = format !== 'original' && trimRadius > 0;
+	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
 	if (activities.length === 1) {
 		await downloadSingle(activities[0]!, format, names, trimRadius);
 		return { ok: 1, failed: [] };
@@ -417,8 +435,15 @@ export async function downloadBulk(
 		// A track trimmed down to nothing throws here, which records this
 		// activity as failed with that reason.
 		const blob = trim
-			? new Blob([trimGpx(await res.text(), trimRadius)], { type: 'application/gpx+xml' })
+			? new Blob([trimExport(await res.text(), format, trimRadius)], { type: xmlType(format) })
 			: await res.blob();
+		// Full: save this zip and start the next one. The swap happens before
+		// the await, so other workers already add to the new part meanwhile.
+		if (splitBytes > 0 && part.files.size > 0 && part.bytes + blob.size > splitBytes) {
+			const full = part;
+			part = newZipPart();
+			await saveZip(full, zipName(saved + 1));
+		}
 		// GPX/TCX: known extension. Original: the server's filename carries
 		// the uploaded file's extension (and, for the 'id' pattern, the
 		// whole name).
@@ -427,43 +452,24 @@ export async function downloadBulk(
 		// JSZip silently replaces an entry with the same name, so two uploads
 		// that share a filename would otherwise lose one file.
 		const named = activityFilePath(a, format, names, serverName);
-		const path = uniquePath(trim ? trimmedName(named) : named, used);
-		zip.file(path, blob);
-		files.set(a.id, path);
+		const path = uniquePath(trim ? trimmedName(named) : named, part.used);
+		part.zip.file(path, blob);
+		part.files.set(a.id, path);
+		part.bytes += blob.size;
+		ok++;
 	});
 
-	if (files.size === 0) {
+	if (ok === 0) {
 		throw new Error(`All ${activities.length} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
 	}
-
-	onProgress?.({ stage: 'zipping' });
-	zip.file(
-		CSV_NAME,
-		activitiesCsv(
-			activities.filter((a) => files.has(a.id)),
-			files,
-		),
-	);
-	const blob = await zip.generateAsync({
-		type: 'blob',
-		compression: 'DEFLATE',
-		compressionOptions: { level: 6 },
-	});
-	// Cancel may land while JSZip is compressing; honour it before saving.
-	signal?.throwIfAborted();
-	// Zip filename mentions the format, so a user with several batches doesn't
-	// confuse strava_gpx_…zip with strava_tcx_…zip in their Downloads folder.
-	downloadBlob(`strava_${format}_${today()}.zip`, blob);
-	return { ok: files.size, failed };
+	if (part.files.size > 0) await saveZip(part, zipName(saved > 0 ? saved + 1 : null));
+	return { ok, failed, parts: saved };
 }
 
 /** Backwards-compatible alias - older callers passed no format and expected GPX. */
 export function downloadBulkGpx(activities: ActivityRow[], options: BulkOptions = {}): Promise<BulkResult> {
 	return downloadBulk(activities, 'gpx', options);
 }
-
-const GPX_NS = 'http://www.topografix.com/GPX/1/1';
-const TCX_NS = 'http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2';
 
 interface MergeSource {
 	id: string;
@@ -709,8 +715,9 @@ function mergeTcxDocuments(sources: MergeSource[]): string {
  *     (`strava_joined_<date>.gpx`): to upload back to Strava as one activity.
  *   - TCX → one activity with a lap per activity (`strava_merged_<date>.tcx`).
  *
- * With `options.trimRadius` (GPX only) every source is trimmed before merging
- * and the file name gets a `_trimmed` suffix.
+	const { onProgress, signal, names = 'id', trimRadius = 0, splitBytes = 0, onSaved } = options;
+	const trim = format === 'gpx' && trimRadius > 0;
+	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
  *
  * Progress events mirror {@link downloadBulk} but the post-fetch stage is
  * `'merging'` instead of `'zipping'` so the UI can show the right string.
@@ -726,12 +733,12 @@ export async function downloadMerged(
 	mode: MergeMode,
 	options: BulkOptions = {},
 ): Promise<BulkResult> {
-	if (activities.length === 0) return { ok: 0, failed: [] };
+	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
 
 	// Indexed by input position rather than pushed as fetches finish, so the
 	// merge never depends on which response happened to arrive first.
 	const fetched: (MergeSource | undefined)[] = [];
-	const trimRadius = format === 'gpx' ? (options.trimRadius ?? 0) : 0;
+	const trimRadius = options.trimRadius ?? 0;
 	const failed = await fetchAll(activities, format, options, async (a, res, i) => {
 		const xml = await res.text();
 		fetched[i] = { id: a.id, name: a.name, xml: trimRadius > 0 ? trimGpx(xml, trimRadius) : xml };
@@ -745,14 +752,10 @@ export async function downloadMerged(
 	options.onProgress?.({ stage: 'merging' });
 	const merged = format === 'tcx' ? mergeTcxDocuments(sources) : mergeGpxDocuments(sources, mode, trimRadius);
 	options.signal?.throwIfAborted();
-	if (format === 'tcx') {
-		downloadBlob(`strava_merged_${today()}.tcx`, new Blob([merged], { type: 'application/vnd.garmin.tcx+xml' }));
-	} else {
-		const kind = mode === 'single' ? 'joined' : 'merged';
-		const name = `strava_${kind}_${today()}${trimRadius > 0 ? '_trimmed' : ''}.gpx`;
-		downloadBlob(name, new Blob([merged], { type: 'application/gpx+xml' }));
-	}
-	return { ok: sources.length, failed };
+	const kind = format === 'gpx' && mode === 'single' ? 'joined' : 'merged';
+	const name = `strava_${kind}_${today()}${trimRadius > 0 ? '_trimmed' : ''}.${format}`;
+	downloadBlob(name, new Blob([merged], { type: xmlType(format) }));
+	return { ok: sources.length, failed, parts: 1 };
 }
 
 /** Backwards-compatible alias - older callers merged GPX into separate tracks. */
