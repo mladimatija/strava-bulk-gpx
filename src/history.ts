@@ -64,18 +64,29 @@ export function exportedTotal(): number {
 	return FORMATS.reduce((sum, format) => sum + Object.keys(cache[format]).length, 0);
 }
 
+/** The last queued write; each waits for the one before (see recordExports). */
+let writes: Promise<void> = Promise.resolve();
+
 /**
  * Record `ids` as exported in `format`, now. Re-reads storage first so an
- * export finishing in another tab at the same time isn't overwritten.
+ * export finishing in another tab at the same time isn't overwritten, and
+ * queues behind this tab's earlier writes - two zip parts saved moments
+ * apart would otherwise both read the old history, and the second write
+ * would drop the first part's ids.
  */
-export async function recordExports(ids: string[], format: ExportFormat): Promise<void> {
-	if (ids.length === 0) return;
-	const stored = await chrome.storage.local.get(HISTORY_KEY);
-	const next = parseHistory(stored[HISTORY_KEY]);
-	const now = Date.now();
-	for (const id of ids) next[format][id] = now;
-	cache = next;
-	await chrome.storage.local.set({ [HISTORY_KEY]: next });
+export function recordExports(ids: string[], format: ExportFormat): Promise<void> {
+	if (ids.length === 0) return Promise.resolve();
+	const write = writes.then(async () => {
+		const stored = await chrome.storage.local.get(HISTORY_KEY);
+		const next = parseHistory(stored[HISTORY_KEY]);
+		const now = Date.now();
+		for (const id of ids) next[format][id] = now;
+		cache = next;
+		await chrome.storage.local.set({ [HISTORY_KEY]: next });
+	});
+	// A failed write mustn't block the ones after it.
+	writes = write.catch(() => undefined);
+	return write;
 }
 
 /** Forget every recorded export, in every format. */

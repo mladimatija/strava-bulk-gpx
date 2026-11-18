@@ -417,27 +417,14 @@ function csvLines(text: string): string[] {
 		.split('\r\n');
 }
 
-interface FakeRow {
-	id: string;
-	sport: string;
-	title: string;
-}
-
 /**
  * Simulate Strava paginating: swap the table body for other activities, the
  * way its React re-render does, and wait for the extension to augment them.
  */
 async function showOtherPage(page: Page, rows: FakeRow[]): Promise<void> {
-	await page.evaluate((fakeRows) => {
-		document.querySelector('tbody')!.innerHTML = fakeRows
-			.map(
-				(r) =>
-					`<tr><td>${r.sport}</td><td>Mon, 04/05/2026</td><td><a href="/activities/${r.id}">${r.title}</a></td>` +
-					`<td class="num">30:00</td><td class="num">5.00 km</td><td class="num">20 m</td><td class="num">5</td>` +
-					`<td class="row-actions"><a href="#">Edit</a></td></tr>`,
-			)
-			.join('');
-	}, rows);
+	await page.evaluate((html) => {
+		document.querySelector('tbody')!.innerHTML = html;
+	}, fakeRowsHtml(rows));
 	await page.locator(`tr[data-sbgx-id="${rows[0]!.id}"] .sbgx-row-cb`).waitFor();
 }
 
@@ -623,7 +610,11 @@ test.describe('CSV', () => {
 
 		expect(csv.startsWith('\uFEFF')).toBe(true);
 		const lines = csvLines(csv);
-		expect(lines[0]).toBe('Activity ID,URL,File,Sport,Date,Title,Time,Distance,Elevation,Relative Effort');
+		expect(lines[0]).toBe(
+			'Activity ID,URL,File,Date (YYYY-MM-DD),Sport,Date,Title,Time,Distance,Elevation,Relative Effort',
+		);
+		// "Sat, 09/05/2026" alone could be 9 May or 5 September (both
+		// Saturdays); "Fri, 08/05/2026" further down settles it as day-first.
 		expect(lines).toContain(
 			'9000000001,https://www.strava.com/activities/9000000001,strava_9000000001.gpx,Trail Run,' +
 				'"Sat, 09/05/2026",Traversa v19 feat. Ex Acini Novi Šćapi,5:32:41,48.11 km,"1,889 m",109',
@@ -1089,5 +1080,505 @@ test.describe('hide start/end', () => {
 		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
 		await expect(extensionPage.locator('[data-role="trim-chip"]')).toBeHidden();
 		await expect(extensionPage.locator('select[data-role="trim"]')).toBeDisabled();
+		await expect(extensionPage.locator('select[data-role="trim"]')).toHaveAttribute(
+			'title',
+			'Not available for Original files',
+		);
+	});
+});
+
+test.describe('selecting across pages', () => {
+	const middle: FakeRow[] = [
+		{ id: '9000000006', sport: 'Ride', title: 'Gravel Loop' },
+		{ id: '9000000007', sport: 'Hike', title: 'Ridge Hike' },
+	];
+	const last: FakeRow[] = [
+		{ id: '9000000008', sport: 'Run', title: 'Track Session' },
+		{ id: '9000000009', sport: 'Workout', title: 'Core', distance: '0 km' },
+	];
+
+	test('"Select all pages" goes back to the first page, then on to the last', async ({ extensionPage }) => {
+		// Start on the middle page, so the walk has to go both ways.
+		await installFakePager(extensionPage, ['', fakeRowsHtml(middle), fakeRowsHtml(last)], 1);
+		await extensionPage.locator('tr[data-sbgx-id="9000000006"] .sbgx-row-cb').waitFor();
+		await extensionPage.locator('[data-role="select-pages"]').click();
+
+		const status = extensionPage.locator('[data-role="status-text"]');
+		// The fixture's 3 GPS rows, both middle rows, and the last page's
+		// GPS row - not its indoor one (GPX mode).
+		await expect(status).toHaveText('Added 6 activities from 3 pages.');
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('6 selected (5 not on this page)');
+		await expect(extensionPage.locator('.pagination .pages')).toHaveText('41-60 of 60');
+		await expect(extensionPage.locator('tr[data-sbgx-id="9000000008"] .sbgx-row-cb')).toBeChecked();
+
+		await stubGpxExports(extensionPage);
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toHaveLength(7);
+	});
+
+	test('"Select new on all pages" skips exported activities, and Cancel keeps what was picked', async ({
+		extensionPage,
+	}) => {
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await extensionPage.locator('[data-role="history-file"]').setInputFiles({
+			name: 'activities.csv',
+			mimeType: 'text/csv',
+			buffer: Buffer.from('Activity ID\r\n9000000001\r\n9000000006\r\n'),
+		});
+		await installFakePager(extensionPage, ['', fakeRowsHtml(middle), fakeRowsHtml(last)], 0);
+		await extensionPage.locator('[data-role="select-new-pages"]').click();
+		const status = extensionPage.locator('[data-role="status-text"]');
+		await expect(status).toHaveText('Added 4 activities from 3 pages.');
+
+		// A slow page: cancel while waiting for it.
+		await extensionPage.locator('[data-role="clear"]').click();
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await installFakePager(extensionPage, ['', fakeRowsHtml(middle)], 0, { delayMs: 3000 });
+		await extensionPage.locator('[data-role="select-pages"]').click();
+		await expect(status).toContainText('Selecting on every page… 1-20 of 40 (3 selected)');
+		await extensionPage.locator('[data-role="cancel"]').click();
+		await expect(status).toHaveText('Stopped - added 3 activities so far.');
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText(/^3 selected/);
+	});
+
+	test('the selection survives a reload, until it is cleared', async ({ extensionPage }) => {
+		const count = extensionPage.locator('[data-role="count"]');
+		await extensionPage.locator('.sbgx-row-cb').nth(0).check();
+		await showOtherPage(extensionPage, middle);
+		await extensionPage.locator('tr[data-sbgx-id="9000000007"] .sbgx-row-cb').check();
+		// Saving is batched; give it a moment.
+		await extensionPage.waitForTimeout(600);
+
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(count).toHaveText('2 selected (1 not on this page)');
+		await expect(extensionPage.locator('.sbgx-row-cb').nth(0)).toBeChecked();
+
+		await extensionPage.locator('[data-role="clear"]').click();
+		await extensionPage.waitForTimeout(600);
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(count).toHaveText('0 selected');
+	});
+});
+
+test.describe('activities without GPS', () => {
+	test('can be exported as Original, and are deselected when switching to GPX', async ({ extensionPage }) => {
+		const format = extensionPage.locator('select[data-role="format"]');
+		await expect(extensionPage.locator('.sbgx-row-cb')).toHaveCount(3);
+		await format.selectOption('original');
+		await expect(extensionPage.locator('.sbgx-row-cb')).toHaveCount(5);
+		await expect(extensionPage.locator('tr[data-sbgx-has-gps="0"] .sbgx-btn-row').first()).toHaveText('Original');
+
+		// A strength session with a FIT file, and a manual entry without one:
+		// Strava answers that with an HTML page.
+		await extensionPage.route('**/activities/*/export_original', async (route) => {
+			const id = idFromUrl(route.request().url());
+			if (id === '9000000005') {
+				await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<html></html>' });
+				return;
+			}
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/octet-stream',
+				headers: { 'Content-Disposition': `attachment; filename="${id}.fit"` },
+				body: 'FIT',
+			});
+		});
+		await extensionPage.locator('tr[data-sbgx-has-gps="0"] .sbgx-row-cb').nth(0).check();
+		await extensionPage.locator('tr[data-sbgx-has-gps="0"] .sbgx-row-cb').nth(1).check();
+		await extensionPage.locator('.sbgx-row-cb').nth(0).check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual(['9000000001.fit', '9000000004.fit', 'activities.csv']);
+		const status = extensionPage.locator('[data-role="status-text"]');
+		await expect(status).toHaveText('Saved 2, skipped 1 (Strava has no Original file for this activity)');
+
+		await format.selectOption('gpx');
+		await expect(status).toHaveText('Deselected 2 activities without GPS - they have no GPX export, only Original.');
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('1 selected');
+		await expect(extensionPage.locator('.sbgx-row-cb')).toHaveCount(3);
+	});
+
+	test('an export that comes back as a web page is a failure, not a saved file', async ({ extensionPage }) => {
+		// Strava redirects an export it doesn't have to an HTML page. (Not
+		// simulated with a real redirect: Playwright doesn't route the
+		// request that follows one, so it would reach strava.com.)
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			if (id === '9000000003') {
+				await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<html></html>' });
+				return;
+			}
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) });
+		});
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual(['activities.csv', 'strava_9000000001.gpx', 'strava_9000000002.gpx']);
+		const failures = extensionPage.locator('[data-role="failures"]');
+		await failures.locator('summary').click();
+		await expect(failures.locator('li')).toHaveText(['Morning Run - Strava has no GPX file for this activity']);
+	});
+});
+
+test.describe('date names and split zips', () => {
+	test('"Date + title" names files by date, and falls back to the ID without one', async ({ extensionPage }) => {
+		await extensionPage.locator('select[data-role="names"]').selectOption('date');
+		// A date the extension can't read.
+		await extensionPage
+			.locator('tr[data-sbgx-id="9000000003"] td')
+			.nth(2)
+			.evaluate((td) => (td.textContent = 'Yesterday'));
+		await stubGpxExports(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual([
+			'2026-05-08_Lunch Trail Run.gpx',
+			'2026-05-09_Traversa v19 feat. Ex Acini Novi Šćapi.gpx',
+			'9000000003_Morning Run.gpx',
+			'activities.csv',
+		]);
+	});
+
+	test('large downloads are split into zips saved as they fill, each with its own CSV', async ({ extensionPage }) => {
+		await stubGpxExports(extensionPage);
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		const split = extensionPage.locator('select[data-role="split"]');
+		await expect(split).toHaveValue('500');
+		// Each stubbed GPX is ~280 bytes; a 600-byte limit fits two per zip.
+		await split.evaluate((select: HTMLSelectElement) => {
+			select.add(new Option('600 bytes', '0.0006'));
+			select.value = '0.0006';
+			select.dispatchEvent(new Event('change'));
+		});
+		await extensionPage.locator('[data-role="more"] > summary').click();
+
+		const downloads: { name: string; bytes: Buffer }[] = [];
+		extensionPage.on('download', async (download) => {
+			downloads.push({ name: download.suggestedFilename(), bytes: readFileSync(await download.path()) });
+		});
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		await extensionPage.locator('[data-role="bulk"]').click();
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved 3 activities in 2 zips.');
+		await expect.poll(() => downloads.length).toBe(2);
+
+		downloads.sort((a, b) => a.name.localeCompare(b.name));
+		expect(downloads.map((d) => d.name)).toEqual([
+			expect.stringMatching(/^strava_gpx_\d{4}-\d{2}-\d{2}_part1\.zip$/),
+			expect.stringMatching(/^strava_gpx_\d{4}-\d{2}-\d{2}_part2\.zip$/),
+		]);
+		const [first, second] = await Promise.all(downloads.map((d) => zipFileNames(d.bytes)));
+		expect(first).toHaveLength(3);
+		expect(second).toHaveLength(2);
+		expect(first).toContain('activities.csv');
+		expect(second).toContain('activities.csv');
+		// Every part counts as exported.
+		await expect(extensionPage.locator('.sbgx-done:visible')).toHaveCount(3);
+	});
+});
+
+/**
+ * A TCX running east along 45°N with heart rate on every trackpoint, one
+ * point per longitude offset (see {@link lineGpx}).
+ */
+function lineTcx(offsets: number[]): string {
+	const points = offsets
+		.map(
+			(o, i) =>
+				`<Trackpoint><Time>2026-05-09T07:${String(i).padStart(2, '0')}:00Z</Time>` +
+				`<Position><LatitudeDegrees>45</LatitudeDegrees><LongitudeDegrees>${(13 + o).toFixed(4)}</LongitudeDegrees></Position>` +
+				`<HeartRateBpm><Value>${120 + i}</Value></HeartRateBpm></Trackpoint>`,
+		)
+		.join('');
+	return `<?xml version="1.0" encoding="UTF-8"?>
+<TrainingCenterDatabase xmlns="http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2"><Activities><Activity Sport="Running"><Id>2026-05-09T07:00:00Z</Id><Lap StartTime="2026-05-09T07:00:00Z"><Track>${points}</Track></Lap></Activity></Activities></TrainingCenterDatabase>`;
+}
+
+test.describe('hide start/end in TCX', () => {
+	test('hides positions near the start and end but keeps the heart rate, splitting the track', async ({
+		extensionPage,
+	}) => {
+		await extensionPage.route('**/activities/*/export_tcx', async (route) => {
+			await route.fulfill({ status: 200, contentType: 'application/xml', body: lineTcx(OUT_AND_BACK) });
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		await setTrim(extensionPage, '200');
+		const { name, bytes } = await downloadFrom(extensionPage, () =>
+			extensionPage.locator('.sbgx-btn-row').first().click(),
+		);
+		expect(name).toBe('strava_9000000001_trimmed.tcx');
+		const tcx = bytes.toString('utf8');
+		await expectWellFormed(extensionPage, tcx);
+		// Every trackpoint and its heart rate stays; only the positions near
+		// the ends go - the same points the GPX test keeps.
+		expect(tcx.match(/<Trackpoint>/g)).toHaveLength(OUT_AND_BACK.length);
+		expect(tcx.match(/<HeartRateBpm>/g)).toHaveLength(OUT_AND_BACK.length);
+		const kept = [...tcx.matchAll(/<LongitudeDegrees>([^<]+)</g)].map((m) => (Number(m[1]) - 13).toFixed(3));
+		expect(kept).toEqual(['0.003', '0.004', '0.003', '0.003', '0.004', '0.005', '0.006', '0.007']);
+		// Hidden, visible, hidden, visible, hidden: five tracks in the lap.
+		expect(tcx.match(/<Track>/g)).toHaveLength(5);
+		expect(tcx).toContain(
+			"</Lap><Notes>Start and end hidden (200 m) by Strava Bulk GPX Export - not Strava's original export.</Notes>",
+		);
+	});
+});
+
+/**
+ * Run `expression` in the content script's isolated world, where
+ * `chrome.storage` exists - the page's own world can't reach extension
+ * storage. Used to plant stored state the UI can't produce on demand.
+ */
+async function evaluateInContentScript(page: Page, expression: string): Promise<void> {
+	const cdp = await page.context().newCDPSession(page);
+	const contexts: { id: number; origin: string }[] = [];
+	cdp.on('Runtime.executionContextCreated', (e) => contexts.push(e.context));
+	await cdp.send('Runtime.enable');
+	const world = contexts.find((c) => c.origin.startsWith('chrome-extension://'));
+	if (!world) throw new Error('No content-script world on this page');
+	const result = await cdp.send('Runtime.evaluate', { expression, contextId: world.id, awaitPromise: true });
+	if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
+	await cdp.detach();
+}
+
+/** A saved selection of the fixture's first two rows, `ageMs` old. */
+function savedSelection(ageMs: number): string {
+	const rows = [
+		{ id: '9000000001', name: 'Traversa', sport_type: 'Trail Run', date: '2026-05-09', hasGps: true, columns: [] },
+		// Saved before `date` and `hasGps` existed.
+		{ id: '9000000002', name: 'Lunch Trail Run', sport_type: 'Trail Run', columns: [] },
+		// Malformed: dropped.
+		{ id: 'not-a-number', name: 'x', sport_type: '' },
+	];
+	return `chrome.storage.local.set({ selection: { savedAt: Date.now() - ${ageMs}, rows: ${JSON.stringify(rows)} } })`;
+}
+
+test.describe('saved selection', () => {
+	test('is restored within a day, and malformed rows are dropped', async ({ extensionPage }) => {
+		await evaluateInContentScript(extensionPage, savedSelection(23 * 60 * 60 * 1000));
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('2 selected');
+		// Rows saved without `hasGps` count as GPS-bearing, so switching
+		// format doesn't drop them.
+		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('2 selected');
+	});
+
+	test('is dropped when it is more than a day old', async ({ extensionPage }) => {
+		await evaluateInContentScript(extensionPage, savedSelection(25 * 60 * 60 * 1000));
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('0 selected');
+	});
+});
+
+test.describe('selecting across pages, edge cases', () => {
+	test('without a pager, it selects the one page there is', async ({ extensionPage }) => {
+		await extensionPage.locator('[data-role="select-pages"]').click();
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Added 3 activities from 1 pages.');
+		await expect(extensionPage.locator('[data-role="select-pages"]')).toBeEnabled();
+	});
+
+	test('gives up on a page Strava never shows, keeping the selection', async ({ extensionPage }) => {
+		// The 30-second page timeout runs out for real.
+		test.setTimeout(60_000);
+		await installFakePager(extensionPage, ['', fakeRowsHtml([{ id: '9000000006', sport: 'Ride', title: 'Loop' }])], 0, {
+			delayMs: 120_000,
+		});
+		await extensionPage.locator('[data-role="select-pages"]').click();
+		await expect(extensionPage.locator('[data-role="select-pages"]')).toBeDisabled();
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText(
+			"Failed: Strava didn't load the next page",
+			{ timeout: 40_000 },
+		);
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText(/^3 selected/);
+		await expect(extensionPage.locator('[data-role="select-pages"]')).toBeEnabled();
+	});
+});
+
+test.describe('split zips, edge cases', () => {
+	test('the split size is remembered, and Cancel keeps the parts already saved', async ({ extensionPage }) => {
+		const split = extensionPage.locator('select[data-role="split"]');
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await split.selectOption('0');
+		await extensionPage.reload();
+		await extensionPage.waitForSelector('.sbgx-toolbar');
+		await expect(split).toHaveValue('0');
+
+		// One file per zip; the third activity never arrives.
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await split.evaluate((select: HTMLSelectElement) => {
+			select.add(new Option('300 bytes', '0.0003'));
+			select.value = '0.0003';
+			select.dispatchEvent(new Event('change'));
+		});
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await new Promise((r) => setTimeout(r, { '9000000001': 0, '9000000002': 300 }[id] ?? 10_000));
+			await route
+				.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) })
+				.catch(() => undefined);
+		});
+		const downloads: string[] = [];
+		extensionPage.on('download', (d) => downloads.push(d.suggestedFilename()));
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		await extensionPage.locator('[data-role="bulk"]').click();
+		// The second file arriving fills part 1, which is saved.
+		await expect.poll(() => downloads.length).toBe(1);
+		await extensionPage.locator('[data-role="cancel"]').click();
+		const status = extensionPage.locator('[data-role="status-text"]');
+		await expect(status).toHaveText('Cancelled - 1 zip parts were already saved.');
+		expect(downloads).toEqual([expect.stringMatching(/_part1\.zip$/)]);
+		// Part 1's activity counts as exported; the others don't.
+		await expect(extensionPage.locator('.sbgx-done').nth(0)).toBeVisible();
+		await expect(extensionPage.locator('.sbgx-done').nth(1)).toBeHidden();
+	});
+});
+
+test.describe('activities without GPS, row downloads', () => {
+	test('an indoor row downloads its Original file; a manual entry says why it can’t', async ({ extensionPage }) => {
+		await extensionPage.route('**/activities/*/export_original', async (route) => {
+			const id = idFromUrl(route.request().url());
+			if (id === '9000000005') {
+				await route.fulfill({ status: 200, contentType: 'text/html; charset=utf-8', body: '<html></html>' });
+				return;
+			}
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/octet-stream',
+				headers: { 'Content-Disposition': `attachment; filename="${id}.fit"` },
+				body: 'FIT',
+			});
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('original');
+		const indoor = extensionPage.locator('tr[data-sbgx-has-gps="0"] .sbgx-btn-row');
+		const { name } = await downloadFrom(extensionPage, () => indoor.nth(0).click());
+		expect(name).toBe('9000000004.fit');
+		await expect(extensionPage.locator('tr[data-sbgx-id="9000000004"] .sbgx-done')).toBeVisible();
+
+		// The row button reports failures with alert(); answer it here.
+		const alerts: string[] = [];
+		extensionPage.once('dialog', (dialog) => {
+			alerts.push(dialog.message());
+			void dialog.dismiss();
+		});
+		await indoor.nth(1).click();
+		await expect
+			.poll(() => alerts)
+			.toEqual(["Couldn't download 9000000005: Strava has no Original file for this activity"]);
+		// The page stayed where it was, rather than navigating to Strava's answer.
+		await expect(extensionPage).toHaveURL('https://www.strava.com/athlete/training');
+	});
+});
+
+test.describe('hide start/end in TCX, zips and merges', () => {
+	/** {@link lineTcx} with a trackpoint without a position (a GPS dropout) after the fifth. */
+	function tcxWithDropout(): string {
+		return lineTcx(OUT_AND_BACK).replace(
+			/(<Trackpoint>(?:(?!<\/Trackpoint>).)*<\/Trackpoint>){5}/,
+			(m) =>
+				`${m}<Trackpoint><Time>2026-05-09T07:04:30Z</Time><HeartRateBpm><Value>99</Value></HeartRateBpm></Trackpoint>`,
+		);
+	}
+
+	test('zips and merges are trimmed and named so; a fully hidden track fails', async ({ extensionPage }) => {
+		await extensionPage.route('**/activities/*/export_tcx', async (route) => {
+			await route.fulfill({ status: 200, contentType: 'application/xml', body: tcxWithDropout() });
+		});
+		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		await setTrim(extensionPage, '200');
+		await extensionPage.locator('.sbgx-row-cb').nth(0).check();
+		await extensionPage.locator('.sbgx-row-cb').nth(1).check();
+
+		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
+		expect(await zipFileNames(bytes)).toEqual([
+			'activities.csv',
+			'strava_9000000001_trimmed.tcx',
+			'strava_9000000002_trimmed.tcx',
+		]);
+		const zip = await JSZip.loadAsync(bytes);
+		const tcx = await zip.file('strava_9000000001_trimmed.tcx')!.async('string');
+		await expectWellFormed(extensionPage, tcx);
+		// The dropout point stays, with its heart rate, in the track it was in.
+		expect(tcx).toContain('<Time>2026-05-09T07:04:30Z</Time><HeartRateBpm><Value>99</Value></HeartRateBpm>');
+		expect(tcx.match(/<Trackpoint>/g)).toHaveLength(OUT_AND_BACK.length + 1);
+		// Trimmed files aren't backups.
+		await expect(extensionPage.locator('.sbgx-done').first()).toBeHidden();
+
+		// Both activities have the same times, so they overlap: merge one.
+		await extensionPage.locator('.sbgx-row-cb').nth(1).uncheck();
+		const merged = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="merge"]').click());
+		expect(merged.name).toMatch(/^strava_merged_\d{4}-\d{2}-\d{2}_trimmed\.tcx$/);
+		expect(merged.bytes.toString('utf8')).toContain('Start and end hidden (200 m)');
+		await expectWellFormed(extensionPage, merged.bytes.toString('utf8'));
+
+		await setTrim(extensionPage, '1000');
+		await extensionPage.locator('.sbgx-row-cb').nth(1).check();
+		await extensionPage.locator('[data-role="bulk"]').click();
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText(
+			'Failed: All 2 downloads failed. First error: the whole track is within the hidden distance',
+		);
+	});
+});
+
+test.describe('hide start/end, custom distance', () => {
+	test('takes a distance in the locale’s unit; switching the unit keeps the number', async ({ extensionPage }) => {
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: lineGpx(id, OUT_AND_BACK) });
+		});
+		const chip = extensionPage.locator('[data-role="trim-chip"]');
+		const value = extensionPage.locator('[data-role="trim-value"]');
+		const unit = extensionPage.locator('select[data-role="trim-unit"]');
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await expect(value).toBeHidden();
+		await extensionPage.locator('select[data-role="trim"]').selectOption('custom');
+		await expect(value).toBeFocused();
+		// The test browser is en-US, which measures in feet.
+		await expect(unit).toHaveValue('ft');
+		// Nothing typed yet: nothing hidden.
+		await expect(chip).toBeHidden();
+
+		await value.fill('700');
+		await expect(chip).toHaveText(/Hiding 700 ft at start and end/);
+		await unit.selectOption('m');
+		await expect(value).toHaveValue('700');
+		await expect(chip).toHaveText(/Hiding 700 m at start and end/);
+
+		// 700 ft is 213 m: the same points go as with 200 m.
+		await unit.selectOption('ft');
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		const { name, bytes } = await downloadFrom(extensionPage, () =>
+			extensionPage.locator('.sbgx-btn-row').first().click(),
+		);
+		expect(name).toBe('strava_9000000001_trimmed.gpx');
+		const gpx = bytes.toString('utf8');
+		await expectWellFormed(extensionPage, gpx);
+		const kept = [...gpx.matchAll(/lon="([^"]+)"/g)].map((m) => (Number(m[1]) - 13).toFixed(3));
+		expect(kept).toEqual(['0.003', '0.004', '0.003', '0.003', '0.004', '0.005', '0.006', '0.007']);
+		expect(gpx).toContain('Start and end hidden (213 m)');
+
+		// Clearing the number turns hiding off; ✕ goes back to Off.
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await value.fill('');
+		await expect(chip).toBeHidden();
+		await value.fill('0');
+		await expect(chip).toBeHidden();
+		await value.fill('300');
+		await expect(chip).toBeVisible();
+		await extensionPage.locator('[data-role="trim-off"]').click();
+		await expect(chip).toBeHidden();
+		await expect(extensionPage.locator('select[data-role="trim"]')).toHaveValue('0');
+		await expect(value).toBeHidden();
+
+		// Original files aren't trimmed: the custom fields disable too. (The
+		// ✕ sits outside the menu, so clicking it closed the menu.)
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await extensionPage.locator('select[data-role="trim"]').selectOption('custom');
+		await extensionPage.locator('select[data-role="format"]').selectOption('original');
+		await expect(value).toBeDisabled();
+		await expect(unit).toBeDisabled();
 	});
 });
