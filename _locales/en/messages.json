@@ -320,16 +320,16 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Hide start/end (GPX only)",
-		"description": "Label of the '⋯' menu dropdown that removes track points near each activity's start and end before saving (Off / 200 m / 500 m / 1 km)."
+		"message": "Hide start/end",
+		"description": "Heading of the '⋯' menu setting that hides the start and end of GPX and TCX tracks."
 	},
 	"trimOff": {
 		"message": "Off",
 		"description": "'Hide start/end' option: no trimming (the default)."
 	},
 	"trimTitle": {
-		"message": "Removes track points near each activity's start and end before saving, so files you share don't show where you start. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
-		"description": "Tooltip on the 'Hide start/end' setting. Keep '_trimmed' as-is (it's part of the file name)."
+		"message": "Hides the locations near each activity's start and end before saving, so files you share don't show where you start. TCX files keep their heart rate, cadence and power. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
+		"description": "Tooltip on the Hide start/end setting. Keep '_trimmed' verbatim - it's part of the file name."
 	},
 	"trimChip": {
 		"message": "Hiding $RADIUS$ at start and end",
@@ -342,9 +342,9 @@
 		"message": "Turn off",
 		"description": "Tooltip on the ✕ in the 'Hiding … at start and end' chip."
 	},
-	"trimOnlyGpx": {
-		"message": "Only available in GPX mode",
-		"description": "Tooltip on the disabled 'Hide start/end' setting in TCX and Original modes."
+	"trimNotOriginal": {
+		"message": "Not available for Original files",
+		"description": "Tooltip on the disabled 'Hide start/end' setting in Original mode."
 	},
 	"trimAllHidden": {
 		"message": "the whole track is within the hidden distance",
@@ -395,5 +395,17 @@
 			"count": { "content": "$1", "example": "1200" },
 			"parts": { "content": "$2", "example": "3" }
 		}
+	},
+	"trimCustom": {
+		"message": "Custom…",
+		"description": "Last option of the Hide start/end dropdown; shows a distance input and a unit dropdown (m / ft)."
+	},
+	"trimCustomValue": {
+		"message": "Distance",
+		"description": "Placeholder and accessible label of the custom Hide start/end distance input."
+	},
+	"trimCustomUnit": {
+		"message": "Unit",
+		"description": "Accessible label of the unit dropdown (m / ft) next to the custom distance input."
 	}
 }

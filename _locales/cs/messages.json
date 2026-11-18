@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Skrýt začátek/konec (jen GPX)"
+		"message": "Skrýt začátek/konec"
 	},
 	"trimOff": {
 		"message": "Vypnuto"
 	},
 	"trimTitle": {
-		"message": "Před uložením odstraní body trasy blízko začátku a konce každé aktivity, aby sdílené soubory neprozradily, odkud vyrážíte. Oříznuté soubory končí na _trimmed a už nejsou totožné s exportem ze Stravy. Po opětovném načtení stránky se nastavení vypne."
+		"message": "Před uložením skryje polohy blízko začátku a konce každé aktivity, aby sdílené soubory neprozradily, odkud vyrážíte. Soubory TCX si ponechají tep, kadenci a výkon. Oříznuté soubory končí na _trimmed a už nejsou totožné s exportem ze Stravy. Po opětovném načtení stránky se nastavení vypne."
 	},
 	"trimChip": {
 		"message": "Skrývám $RADIUS$ na začátku a konci",
@@ -361,8 +361,8 @@
 	"trimTurnOff": {
 		"message": "Vypnout"
 	},
-	"trimOnlyGpx": {
-		"message": "Dostupné jen v režimu GPX"
+	"trimNotOriginal": {
+		"message": "Není dostupné pro originální soubory"
 	},
 	"trimAllHidden": {
 		"message": "celá trasa leží ve skryté vzdálenosti"
@@ -422,5 +422,14 @@
 				"example": "3"
 			}
 		}
+	},
+	"trimCustom": {
+		"message": "Vlastní…"
+	},
+	"trimCustomValue": {
+		"message": "Vzdálenost"
+	},
+	"trimCustomUnit": {
+		"message": "Jednotka"
 	}
 }

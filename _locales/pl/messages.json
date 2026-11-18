@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Ukryj początek/koniec (tylko GPX)"
+		"message": "Ukryj początek/koniec"
 	},
 	"trimOff": {
 		"message": "Wyłączone"
 	},
 	"trimTitle": {
-		"message": "Przed zapisem usuwa punkty śladu blisko początku i końca każdej aktywności, aby udostępniane pliki nie pokazywały, skąd startujesz. Przycięte pliki kończą się na _trimmed i nie są już identyczne z eksportem ze Stravy. Resetuje się po przeładowaniu strony."
+		"message": "Przed zapisem ukrywa położenia blisko początku i końca każdej aktywności, aby udostępniane pliki nie pokazywały, skąd startujesz. Pliki TCX zachowują tętno, kadencję i moc. Przycięte pliki kończą się na _trimmed i nie są już identyczne z eksportem ze Stravy. Resetuje się po przeładowaniu strony."
 	},
 	"trimChip": {
 		"message": "Ukrywanie $RADIUS$ na początku i końcu",
@@ -361,8 +361,8 @@
 	"trimTurnOff": {
 		"message": "Wyłącz"
 	},
-	"trimOnlyGpx": {
-		"message": "Dostępne tylko w trybie GPX"
+	"trimNotOriginal": {
+		"message": "Niedostępne dla plików oryginalnych"
 	},
 	"trimAllHidden": {
 		"message": "cały ślad mieści się w ukrytej odległości"
@@ -422,5 +422,14 @@
 				"example": "3"
 			}
 		}
+	},
+	"trimCustom": {
+		"message": "Własna…"
+	},
+	"trimCustomValue": {
+		"message": "Odległość"
+	},
+	"trimCustomUnit": {
+		"message": "Jednostka"
 	}
 }

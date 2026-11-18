@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "開始/終了地点を隠す (GPX のみ)"
+		"message": "開始/終了地点を隠す"
 	},
 	"trimOff": {
 		"message": "オフ"
 	},
 	"trimTitle": {
-		"message": "保存前に各アクティビティの開始・終了地点付近のトラックポイントを削除し、共有するファイルから出発地点が分からないようにします。トリミングしたファイル名は _trimmed で終わり、Strava のエクスポートとは同一ではなくなります。ページを再読み込みするとオフに戻ります。"
+		"message": "保存前に各アクティビティの開始・終了地点付近の位置情報を隠し、共有するファイルから出発地点が分からないようにします。TCX ファイルでは心拍数、ケイデンス、パワーは残ります。トリミングしたファイル名は _trimmed で終わり、Strava のエクスポートとは同一ではなくなります。ページを再読み込みするとオフに戻ります。"
 	},
 	"trimChip": {
 		"message": "開始・終了の $RADIUS$ を非表示",
@@ -361,8 +361,8 @@
 	"trimTurnOff": {
 		"message": "オフにする"
 	},
-	"trimOnlyGpx": {
-		"message": "GPX モードでのみ使用できます"
+	"trimNotOriginal": {
+		"message": "オリジナルファイルでは使用できません"
 	},
 	"trimAllHidden": {
 		"message": "トラック全体が非表示の範囲内です"
@@ -422,5 +422,14 @@
 				"example": "3"
 			}
 		}
+	},
+	"trimCustom": {
+		"message": "カスタム…"
+	},
+	"trimCustomValue": {
+		"message": "距離"
+	},
+	"trimCustomUnit": {
+		"message": "単位"
 	}
 }

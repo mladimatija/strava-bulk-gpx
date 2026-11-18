@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "隐藏起点/终点 (仅 GPX)"
+		"message": "隐藏起点/终点"
 	},
 	"trimOff": {
 		"message": "关闭"
 	},
 	"trimTitle": {
-		"message": "保存前移除每个活动起点和终点附近的轨迹点，让你分享的文件不会暴露出发地点。裁剪后的文件名以 _trimmed 结尾，不再与 Strava 的导出完全相同。重新加载页面后会关闭。"
+		"message": "保存前隐藏每个活动起点和终点附近的位置，让你分享的文件不会暴露出发地点。TCX 文件会保留心率、踏频和功率。裁剪后的文件名以 _trimmed 结尾，不再与 Strava 的导出完全相同。重新加载页面后会关闭。"
 	},
 	"trimChip": {
 		"message": "正在隐藏起点和终点的 $RADIUS$",
@@ -361,8 +361,8 @@
 	"trimTurnOff": {
 		"message": "关闭"
 	},
-	"trimOnlyGpx": {
-		"message": "仅在 GPX 模式下可用"
+	"trimNotOriginal": {
+		"message": "不适用于原始文件"
 	},
 	"trimAllHidden": {
 		"message": "整条轨迹都在隐藏范围内"
@@ -422,5 +422,14 @@
 				"example": "3"
 			}
 		}
+	},
+	"trimCustom": {
+		"message": "自定义…"
+	},
+	"trimCustomValue": {
+		"message": "距离"
+	},
+	"trimCustomUnit": {
+		"message": "单位"
 	}
 }

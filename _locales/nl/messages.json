@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Start/einde verbergen (alleen GPX)"
+		"message": "Start/einde verbergen"
 	},
 	"trimOff": {
 		"message": "Uit"
 	},
 	"trimTitle": {
-		"message": "Verwijdert trackpunten bij de start en het einde van elke activiteit vóór het opslaan, zodat gedeelde bestanden niet laten zien waar je start. Ingekorte bestanden eindigen op _trimmed en zijn niet meer gelijk aan de export van Strava. Wordt gereset als je de pagina herlaadt."
+		"message": "Verbergt de locaties bij de start en het einde van elke activiteit vóór het opslaan, zodat gedeelde bestanden niet laten zien waar je start. TCX-bestanden behouden hartslag, cadans en vermogen. Ingekorte bestanden eindigen op _trimmed en zijn niet meer gelijk aan de export van Strava. Wordt gereset als je de pagina herlaadt."
 	},
 	"trimChip": {
 		"message": "$RADIUS$ bij start en einde verborgen",
@@ -361,8 +361,8 @@
 	"trimTurnOff": {
 		"message": "Uitschakelen"
 	},
-	"trimOnlyGpx": {
-		"message": "Alleen beschikbaar in GPX-modus"
+	"trimNotOriginal": {
+		"message": "Niet beschikbaar voor originele bestanden"
 	},
 	"trimAllHidden": {
 		"message": "de hele track valt binnen de verborgen afstand"
@@ -422,5 +422,14 @@
 				"example": "3"
 			}
 		}
+	},
+	"trimCustom": {
+		"message": "Aangepast…"
+	},
+	"trimCustomValue": {
+		"message": "Afstand"
+	},
+	"trimCustomUnit": {
+		"message": "Eenheid"
 	}
 }

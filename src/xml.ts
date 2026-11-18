@@ -1,5 +1,8 @@
-// Small DOM helpers shared by the GPX/TCX merge (downloader.ts) and the GPX
-// trimmer (trim.ts).
+// Small DOM helpers shared by the GPX/TCX merge (downloader.ts) and the
+// GPX/TCX trimmer (trim.ts).
+
+export const GPX_NS = 'http://www.topografix.com/GPX/1/1';
+export const TCX_NS = 'http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2';
 
 /** Direct children of `parent` with the given local name, whatever their namespace prefix. */
 export function childrenNamed(parent: Element, localName: string): Element[] {

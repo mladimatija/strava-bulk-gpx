@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Skjul start/slutt (kun GPX)"
+		"message": "Skjul start/slutt"
 	},
 	"trimOff": {
 		"message": "Av"
 	},
 	"trimTitle": {
-		"message": "Fjerner sporpunkter nær start og slutt på hver aktivitet før lagring, så filer du deler ikke viser hvor du starter. Trimmede filer slutter på _trimmed og er ikke lenger identiske med Stravas eksport. Tilbakestilles når du laster siden på nytt."
+		"message": "Skjuler posisjonene nær start og slutt på hver aktivitet før lagring, så filer du deler ikke viser hvor du starter. TCX-filer beholder puls, kadens og effekt. Trimmede filer slutter på _trimmed og er ikke lenger identiske med Stravas eksport. Tilbakestilles når du laster siden på nytt."
 	},
 	"trimChip": {
 		"message": "Skjuler $RADIUS$ ved start og slutt",
@@ -361,8 +361,8 @@
 	"trimTurnOff": {
 		"message": "Slå av"
 	},
-	"trimOnlyGpx": {
-		"message": "Bare tilgjengelig i GPX-modus"
+	"trimNotOriginal": {
+		"message": "Ikke tilgjengelig for originalfiler"
 	},
 	"trimAllHidden": {
 		"message": "hele sporet er innenfor den skjulte avstanden"
@@ -422,5 +422,14 @@
 				"example": "3"
 			}
 		}
+	},
+	"trimCustom": {
+		"message": "Egendefinert …"
+	},
+	"trimCustomValue": {
+		"message": "Avstand"
+	},
+	"trimCustomUnit": {
+		"message": "Enhet"
 	}
 }

@@ -4,7 +4,8 @@
 //   - /activities/<id>/export_original  (raw upload file - .fit, .gpx, .tcx, etc.)
 //
 // These are the same URLs strava.com's own "Export" menu uses, so the files
-// the user gets are byte-for-byte identical to clicking those links manually.
+// the user gets are byte-for-byte identical to clicking those links manually
+// (except trimmed and merged files, which are built from them).
 //
 // All requests are same-origin from the content script's standpoint, so the
 // browser auto-attaches the user's session cookies - no cookie permission or
@@ -13,7 +14,7 @@
 import JSZip from 'jszip';
 import { activitiesCsv } from './csv.ts';
 import { t } from './i18n.ts';
-import { markTrimmed, trimGpx } from './trim.ts';
+import { markTrimmed, trimGpx, trimTcx } from './trim.ts';
 import type {
 	ActivityRow,
 	BulkFailure,
@@ -23,7 +24,7 @@ import type {
 	NamePattern,
 	ProgressCallback,
 } from './types.ts';
-import { childrenNamed, serializeXml } from './xml.ts';
+import { childrenNamed, GPX_NS, serializeXml, TCX_NS } from './xml.ts';
 
 /** Build the URL for a given activity + format. */
 function exportUrl(id: string, format: ExportFormat): string {
@@ -166,7 +167,7 @@ function activityFilePath(
 
 /** `strava_1.gpx` → `strava_1_trimmed.gpx`: a trimmed file is no longer Strava's own export. */
 function trimmedName(path: string): string {
-	return path.replace(/\.gpx$/, '_trimmed.gpx');
+	return path.replace(/\.(gpx|tcx)$/, '_trimmed.$1');
 }
 
 /** Last segment of a zip path - browsers can't create folders from a download. */
@@ -397,16 +398,18 @@ function newZipPart(): ZipPart {
 
 /**
  * Bulk download. One id → one file (no zip). Multiple ids → zip, with an
- * `activities.csv` summary next to the files.
+ * `activities.csv` summary of that zip's files next to them. With
+ * `options.splitBytes`, several zips (`…_part1.zip`, `…_part2.zip`, …), each
+ * saved as soon as it's full.
  *
  * Emits progress as a discriminated event:
  *   - { stage: "downloading", completed, total } - fires immediately and after
  *     every fetch finishes (success or fail), so the caller can keep a counter
  *     in sync.
  *   - { stage: "throttled", seconds } - Strava rate-limited us; see {@link fetchAll}.
- *   - { stage: "zipping" } - fires once when fetches are done and JSZip starts
- *     assembling. Useful for keeping a spinner alive during what can be a
- *     multi-second client-side step on large batches.
+ *   - { stage: "zipping" } - fires when JSZip starts assembling a zip. Useful
+ *     for keeping a spinner alive during what can be a multi-second
+ *     client-side step on large batches.
  *
  * Resolves with the count of successes, a list of per-activity failures and
  * the number of zips saved. Throws if *every* activity failed, or if `signal`
@@ -422,14 +425,37 @@ export async function downloadBulk(
 	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
 	if (activities.length === 1) {
 		await downloadSingle(activities[0]!, format, names, trimRadius);
-		return { ok: 1, failed: [] };
+		onSaved?.([activities[0]!.id]);
+		return { ok: 1, failed: [], parts: 1 };
 	}
 
-	const zip = new JSZip();
-	/** Activity id → path inside the zip, for the CSV's File column. */
-	const files = new Map<string, string>();
-	// Reserve the summary's name so no activity file can overwrite it.
-	const used = new Set<string>([CSV_NAME]);
+	let part = newZipPart();
+	let saved = 0;
+	let ok = 0;
+	// Zip filename mentions the format, so a user with several batches doesn't
+	// confuse strava_gpx_…zip with strava_tcx_…zip in their Downloads folder.
+	const zipName = (n: number | null): string => `strava_${format}_${today()}${n ? `_part${n}` : ''}.zip`;
+
+	async function saveZip(full: ZipPart, name: string): Promise<void> {
+		onProgress?.({ stage: 'zipping' });
+		full.zip.file(
+			CSV_NAME,
+			activitiesCsv(
+				activities.filter((a) => full.files.has(a.id)),
+				full.files,
+			),
+		);
+		const blob = await full.zip.generateAsync({
+			type: 'blob',
+			compression: 'DEFLATE',
+			compressionOptions: { level: 6 },
+		});
+		// Cancel may land while JSZip is compressing; honour it before saving.
+		signal?.throwIfAborted();
+		downloadBlob(name, blob);
+		saved++;
+		onSaved?.([...full.files.keys()]);
+	}
 
 	const failed = await fetchAll(activities, format, options, async (a, res) => {
 		// A track trimmed down to nothing throws here, which records this
@@ -715,9 +741,9 @@ function mergeTcxDocuments(sources: MergeSource[]): string {
  *     (`strava_joined_<date>.gpx`): to upload back to Strava as one activity.
  *   - TCX → one activity with a lap per activity (`strava_merged_<date>.tcx`).
  *
-	const { onProgress, signal, names = 'id', trimRadius = 0, splitBytes = 0, onSaved } = options;
-	const trim = format === 'gpx' && trimRadius > 0;
-	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
+ * With `options.trimRadius` every source is trimmed before merging and the
+ * file name gets a `_trimmed` suffix. (A trimmed TCX merge keeps the note of
+ * its earliest source, whose `<Activity>` it is built on.)
  *
  * Progress events mirror {@link downloadBulk} but the post-fetch stage is
  * `'merging'` instead of `'zipping'` so the UI can show the right string.
@@ -741,7 +767,7 @@ export async function downloadMerged(
 	const trimRadius = options.trimRadius ?? 0;
 	const failed = await fetchAll(activities, format, options, async (a, res, i) => {
 		const xml = await res.text();
-		fetched[i] = { id: a.id, name: a.name, xml: trimRadius > 0 ? trimGpx(xml, trimRadius) : xml };
+		fetched[i] = { id: a.id, name: a.name, xml: trimRadius > 0 ? trimExport(xml, format, trimRadius) : xml };
 	});
 	const sources = fetched.filter((s): s is MergeSource => s !== undefined);
 

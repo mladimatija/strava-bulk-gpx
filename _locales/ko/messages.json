@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "시작/종료 지점 숨기기 (GPX 전용)"
+		"message": "시작/종료 지점 숨기기"
 	},
 	"trimOff": {
 		"message": "끔"
 	},
 	"trimTitle": {
-		"message": "저장하기 전에 각 활동의 시작·종료 지점 근처 트랙 포인트를 제거하여 공유한 파일에서 출발 위치가 드러나지 않게 합니다. 잘린 파일은 이름이 _trimmed로 끝나며 Strava 내보내기와 더 이상 같지 않습니다. 페이지를 새로 고치면 꺼집니다."
+		"message": "저장하기 전에 각 활동의 시작·종료 지점 근처 위치 정보를 숨겨 공유한 파일에서 출발 위치가 드러나지 않게 합니다. TCX 파일은 심박수, 케이던스, 파워를 그대로 유지합니다. 잘린 파일은 이름이 _trimmed로 끝나며 Strava 내보내기와 더 이상 같지 않습니다. 페이지를 새로 고치면 꺼집니다."
 	},
 	"trimChip": {
 		"message": "시작·종료 $RADIUS$ 숨김",
@@ -361,8 +361,8 @@
 	"trimTurnOff": {
 		"message": "끄기"
 	},
-	"trimOnlyGpx": {
-		"message": "GPX 모드에서만 사용할 수 있습니다"
+	"trimNotOriginal": {
+		"message": "원본 파일에는 사용할 수 없습니다"
 	},
 	"trimAllHidden": {
 		"message": "트랙 전체가 숨김 범위 안에 있습니다"
@@ -422,5 +422,14 @@
 				"example": "3"
 			}
 		}
+	},
+	"trimCustom": {
+		"message": "사용자 지정…"
+	},
+	"trimCustomValue": {
+		"message": "거리"
+	},
+	"trimCustomUnit": {
+		"message": "단위"
 	}
 }

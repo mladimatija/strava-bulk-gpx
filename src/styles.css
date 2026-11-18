@@ -243,6 +243,20 @@
 	gap: 4px;
 	margin-bottom: 4px;
 }
+/* Hide start/end → Custom…: a distance and its unit, side by side. */
+.sbgx-trim-custom {
+	display: flex;
+	gap: 6px;
+	margin: -2px 0 4px;
+}
+.sbgx-trim-custom[hidden] {
+	display: none;
+}
+.sbgx-trim-custom input {
+	cursor: text;
+	flex: 1;
+	min-width: 0;
+}
 .sbgx-menu-heading {
 	color: #6d7177;
 	font-size: 12px;

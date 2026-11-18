@@ -93,6 +93,8 @@ export type ExportFormat = 'gpx' | 'tcx' | 'original';
  *               sorts them in upload order
  *   - 'sport' → `<sport>/<id>_<title>.gpx` inside zips; single downloads
  *               can't create folders, so they get the 'title' name
+ *   - 'date'  → `<YYYY-MM-DD>_<title>.gpx`, sorting files by when they
+ *               happened; the 'title' name when the date is unknown
  */
 export type NamePattern = 'id' | 'title' | 'sport';
 

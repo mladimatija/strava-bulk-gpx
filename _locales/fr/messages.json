@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Masquer début/fin (GPX uniquement)"
+		"message": "Masquer début/fin"
 	},
 	"trimOff": {
 		"message": "Désactivé"
 	},
 	"trimTitle": {
-		"message": "Supprime les points proches du début et de la fin de chaque activité avant l'enregistrement, pour que les fichiers partagés ne révèlent pas d'où vous partez. Les fichiers rognés se terminent par _trimmed et ne sont plus identiques à l'export Strava. Se réinitialise au rechargement de la page."
+		"message": "Masque les positions proches du début et de la fin de chaque activité avant l'enregistrement, pour que les fichiers partagés ne révèlent pas d'où vous partez. Les fichiers TCX gardent la fréquence cardiaque, la cadence et la puissance. Les fichiers rognés se terminent par _trimmed et ne sont plus identiques à l'export Strava. Se réinitialise au rechargement de la page."
 	},
 	"trimChip": {
 		"message": "$RADIUS$ masqués au début et à la fin",
@@ -361,8 +361,8 @@
 	"trimTurnOff": {
 		"message": "Désactiver"
 	},
-	"trimOnlyGpx": {
-		"message": "Disponible uniquement en mode GPX"
+	"trimNotOriginal": {
+		"message": "Non disponible pour les fichiers originaux"
 	},
 	"trimAllHidden": {
 		"message": "toute la trace est dans la distance masquée"
@@ -422,5 +422,14 @@
 				"example": "3"
 			}
 		}
+	},
+	"trimCustom": {
+		"message": "Personnalisée…"
+	},
+	"trimCustomValue": {
+		"message": "Distance"
+	},
+	"trimCustomUnit": {
+		"message": "Unité"
 	}
 }

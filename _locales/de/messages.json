@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Start/Ende ausblenden (nur GPX)"
+		"message": "Start/Ende ausblenden"
 	},
 	"trimOff": {
 		"message": "Aus"
 	},
 	"trimTitle": {
-		"message": "Entfernt vor dem Speichern Trackpunkte nahe Start und Ende jeder Aktivität, damit geteilte Dateien nicht zeigen, wo du startest. Gekürzte Dateien enden auf _trimmed und sind nicht mehr identisch mit Stravas Export. Wird beim Neuladen der Seite zurückgesetzt."
+		"message": "Blendet vor dem Speichern die Positionen nahe Start und Ende jeder Aktivität aus, damit geteilte Dateien nicht zeigen, wo du startest. TCX-Dateien behalten Herzfrequenz, Trittfrequenz und Leistung. Gekürzte Dateien enden auf _trimmed und sind nicht mehr identisch mit Stravas Export. Wird beim Neuladen der Seite zurückgesetzt."
 	},
 	"trimChip": {
 		"message": "$RADIUS$ an Start und Ende ausgeblendet",
@@ -361,8 +361,8 @@
 	"trimTurnOff": {
 		"message": "Ausschalten"
 	},
-	"trimOnlyGpx": {
-		"message": "Nur im GPX-Modus verfügbar"
+	"trimNotOriginal": {
+		"message": "Für Originaldateien nicht verfügbar"
 	},
 	"trimAllHidden": {
 		"message": "der ganze Track liegt im ausgeblendeten Bereich"
@@ -422,5 +422,14 @@
 				"example": "3"
 			}
 		}
+	},
+	"trimCustom": {
+		"message": "Eigene …"
+	},
+	"trimCustomValue": {
+		"message": "Entfernung"
+	},
+	"trimCustomUnit": {
+		"message": "Einheit"
 	}
 }
