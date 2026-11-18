@@ -6,7 +6,13 @@ export function childrenNamed(parent: Element, localName: string): Element[] {
 	return Array.from(parent.children).filter((el) => el.localName === localName);
 }
 
-/** Serialize an XML document with the declaration XMLSerializer leaves out. */
+/**
+ * Serialize an XML document with exactly one UTF-8 declaration. XMLSerializer
+ * keeps the declaration of a document parsed from text that had one (every
+ * Strava export does) and has none otherwise, so drop whatever it wrote and
+ * add ours - two declarations make the file malformed.
+ */
 export function serializeXml(doc: Document): string {
-	return `<?xml version="1.0" encoding="UTF-8"?>\n${new XMLSerializer().serializeToString(doc)}`;
+	const body = new XMLSerializer().serializeToString(doc).replace(/^<\?xml[^?]*\?>\s*/, '');
+	return `<?xml version="1.0" encoding="UTF-8"?>\n${body}`;
 }

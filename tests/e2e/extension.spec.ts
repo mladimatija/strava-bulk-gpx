@@ -337,6 +337,7 @@ test.describe('Strava Bulk GPX extension', () => {
 		const filePath = await download.path();
 		expect(filePath).toBeTruthy();
 		const merged = readFileSync(filePath, 'utf8');
+		await expectWellFormed(extensionPage, merged);
 		expect(merged).toContain('<name>activity-9000000001</name>');
 		expect(merged).toContain('<name>activity-9000000002</name>');
 		expect(merged).toContain('<name>activity-9000000003</name>');
@@ -382,6 +383,21 @@ async function downloadFrom(page: Page, action: () => Promise<void>): Promise<{ 
 	await action();
 	const download = await downloadPromise;
 	return { name: download.suggestedFilename(), bytes: readFileSync(await download.path()) };
+}
+
+/**
+ * Assert that `xml` is a well-formed XML document, as the browser parses it -
+ * mapping tools and Strava's uploader reject anything else.
+ */
+async function expectWellFormed(page: Page, xml: string): Promise<void> {
+	const error = await page.evaluate(
+		(text) =>
+			new DOMParser().parseFromString(text, 'application/xml').getElementsByTagName('parsererror')[0]?.textContent ??
+			null,
+		xml,
+	);
+	expect(error).toBeNull();
+	expect(xml.match(/<\?xml /g)).toHaveLength(1);
 }
 
 /** Sorted file paths inside a zip (folder entries left out). */
@@ -447,6 +463,7 @@ test.describe('merge ordering', () => {
 		await extensionPage.locator('.sbgx-select-all-cb').check();
 		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="merge"]').click());
 		const merged = bytes.toString('utf8');
+		await expectWellFormed(extensionPage, merged);
 
 		const positions = ['9000000003', '9000000002', '9000000001'].map((id) =>
 			merged.indexOf(`<name>activity-${id}</name>`),
@@ -912,6 +929,7 @@ test.describe('merge modes', () => {
 		const { name, bytes } = await downloadFrom(extensionPage, () => mergeBtn.click());
 		expect(name).toMatch(/^strava_joined_\d{4}-\d{2}-\d{2}\.gpx$/);
 		const joined = bytes.toString('utf8');
+		await expectWellFormed(extensionPage, joined);
 		expect(joined.match(/<trk[\s>]/g)).toHaveLength(1);
 		expect(joined.match(/<trkseg[\s>]/g)).toHaveLength(3);
 		// Named and typed after the earliest activity; <type> precedes the segments.
@@ -963,6 +981,7 @@ test.describe('merge modes', () => {
 		);
 		expect(name).toMatch(/^strava_merged_\d{4}-\d{2}-\d{2}\.tcx$/);
 		const merged = bytes.toString('utf8');
+		await expectWellFormed(extensionPage, merged);
 
 		expect(merged.match(/<Activity[\s>]/g)).toHaveLength(1);
 		expect(merged).toContain('<Activity Sport="Other">');
@@ -1023,6 +1042,7 @@ test.describe('hide start/end', () => {
 		);
 		expect(name).toBe('strava_9000000001_trimmed.gpx');
 		const gpx = bytes.toString('utf8');
+		await expectWellFormed(extensionPage, gpx);
 		const kept = [...gpx.matchAll(/lon="([^"]+)"/g)].map((m) => (Number(m[1]) - 13).toFixed(3));
 		expect(kept).toEqual(['0.003', '0.004', '0.003', '0.003', '0.004', '0.005', '0.006', '0.007']);
 		expect(gpx.match(/<trkseg[\s>]/g)).toHaveLength(2);
