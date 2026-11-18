@@ -349,5 +349,16 @@
 	"trimAllHidden": {
 		"message": "the whole track is within the hidden distance",
 		"description": "Failure reason (lowercase, shown in parentheses or after a dash) when 'Hide start/end' would remove every point of an activity."
+	},
+	"exportUnavailable": {
+		"message": "Strava has no $FORMAT$ file for this activity",
+		"description": "Failure reason when Strava redirects instead of sending a file - e.g. GPX of an indoor activity, or Original of a manual entry. FORMAT is GPX/TCX/Original.",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" }
+		}
+	},
+	"notLoggedIn": {
+		"message": "not logged in to Strava",
+		"description": "Failure reason (lowercase) when Strava redirects an export to its login page."
 	}
 }

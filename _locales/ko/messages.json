@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "트랙 전체가 숨김 범위 안에 있습니다"
+	},
+	"exportUnavailable": {
+		"message": "Strava에 이 활동의 $FORMAT$ 파일이 없습니다",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "Strava에 로그인되어 있지 않음"
 	}
 }

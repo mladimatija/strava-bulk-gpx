@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "todo el track está dentro de la distancia oculta"
+	},
+	"exportUnavailable": {
+		"message": "Strava no tiene archivo $FORMAT$ para esta actividad",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "no has iniciado sesión en Strava"
 	}
 }

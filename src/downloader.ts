@@ -30,6 +30,33 @@ function exportUrl(id: string, format: ExportFormat): string {
 	return `/activities/${id}/export_${format}`;
 }
 
+/**
+ * Why an export response isn't a file, or null when it is. Strava answers
+ * an export that doesn't exist - GPX or TCX of an activity without GPS,
+ * Original of a manual entry - with a redirect to an HTML page, and a
+ * signed-out session with a redirect to the login page. Both arrive as
+ * HTTP 200 after the redirect, so `res.ok` alone would save a web page. A
+ * redirect that ends in a file (say, on a CDN) is fine.
+ */
+export function exportProblem(
+	res: Pick<Response, 'ok' | 'status' | 'url' | 'headers'>,
+	format: ExportFormat,
+): string | null {
+	if (!res.ok) return `HTTP ${res.status}`;
+	if (!(res.headers.get('content-type') ?? '').includes('text/html')) return null;
+	// A fetch response's url is absolute: where the redirects ended.
+	if (/^https?:\/\/[^/]+\/(login|session)\b/.test(res.url)) return t('notLoggedIn');
+	return t('exportUnavailable', format === 'original' ? t('formatOriginal') : format.toUpperCase());
+}
+
+/** Fetch an activity's export, throwing with {@link exportProblem}'s reason when it isn't a file. */
+async function fetchExport(id: string, format: ExportFormat): Promise<Response> {
+	const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin' });
+	const problem = exportProblem(res, format);
+	if (problem) throw new Error(problem);
+	return res;
+}
+
 /** Tell the browser to download a same-origin URL with our chosen filename. */
 function downloadViaAnchor(href: string, filename: string | null): void {
 	const a = document.createElement('a');
@@ -150,13 +177,16 @@ function uniquePath(path: string, used: Set<string>): string {
 }
 
 /**
- * Per-row download. Usually a same-origin anchor click - Strava streams the
- * file via the browser's download manager, which handles the actual writing
- * out of band.
+ * Per-row download. For GPX and TCX, a same-origin anchor click - Strava
+ * streams the file via the browser's download manager, which handles the
+ * actual writing out of band.
  *
- * Two exceptions fetch the file and save the blob instead: GPX with
- * `trimRadius` (it has to be trimmed first), and Original with a custom name
- * pattern (the extension we need only arrives in the response headers).
+ * Two cases fetch the file and save the blob instead: a trimmed GPX or TCX
+ * (it has to be trimmed first), and Original. Original files exist for
+ * activities without GPS only when a file was uploaded; an anchor to a
+ * missing one would navigate away to the page Strava redirects to, where a
+ * fetch can report it. The fetch also delivers the Content-Disposition name
+ * the custom name patterns need.
  */
 export async function downloadSingle(
 	activity: ActivityRow,
@@ -177,12 +207,7 @@ export async function downloadSingle(
 		downloadViaAnchor(exportUrl(id, format), baseName(activityFilePath(activity, format, names, null)));
 		return;
 	}
-	if (names === 'id') {
-		downloadViaAnchor(exportUrl(id, format), null);
-		return;
-	}
-	const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin' });
-	if (!res.ok) throw new Error(`HTTP ${res.status}`);
+	const res = await fetchExport(id, format);
 	const serverName = parseContentDispositionFilename(res.headers.get('content-disposition'));
 	downloadBlob(baseName(activityFilePath(activity, format, names, serverName)), await res.blob());
 }
@@ -299,8 +324,9 @@ async function fetchAll(
 				const a = activities[i]!;
 				try {
 					const res = await fetchThrottled(a.id);
-					if (!res.ok) {
-						failed.push({ id: a.id, reason: `HTTP ${res.status}` });
+					const problem = exportProblem(res, format);
+					if (problem) {
+						failed.push({ id: a.id, reason: problem });
 					} else {
 						await onResponse(a, res, i);
 					}

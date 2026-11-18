@@ -24,6 +24,7 @@
 		"package": "npm run build && cd dist && zip -r ../strava-bulk-gpx.zip .",
 		"pretest": "npm run build",
 		"test": "playwright test --project=e2e",
+		"test:unit": "node --test tests/unit/",
 		"pretest:screenshots": "npm run build",
 		"test:screenshots": "playwright test --project=screenshots --update-snapshots",
 		"test:install": "playwright install --with-deps chromium"

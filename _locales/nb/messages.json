@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "hele sporet er innenfor den skjulte avstanden"
+	},
+	"exportUnavailable": {
+		"message": "Strava har ingen $FORMAT$-fil for denne aktiviteten",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "ikke logget inn på Strava"
 	}
 }

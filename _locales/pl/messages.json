@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "cały ślad mieści się w ukrytej odległości"
+	},
+	"exportUnavailable": {
+		"message": "Strava nie ma pliku $FORMAT$ dla tej aktywności",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "nie zalogowano do Stravy"
 	}
 }

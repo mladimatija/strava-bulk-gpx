@@ -207,23 +207,24 @@ test.describe('Strava Bulk GPX extension', () => {
 		expect(click.download).toBe('strava_9000000001.tcx');
 	});
 
-	test('per-row button targets export_original when Original format is selected', async ({ extensionPage }) => {
-		// The "original" case deliberately omits the download attribute on
-		// the anchor (downloader.ts: `if (filename) a.download = filename`,
-		// where filename is null for original) so Chrome respects the
-		// server's Content-Disposition header for the filename. We assert
-		// both - the URL points at /export_original AND no `download`
-		// attribute was set.
-		await installAnchorClickCapture(extensionPage);
-
+	test('per-row button fetches export_original and keeps the uploaded file name', async ({ extensionPage }) => {
+		// Original is fetched rather than linked: an activity without an
+		// uploaded file redirects, and an anchor would navigate away to it.
+		// With the default names, the file keeps the name Strava gives it.
+		const requested: string[] = [];
+		await extensionPage.route('**/activities/*/export_original', async (route) => {
+			requested.push(route.request().url());
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/octet-stream',
+				headers: { 'Content-Disposition': 'attachment; filename="garmin-upload.fit"' },
+				body: 'FIT',
+			});
+		});
 		await extensionPage.locator('select[data-role="format"]').selectOption('original');
-		await extensionPage.locator('.sbgx-btn-row').first().click();
-
-		const clicks = await readCapturedAnchorClicks(extensionPage);
-		expect(clicks).toHaveLength(1);
-		const click = clicks[0]!;
-		expect(click.href).toMatch(/\/activities\/9000000001\/export_original$/);
-		expect(click.download).toBeNull();
+		const { name } = await downloadFrom(extensionPage, () => extensionPage.locator('.sbgx-btn-row').first().click());
+		expect(name).toBe('garmin-upload.fit');
+		expect(requested).toEqual([expect.stringMatching(/\/activities\/9000000001\/export_original$/)]);
 	});
 
 	test('merge button adapts to the format and disables with a tooltip for Original', async ({ extensionPage }) => {
@@ -464,7 +465,8 @@ test.describe('merge ordering', () => {
 test.describe('zip entries', () => {
 	test('Original uploads that share a filename all survive in the zip', async ({ extensionPage }) => {
 		// JSZip silently replaces same-named entries, so without de-duplication
-		// two of these three files would vanish from the archive.
+		// four of these five files (the indoor rows included - Original
+		// exports them) would vanish from the archive.
 		await extensionPage.route('**/activities/*/export_original', async (route) => {
 			await route.fulfill({
 				status: 200,
@@ -476,7 +478,14 @@ test.describe('zip entries', () => {
 		await extensionPage.locator('select[data-role="format"]').selectOption('original');
 		await extensionPage.locator('.sbgx-select-all-cb').check();
 		const { bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="bulk"]').click());
-		expect(await zipFileNames(bytes)).toEqual(['activities.csv', 'activity-2.fit', 'activity-3.fit', 'activity.fit']);
+		expect(await zipFileNames(bytes)).toEqual([
+			'activities.csv',
+			'activity-2.fit',
+			'activity-3.fit',
+			'activity-4.fit',
+			'activity-5.fit',
+			'activity.fit',
+		]);
 	});
 });
 
@@ -771,6 +780,9 @@ test.describe('activity page', () => {
 
 test.describe('⋯ menu', () => {
 	test("opens above Strava's row controls and keeps its file input hidden", async ({ extensionPage }) => {
+		// Wide enough for the toolbar to fit on one line, which puts the menu
+		// over the rows' Share controls.
+		await extensionPage.setViewportSize({ width: 1600, height: 800 });
 		await extensionPage.locator('[data-role="more"] > summary').click();
 		const menu = extensionPage.locator('.sbgx-menu');
 		await expect(menu).toBeVisible();

@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "整條軌跡都在隱藏範圍內"
+	},
+	"exportUnavailable": {
+		"message": "Strava 沒有此活動的 $FORMAT$ 檔案",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "未登入 Strava"
 	}
 }

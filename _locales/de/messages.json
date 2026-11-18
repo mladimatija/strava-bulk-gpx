@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "der ganze Track liegt im ausgeblendeten Bereich"
+	},
+	"exportUnavailable": {
+		"message": "Strava hat für diese Aktivität keine $FORMAT$-Datei",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "nicht bei Strava angemeldet"
 	}
 }

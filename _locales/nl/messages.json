@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "de hele track valt binnen de verborgen afstand"
+	},
+	"exportUnavailable": {
+		"message": "Strava heeft geen $FORMAT$-bestand voor deze activiteit",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "niet ingelogd bij Strava"
 	}
 }

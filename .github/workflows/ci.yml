@@ -52,10 +52,24 @@ jobs:
       # invokes type-check, so the kofi fetch is wired in one place only.
       - run: npm run type-check
 
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # Pure modules (dates.ts, exportProblem) run directly under Node 24,
+      # which strips TypeScript types itself - no build step.
+      - run: npm run test:unit
+
   build:
     name: Build
     runs-on: ubuntu-latest
-    needs: [lint, format, type-check]
+    needs: [lint, format, type-check, unit]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

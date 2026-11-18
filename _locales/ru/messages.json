@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "весь трек попадает в скрытую зону"
+	},
+	"exportUnavailable": {
+		"message": "У Strava нет файла $FORMAT$ для этой тренировки",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "вход в Strava не выполнен"
 	}
 }

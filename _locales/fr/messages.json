@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "toute la trace est dans la distance masquée"
+	},
+	"exportUnavailable": {
+		"message": "Strava n'a pas de fichier $FORMAT$ pour cette activité",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "pas connecté à Strava"
 	}
 }

@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "トラック全体が非表示の範囲内です"
+	},
+	"exportUnavailable": {
+		"message": "このアクティビティには Strava の $FORMAT$ ファイルがありません",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "Strava にログインしていません"
 	}
 }

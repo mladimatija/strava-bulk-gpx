@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "整条轨迹都在隐藏范围内"
+	},
+	"exportUnavailable": {
+		"message": "Strava 没有此活动的 $FORMAT$ 文件",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "未登录 Strava"
 	}
 }

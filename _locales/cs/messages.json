@@ -366,5 +366,17 @@
 	},
 	"trimAllHidden": {
 		"message": "celá trasa leží ve skryté vzdálenosti"
+	},
+	"exportUnavailable": {
+		"message": "Strava pro tuto aktivitu nemá soubor $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "nejste přihlášeni do Stravy"
 	}
 }
