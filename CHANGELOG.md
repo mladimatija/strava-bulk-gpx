@@ -4,6 +4,8 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-18
+
 ### Added
 
 - **Select all pages / Select new on all pages.** Two toolbar buttons page through Strava's whole activity list with its own ← → buttons - back to the first page, then on to the last - selecting every activity, or only those not yet exported in the current format. Strava's search and filters scope them. Progress shows Strava's own "21-40 of 3433"; **Cancel** keeps what was selected so far. Checked against strava.com: the pager is `.pagination` with a `button.next_page` that becomes a disabled `<span>` on the last page, and a page takes about 0.7 s, so a 3,400-activity account takes about two minutes. No new endpoint and no new permission.
@@ -14,6 +16,10 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 - **Indoor activities in Original mode.** Rows without GPS get a checkbox and button in Original mode: checked against strava.com, their `/export_original` is the uploaded FIT file (a trainer ride's power, a strength session's heart rate), while GPX and TCX redirect to a web page. Switching to GPX or TCX deselects them, with a message saying how many.
 - **Custom Hide start/end distance.** **⋯ → Hide start/end → Custom…** shows a number input with a metres/feet dropdown, defaulting to feet where the browser's locale measures in feet (US, Liberia, Myanmar). Switching the unit doesn't convert the number. The chip shows the distance as typed ("Hiding 700 ft at start and end"); the file's note gives it in whole metres. Not remembered, like the presets.
 - **Hide start/end for TCX.** Trackpoints near the start and end lose their `<Position>` but keep time, distance, heart rate, cadence and power; each `<Track>` is split where hidden and visible points meet; the activity's `<Notes>` records the trimming; files are named `…_trimmed.tcx`. Applies to row downloads, zips and TCX merges. Only Original mode now disables the setting.
+
+### Changed
+
+- **Tests run headless.** The Playwright suite runs Chromium's new headless mode (`channel: 'chromium'`), which loads extensions, so `npm test` no longer opens windows or needs `xvfb-run`; `PWTEST_HEADED=1` shows the window. A Node unit-test layer (`npm run test:unit`, no new dependency) covers date parsing, export-response checks and Original file naming, with its own CI job.
 
 ### Fixed
 
