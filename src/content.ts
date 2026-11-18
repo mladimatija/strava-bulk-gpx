@@ -78,6 +78,11 @@ interface State {
 	trim: number;
 	/** The radius as the user chose it, for the chip: "500 m", "650 ft". */
 	trimLabel: string;
+	/**
+	 * What the Hide start/end menu shows - the dropdown's value, and a custom
+	 * distance as typed with its unit - so a rebuilt toolbar shows it too.
+	 */
+	trimMenu: { choice: string; customValue: string; unit: LengthUnit };
 	/** Start a new zip after this many MB of files, 0 = never split. */
 	splitMb: number;
 	/**
@@ -113,6 +118,7 @@ const STATE: State = {
 	mergeMode: 'tracks',
 	trim: 0,
 	trimLabel: '',
+	trimMenu: { choice: '0', customValue: '', unit: defaultLengthUnit(navigator.language) },
 	splitMb: 500,
 	dateOrder: null,
 	abort: null,
@@ -1119,6 +1125,9 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 			};
 		} else {
 			setStatus(savedMessage(mode, format, mergeMode, result), 'ok');
+			// Fully exported: a reload shouldn't bring this batch back into
+			// the next backup. It stays selected on screen.
+			if (mode === 'zip') forgetSavedSelection();
 		}
 	} catch (err) {
 		if (controller.signal.aborted) {
@@ -1239,6 +1248,7 @@ async function handleSelectPages(onlyNew: boolean): Promise<void> {
 	STATE.busy = true;
 	STATE.abort = controller;
 	STATE.lastRun = null;
+	STATE.selectingPages = true;
 	renderFailures();
 	renderToolbarCounts();
 	const before = STATE.selected.size;
