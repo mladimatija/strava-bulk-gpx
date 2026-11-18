@@ -89,8 +89,15 @@ export function recordExports(ids: string[], format: ExportFormat): Promise<void
 	return write;
 }
 
-/** Forget every recorded export, in every format. */
-export async function clearHistory(): Promise<void> {
-	cache = emptyHistory();
-	await chrome.storage.local.remove(HISTORY_KEY);
+/**
+ * Forget every recorded export, in every format - after any write already
+ * queued, which would otherwise write the old history back.
+ */
+export function clearHistory(): Promise<void> {
+	const write = writes.then(async () => {
+		cache = emptyHistory();
+		await chrome.storage.local.remove(HISTORY_KEY);
+	});
+	writes = write.catch(() => undefined);
+	return write;
 }
