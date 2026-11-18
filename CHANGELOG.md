@@ -4,6 +4,25 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- **Select all pages / Select new on all pages.** Two toolbar buttons page through Strava's whole activity list with its own ← → buttons - back to the first page, then on to the last - selecting every activity, or only those not yet exported in the current format. Strava's search and filters scope them. Progress shows Strava's own "21-40 of 3433"; **Cancel** keeps what was selected so far. Checked against strava.com: the pager is `.pagination` with a `button.next_page` that becomes a disabled `<span>` on the last page, and a page takes about 0.7 s, so a 3,400-activity account takes about two minutes. No new endpoint and no new permission.
+- **The selection survives a reload.** It's saved in `chrome.storage.local` and restored within a day of the last change (older selections are dropped, so they can't quietly join next week's backup); **Clear selection** removes it.
+- **Split zips.** **⋯ → Split zips after** (250 MB, 500 MB by default, 1 GB, never; remembered) starts a new zip once the files in the current one reach that size before compression. Each part - `strava_<format>_<date>_part1.zip`, … - is saved as soon as it's full, with its own `activities.csv`, so a large backup never sits in memory whole. History is recorded per saved part, and cancelling keeps the parts already saved.
+- **Date + title file names.** A new **Names** option: `<YYYY-MM-DD>_<title>.<ext>`. Strava's Date column is display text in the athlete's format ("Tue, 17/11/2026" or "Tue, 11/17/2026"); day-first and month-first are told apart by a day above 12, the weekday name, or any other row of the table that settles the order. Unreadable dates fall back to `<id>_<title>`.
+- **Date column in CSVs.** `activities.csv` and Export list gain a `Date (YYYY-MM-DD)` column after the file name, since Strava's own Date column doesn't sort.
+- **Indoor activities in Original mode.** Rows without GPS get a checkbox and button in Original mode: checked against strava.com, their `/export_original` is the uploaded FIT file (a trainer ride's power, a strength session's heart rate), while GPX and TCX redirect to a web page. Switching to GPX or TCX deselects them, with a message saying how many.
+- **Custom Hide start/end distance.** **⋯ → Hide start/end → Custom…** shows a number input with a metres/feet dropdown, defaulting to feet where the browser's locale measures in feet (US, Liberia, Myanmar). Switching the unit doesn't convert the number. The chip shows the distance as typed ("Hiding 700 ft at start and end"); the file's note gives it in whole metres. Not remembered, like the presets.
+- **Hide start/end for TCX.** Trackpoints near the start and end lose their `<Position>` but keep time, distance, heart rate, cadence and power; each `<Track>` is split where hidden and visible points meet; the activity's `<Notes>` records the trimming; files are named `…_trimmed.tcx`. Applies to row downloads, zips and TCX merges. Only Original mode now disables the setting.
+
+### Fixed
+
+- **Web pages saved as activity files.** An export Strava doesn't have answers with a redirect to an HTML page and HTTP 200, so a zip could contain a `.gpx` that was really Strava's dashboard. HTML responses are now failures, listed with the reason ("Strava has no GPX file for this activity", or "not logged in to Strava" when it's the login page). A redirect that ends in a file is still fine.
+- **Per-row Original downloads** are fetched instead of linked, so an activity without an uploaded file shows an error instead of navigating the page away.
+- **Malformed merged, joined and trimmed files.** Files the extension builds had two XML declarations - the one `XMLSerializer` keeps from the parsed Strava export, and one added in front - which strict XML parsers reject. Every merged GPX since merging was added, and 1.3.0's joined GPX, merged TCX and trimmed GPX, were affected. They now have exactly one, and the tests check every generated file parses.
+- **Lost export history.** Two exports finishing moments apart in one tab - two quick row downloads, or two zip parts - could both read the old history, so the second write dropped the first's activities. Writes are now queued.
+- **⋯ menu off-screen.** When the toolbar wraps and puts **⋯** near its left edge, the menu now opens rightwards instead of past the edge of the window.
+
 ## [1.3.0] - 2026-11-07
 
 ### Added

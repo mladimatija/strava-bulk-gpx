@@ -44,7 +44,8 @@ If a string is missing from a locale's `messages.json`, Chrome falls back to the
 
 - **Sentence case**, not Title Case, for buttons and labels - matches both Strava and Chrome extension conventions.
 - **Keep `GPX`, `TCX` and `Ko-fi` as proper nouns.** They aren't translatable.
-- **Keep file-name fragments verbatim** - e.g. `_trimmed` in `trimTitle` is part of the file name the user will see, and `activities.csv` is a literal file name.
+- **Keep file-name fragments verbatim** - e.g. `_trimmed` in `trimTitle` and `_part1.zip` / `_part2.zip` in `splitTitle` are part of the file names the user will see, and `activities.csv` is a literal file name. Likewise `YYYY-MM-DD` in `csvDate`, which describes the column's values rather than a localized date format.
+- **Strava's own words pass through.** The `$RANGE$` placeholder in `selectingPages` is Strava's pager text ("21-40 of 3433"), already in the page's language.
 - **HTTP errors stay in English.** The `$REASON$` placeholder in `savedWithSkips` and `downloadFailed` carries values like `HTTP 404` or `Network error` that we surface verbatim - don't translate the surrounding text in a way that breaks if the reason is English.
 - **Ellipses** in progress messages (`…`) should be the typographic single-character ellipsis, not three dots. Most translation tools handle this automatically.
 
