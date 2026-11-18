@@ -155,7 +155,7 @@
 		"message": "ファイル名:"
 	},
 	"namesTooltip": {
-		"message": "ダウンロードするファイルの名前の付け方。スポーツ別フォルダーは ZIP 内でのみ適用されます。"
+		"message": "ダウンロードするファイルの名前の付け方。スポーツ別フォルダーは ZIP 内でのみ適用されます。日付 + タイトルでは、日付を読み取れない場合は ID を使います。"
 	},
 	"namesId": {
 		"message": "アクティビティ ID"
@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "開始/終了地点を隠す (GPX のみ)"
+		"message": "開始/終了地点を隠す"
 	},
 	"trimOff": {
 		"message": "オフ"
 	},
 	"trimTitle": {
-		"message": "保存前に各アクティビティの開始・終了地点付近のトラックポイントを削除し、共有するファイルから出発地点が分からないようにします。トリミングしたファイル名は _trimmed で終わり、Strava のエクスポートとは同一ではなくなります。ページを再読み込みするとオフに戻ります。"
+		"message": "保存前に各アクティビティの開始・終了地点付近の位置情報を隠し、共有するファイルから出発地点が分からないようにします。TCX ファイルでは心拍数、ケイデンス、パワーは残ります。トリミングしたファイル名は _trimmed で終わり、Strava のエクスポートとは同一ではなくなります。ページを再読み込みするとオフに戻ります。"
 	},
 	"trimChip": {
 		"message": "開始・終了の $RADIUS$ を非表示",
@@ -361,10 +361,155 @@
 	"trimTurnOff": {
 		"message": "オフにする"
 	},
-	"trimOnlyGpx": {
-		"message": "GPX モードでのみ使用できます"
+	"trimNotOriginal": {
+		"message": "オリジナルファイルでは使用できません"
 	},
 	"trimAllHidden": {
 		"message": "トラック全体が非表示の範囲内です"
+	},
+	"selectAllPages": {
+		"message": "全ページを選択"
+	},
+	"selectAllPagesTitle": {
+		"message": "現在の検索とフィルターのまま一覧全体をページ送りし、すべてのアクティビティを選択します"
+	},
+	"selectNewAllPages": {
+		"message": "全ページの新規を選択"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "一覧全体をページ送りし、まだ $FORMAT$ でエクスポートしていないアクティビティをすべて選択します",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "全ページで選択中… $RANGE$ ($COUNT$件選択中)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "$PAGES$ページから$COUNT$件のアクティビティを追加しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "停止しました。ここまでに$COUNT$件を追加しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava が次のページを読み込みませんでした"
+	},
+	"namesDate": {
+		"message": "日付 + タイトル"
+	},
+	"noGpsDeselected": {
+		"message": "GPS のないアクティビティ$COUNT$件の選択を解除しました。$FORMAT$ のエクスポートはなく、オリジナルのみです。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportUnavailable": {
+		"message": "このアクティビティには Strava の $FORMAT$ ファイルがありません",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "Strava にログインしていません"
+	},
+	"splitLabel": {
+		"message": "ZIP を分割するサイズ"
+	},
+	"splitNever": {
+		"message": "分割しない"
+	},
+	"splitTitle": {
+		"message": "大きなダウンロードは複数の ZIP (…_part1.zip、…_part2.zip) に分け、いっぱいになるたびに保存します。大きなバックアップでブラウザーのメモリが不足しないようにするためです。サイズは圧縮前のファイルで数えます。"
+	},
+	"cancelledAfterParts": {
+		"message": "キャンセルしました。ZIP の$COUNT$個のパートは保存済みです。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "$COUNT$件のアクティビティを$PARTS$個の ZIP に保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"csvDate": {
+		"message": "日付 (YYYY-MM-DD)"
+	},
+	"trimCustom": {
+		"message": "カスタム…"
+	},
+	"trimCustomValue": {
+		"message": "距離"
+	},
+	"trimCustomUnit": {
+		"message": "単位"
+	},
+	"savePart": {
+		"message": "パート $NUMBER$ を保存",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP のパート $NUMBER$ の準備ができました。「パート $NUMBER$ を保存」をクリックしてください (Chrome ではクリックなしのダウンロードは 1 件だけです)。",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

@@ -155,7 +155,7 @@
 		"message": "Navn:"
 	},
 	"namesTooltip": {
-		"message": "Hvordan nedlastede filer navngis. Sportsmapper gjelder bare i ZIP-filer."
+		"message": "Hvordan nedlastede filer navngis. Sportsmapper gjelder bare i ZIP-filer. Dato + tittel bruker ID-en når datoen ikke kan leses."
 	},
 	"namesId": {
 		"message": "Aktivitets-ID"
@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Skjul start/slutt (kun GPX)"
+		"message": "Skjul start/slutt"
 	},
 	"trimOff": {
 		"message": "Av"
 	},
 	"trimTitle": {
-		"message": "Fjerner sporpunkter nær start og slutt på hver aktivitet før lagring, så filer du deler ikke viser hvor du starter. Trimmede filer slutter på _trimmed og er ikke lenger identiske med Stravas eksport. Tilbakestilles når du laster siden på nytt."
+		"message": "Skjuler posisjonene nær start og slutt på hver aktivitet før lagring, så filer du deler ikke viser hvor du starter. TCX-filer beholder puls, kadens og effekt. Trimmede filer slutter på _trimmed og er ikke lenger identiske med Stravas eksport. Tilbakestilles når du laster siden på nytt."
 	},
 	"trimChip": {
 		"message": "Skjuler $RADIUS$ ved start og slutt",
@@ -361,10 +361,155 @@
 	"trimTurnOff": {
 		"message": "Slå av"
 	},
-	"trimOnlyGpx": {
-		"message": "Bare tilgjengelig i GPX-modus"
+	"trimNotOriginal": {
+		"message": "Ikke tilgjengelig for originalfiler"
 	},
 	"trimAllHidden": {
 		"message": "hele sporet er innenfor den skjulte avstanden"
+	},
+	"selectAllPages": {
+		"message": "Velg alle sider"
+	},
+	"selectAllPagesTitle": {
+		"message": "Blar gjennom hele listen, med gjeldende søk og filtre, og velger hver aktivitet i den"
+	},
+	"selectNewAllPages": {
+		"message": "Velg nye på alle sider"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Blar gjennom hele listen og velger hver aktivitet du ikke har eksportert som $FORMAT$ ennå",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Velger på alle sider … $RANGE$ ($COUNT$ valgt)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "La til $COUNT$ aktiviteter fra $PAGES$ sider.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Stoppet - la til $COUNT$ aktiviteter så langt.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava lastet ikke inn neste side"
+	},
+	"namesDate": {
+		"message": "Dato + tittel"
+	},
+	"noGpsDeselected": {
+		"message": "Fjernet valget av $COUNT$ aktiviteter uten GPS - de har ingen $FORMAT$-eksport, bare Original.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportUnavailable": {
+		"message": "Strava har ingen $FORMAT$-fil for denne aktiviteten",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "ikke logget inn på Strava"
+	},
+	"splitLabel": {
+		"message": "Del ZIP-filer etter"
+	},
+	"splitNever": {
+		"message": "Aldri"
+	},
+	"splitTitle": {
+		"message": "Store nedlastinger lagres som flere ZIP-filer (…_part1.zip, …_part2.zip), hver så snart den er full, så en stor sikkerhetskopi ikke bruker opp nettleserens minne. Størrelsen regnes av filene før komprimering."
+	},
+	"cancelledAfterParts": {
+		"message": "Avbrutt - $COUNT$ ZIP-deler var allerede lagret.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "$COUNT$ aktiviteter lagret i $PARTS$ ZIP-filer.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"csvDate": {
+		"message": "Dato (YYYY-MM-DD)"
+	},
+	"trimCustom": {
+		"message": "Egendefinert …"
+	},
+	"trimCustomValue": {
+		"message": "Avstand"
+	},
+	"trimCustomUnit": {
+		"message": "Enhet"
+	},
+	"savePart": {
+		"message": "Lagre del $NUMBER$",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP-del $NUMBER$ er klar - klikk Lagre del $NUMBER$ (Chrome tillater bare én nedlasting uten klikk).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

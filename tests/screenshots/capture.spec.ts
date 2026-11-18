@@ -10,7 +10,8 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { test } from '../fixtures/extension.ts';
+import { test, type Page } from '../fixtures/extension.ts';
+import { fakeRowsHtml, installFakePager, type FakeRow } from '../fixtures/pages.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const readmeDir = path.resolve(__dirname, '../../docs/screenshots');
@@ -19,6 +20,41 @@ const storeDir = path.resolve(__dirname, '../../docs/store');
 // Chrome Web Store accepts either 1280×800 or 640×400 PNG/JPEG. 1280×800
 // reads well at the listing's "Screenshots" carousel size.
 const STORE_VIEWPORT = { width: 1280, height: 800 } as const;
+
+/** More pages of the fixture's list, for "Select all pages". */
+const MORE_ROWS: FakeRow[][] = [
+	[
+		{ id: '9000000011', sport: 'Ride', title: 'Gravel Loop' },
+		{ id: '9000000012', sport: 'Hike', title: 'Ridge Hike' },
+		{ id: '9000000013', sport: 'Run', title: 'Easy Run' },
+	],
+	[
+		{ id: '9000000021', sport: 'Run', title: 'Track Session' },
+		{ id: '9000000022', sport: 'Workout', title: 'Core', distance: '0 km' },
+	],
+];
+
+/**
+ * Start "Select all pages" over a slow fake pager, and wait until it's on
+ * its second page, so the progress status is on screen.
+ */
+async function startSelectingPages(page: Page): Promise<void> {
+	await installFakePager(page, ['', ...MORE_ROWS.map(fakeRowsHtml)], 0, {
+		delayMs: 4000,
+		total: 3184,
+		removeTable: false,
+	});
+	await page.locator('[data-role="select-pages"]').click();
+	await page.locator('[data-role="status-text"]').filter({ hasText: '21-40 of 3184' }).waitFor({ timeout: 10_000 });
+}
+
+/** Original mode with the fixture's indoor rows selected next to an outdoor one. */
+async function selectIndoorRows(page: Page): Promise<void> {
+	await page.locator('select[data-role="format"]').selectOption('original');
+	await page.locator('tr[data-sbgx-has-gps="0"] .sbgx-row-cb').nth(0).check();
+	await page.locator('tr[data-sbgx-has-gps="0"] .sbgx-row-cb').nth(1).check();
+	await page.locator('.sbgx-row-cb').nth(0).check();
+}
 
 test.describe('README screenshots', () => {
 	test.use({ viewport: { width: 1400, height: 900 } });
@@ -57,9 +93,39 @@ test.describe('README screenshots', () => {
 			path: path.join(readmeDir, 'bulk.png'),
 		});
 	});
+
+	test('all pages - selecting across pages, mid-walk', async ({ extensionPage }) => {
+		await startSelectingPages(extensionPage);
+		await extensionPage.locator('.sbgx-toolbar').screenshot({ path: path.join(readmeDir, 'all-pages.png') });
+	});
+
+	test('original - indoor activities selectable in Original mode', async ({ extensionPage }) => {
+		await selectIndoorRows(extensionPage);
+		await extensionPage.locator('table').screenshot({ path: path.join(readmeDir, 'original-indoor.png') });
+	});
+
+	test('menu - the ⋯ menu open', async ({ extensionPage }) => {
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await extensionPage.locator('select[data-role="trim"]').selectOption('custom');
+		await extensionPage.locator('[data-role="trim-value"]').fill('700');
+		const toolbar = (await extensionPage.locator('.sbgx-toolbar').boundingBox())!;
+		const menu = (await extensionPage.locator('.sbgx-menu').boundingBox())!;
+		// The menu hangs below the toolbar; take both, padded a little.
+		const x = Math.min(toolbar.x, menu.x) - 8;
+		const y = toolbar.y - 8;
+		await extensionPage.screenshot({
+			path: path.join(readmeDir, 'menu.png'),
+			clip: {
+				x,
+				y,
+				width: Math.max(toolbar.x + toolbar.width, menu.x + menu.width) + 8 - x,
+				height: menu.y + menu.height + 8 - y,
+			},
+		});
+	});
 });
 
-// Five 1280×800 full-page shots that map to the suggested shot list in
+// Five 1280×800 full-page shots (the store's maximum) that map to the shot list in
 // docs/CHROME_WEB_STORE.md. The Strava fixture is generic enough that
 // these read like a real My Activities page minus the chrome around it.
 test.describe('Chrome Web Store listing screenshots', () => {
@@ -72,38 +138,20 @@ test.describe('Chrome Web Store listing screenshots', () => {
 		});
 	});
 
-	test('2-format-dropdown - dropdown open showing GPX / TCX / Original', async ({ extensionPage }) => {
-		// Native <select> dropdowns can't be screenshotted in their open
-		// state on most platforms (the popup is OS-rendered, not part of
-		// the page). Instead, we tick a few rows and switch the format to TCX,
-		// so the per-row buttons re-label live and the dropdown's current
-		// value visibly says "TCX" - which is what the shot demonstrates.
-		await extensionPage.locator('.sbgx-row-cb').nth(0).check();
-		await extensionPage.locator('.sbgx-row-cb').nth(1).check();
-		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+	test('2-original-indoor - Original mode, indoor activities selected', async ({ extensionPage }) => {
+		// Original mode is the one that exports indoor activities - the
+		// uploaded file, with its heart rate and power.
+		await selectIndoorRows(extensionPage);
 		await extensionPage.screenshot({
-			path: path.join(storeDir, 'screenshot-2-format-tcx.png'),
+			path: path.join(storeDir, 'screenshot-2-original-indoor.png'),
 			fullPage: false,
 		});
 	});
 
-	test('3-merge-mid-flight - merging into one GPX with spinner', async ({ extensionPage }) => {
-		// Slow each export_gpx so the "Merging into one GPX…" status text
-		// is on screen when the screenshot fires.
-		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
-			await new Promise((r) => setTimeout(r, 1500));
-			await route.fulfill({
-				status: 200,
-				contentType: 'application/gpx+xml',
-				body: '<?xml version="1.0"?><gpx version="1.1" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>demo</name><trkseg><trkpt lat="45" lon="13"/></trkseg></trk></gpx>',
-			});
-		});
-		await extensionPage.locator('.sbgx-select-all-cb').check();
-		await extensionPage.locator('[data-role="merge"]').click();
-		await extensionPage.locator('.sbgx-spinner:not([hidden])').waitFor({ state: 'visible' });
-		await extensionPage.waitForTimeout(100);
+	test('3-select-all-pages - selecting across pages, mid-walk', async ({ extensionPage }) => {
+		await startSelectingPages(extensionPage);
 		await extensionPage.screenshot({
-			path: path.join(storeDir, 'screenshot-3-merge.png'),
+			path: path.join(storeDir, 'screenshot-3-all-pages.png'),
 			fullPage: false,
 		});
 	});

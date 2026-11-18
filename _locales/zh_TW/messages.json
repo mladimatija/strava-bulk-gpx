@@ -155,7 +155,7 @@
 		"message": "檔名:"
 	},
 	"namesTooltip": {
-		"message": "下載檔案的命名方式。依運動分資料夾僅在 ZIP 中生效。"
+		"message": "下載檔案的命名方式。依運動分資料夾僅在 ZIP 中生效。無法讀取日期時，「日期 + 標題」會改用 ID。"
 	},
 	"namesId": {
 		"message": "活動 ID"
@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "隱藏起點/終點 (僅 GPX)"
+		"message": "隱藏起點/終點"
 	},
 	"trimOff": {
 		"message": "關閉"
 	},
 	"trimTitle": {
-		"message": "儲存前移除每個活動起點與終點附近的軌跡點，讓你分享的檔案不會暴露出發地點。裁剪後的檔名以 _trimmed 結尾，不再與 Strava 的匯出完全相同。重新載入頁面後會關閉。"
+		"message": "儲存前隱藏每個活動起點與終點附近的位置，讓你分享的檔案不會暴露出發地點。TCX 檔案會保留心率、踏頻與功率。裁剪後的檔名以 _trimmed 結尾，不再與 Strava 的匯出完全相同。重新載入頁面後會關閉。"
 	},
 	"trimChip": {
 		"message": "正在隱藏起點與終點的 $RADIUS$",
@@ -361,10 +361,155 @@
 	"trimTurnOff": {
 		"message": "關閉"
 	},
-	"trimOnlyGpx": {
-		"message": "僅在 GPX 模式下可用"
+	"trimNotOriginal": {
+		"message": "不適用於原始檔案"
 	},
 	"trimAllHidden": {
 		"message": "整條軌跡都在隱藏範圍內"
+	},
+	"selectAllPages": {
+		"message": "選擇所有頁面"
+	},
+	"selectAllPagesTitle": {
+		"message": "依目前的搜尋與篩選條件翻遍整個列表，選擇其中的所有活動"
+	},
+	"selectNewAllPages": {
+		"message": "在所有頁面選擇新的"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "翻遍整個列表，選擇所有尚未匯出為 $FORMAT$ 的活動",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "正在所有頁面中選擇… $RANGE$ (已選擇 $COUNT$ 項)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "已從 $PAGES$ 頁中加入 $COUNT$ 項活動。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "已停止 - 目前已加入 $COUNT$ 項活動。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava 未能載入下一頁"
+	},
+	"namesDate": {
+		"message": "日期 + 標題"
+	},
+	"noGpsDeselected": {
+		"message": "已取消選擇 $COUNT$ 項無 GPS 的活動 - 它們沒有 $FORMAT$ 匯出，只有原始檔案。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportUnavailable": {
+		"message": "Strava 沒有此活動的 $FORMAT$ 檔案",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "未登入 Strava"
+	},
+	"splitLabel": {
+		"message": "ZIP 分割大小"
+	},
+	"splitNever": {
+		"message": "不分割"
+	},
+	"splitTitle": {
+		"message": "大型下載會儲存為多個 ZIP (…_part1.zip、…_part2.zip)，每個裝滿後立即儲存，避免大型備份耗盡瀏覽器記憶體。大小依壓縮前的檔案計算。"
+	},
+	"cancelledAfterParts": {
+		"message": "已取消 - 已儲存 $COUNT$ 個 ZIP 分割檔。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "已將 $COUNT$ 項活動儲存到 $PARTS$ 個 ZIP 中。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"csvDate": {
+		"message": "日期 (YYYY-MM-DD)"
+	},
+	"trimCustom": {
+		"message": "自訂…"
+	},
+	"trimCustomValue": {
+		"message": "距離"
+	},
+	"trimCustomUnit": {
+		"message": "單位"
+	},
+	"savePart": {
+		"message": "儲存第 $NUMBER$ 部分",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP 第 $NUMBER$ 部分已就緒 - 請點選「儲存第 $NUMBER$ 部分」 (Chrome 只允許一次無需點選的下載)。",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

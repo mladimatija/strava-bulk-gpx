@@ -94,8 +94,31 @@ export type MessageKey =
 	| 'trimTitle'
 	| 'trimChip'
 	| 'trimTurnOff'
-	| 'trimOnlyGpx'
-	| 'trimAllHidden';
+	| 'trimNotOriginal'
+	| 'trimAllHidden'
+	| 'selectAllPages'
+	| 'selectAllPagesTitle'
+	| 'selectNewAllPages'
+	| 'selectNewAllPagesTitle'
+	| 'selectingPages'
+	| 'selectedPages'
+	| 'selectPagesStopped'
+	| 'pagingTimeout'
+	| 'namesDate'
+	| 'noGpsDeselected'
+	| 'exportUnavailable'
+	| 'notLoggedIn'
+	| 'splitLabel'
+	| 'splitNever'
+	| 'splitTitle'
+	| 'cancelledAfterParts'
+	| 'savedActivitiesParts'
+	| 'csvDate'
+	| 'trimCustom'
+	| 'trimCustomValue'
+	| 'trimCustomUnit'
+	| 'savePart'
+	| 'partReady';
 
 /**
  * English string templates, byte-identical to `_locales/en/messages.json`.
@@ -129,7 +152,8 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	selectedCountWithHidden: '$1 selected ($2 not on this page)',
 	clearSelection: 'Clear selection',
 	namesLabel: 'Names:',
-	namesTooltip: 'How downloaded files are named. Sport folders only apply inside zips.',
+	namesTooltip:
+		"How downloaded files are named. Sport folders only apply inside zips. Date + title uses the ID where a date can't be read.",
 	namesId: 'Activity ID',
 	namesTitle: 'ID + title',
 	namesSport: 'Sport folders',
@@ -168,14 +192,39 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	savedJoined: 'Saved one activity joined from $1 activities.',
 	savedMergedTcx: 'Saved merged TCX with $1 activities.',
 	mergeOverlap: "Can't join activities that overlap in time: $1 and $2",
-	trimLabel: 'Hide start/end (GPX only)',
+	trimLabel: 'Hide start/end',
 	trimOff: 'Off',
 	trimTitle:
-		"Removes track points near each activity's start and end before saving, so files you share don't show where you start. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
+		"Hides the locations near each activity's start and end before saving, so files you share don't show where you start. TCX files keep their heart rate, cadence and power. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
 	trimChip: 'Hiding $1 at start and end',
 	trimTurnOff: 'Turn off',
-	trimOnlyGpx: 'Only available in GPX mode',
+	trimNotOriginal: 'Not available for Original files',
 	trimAllHidden: 'the whole track is within the hidden distance',
+	selectAllPages: 'Select all pages',
+	selectAllPagesTitle:
+		'Page through the whole list, with your current search and filters, and select every activity on it',
+	selectNewAllPages: 'Select new on all pages',
+	selectNewAllPagesTitle: "Page through the whole list and select every activity you haven't exported as $1 yet",
+	selectingPages: 'Selecting on every page… $1 ($2 selected)',
+	selectedPages: 'Added $1 activities from $2 pages.',
+	selectPagesStopped: 'Stopped - added $1 activities so far.',
+	pagingTimeout: "Strava didn't load the next page",
+	namesDate: 'Date + title',
+	noGpsDeselected: 'Deselected $1 activities without GPS - they have no $2 export, only Original.',
+	exportUnavailable: 'Strava has no $1 file for this activity',
+	notLoggedIn: 'not logged in to Strava',
+	splitLabel: 'Split zips after',
+	splitNever: 'Never',
+	splitTitle:
+		"Large downloads are saved as several zips (…_part1.zip, …_part2.zip), each as soon as it's full, so a big backup doesn't run your browser out of memory. Sizes count the files before compression.",
+	cancelledAfterParts: 'Cancelled - $1 zip parts were already saved.',
+	savedActivitiesParts: 'Saved $1 activities in $2 zips.',
+	csvDate: 'Date (YYYY-MM-DD)',
+	trimCustom: 'Custom…',
+	trimCustomValue: 'Distance',
+	trimCustomUnit: 'Unit',
+	savePart: 'Save part $1',
+	partReady: 'Zip part $1 is ready - click Save part $1 (Chrome allows only one download without a click).',
 };
 
 /**

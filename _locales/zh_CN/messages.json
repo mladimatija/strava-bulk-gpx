@@ -155,7 +155,7 @@
 		"message": "文件名:"
 	},
 	"namesTooltip": {
-		"message": "下载文件的命名方式。按运动分文件夹仅在 ZIP 中生效。"
+		"message": "下载文件的命名方式。按运动分文件夹仅在 ZIP 中生效。无法读取日期时，“日期 + 标题”会改用 ID。"
 	},
 	"namesId": {
 		"message": "活动 ID"
@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "隐藏起点/终点 (仅 GPX)"
+		"message": "隐藏起点/终点"
 	},
 	"trimOff": {
 		"message": "关闭"
 	},
 	"trimTitle": {
-		"message": "保存前移除每个活动起点和终点附近的轨迹点，让你分享的文件不会暴露出发地点。裁剪后的文件名以 _trimmed 结尾，不再与 Strava 的导出完全相同。重新加载页面后会关闭。"
+		"message": "保存前隐藏每个活动起点和终点附近的位置，让你分享的文件不会暴露出发地点。TCX 文件会保留心率、踏频和功率。裁剪后的文件名以 _trimmed 结尾，不再与 Strava 的导出完全相同。重新加载页面后会关闭。"
 	},
 	"trimChip": {
 		"message": "正在隐藏起点和终点的 $RADIUS$",
@@ -361,10 +361,155 @@
 	"trimTurnOff": {
 		"message": "关闭"
 	},
-	"trimOnlyGpx": {
-		"message": "仅在 GPX 模式下可用"
+	"trimNotOriginal": {
+		"message": "不适用于原始文件"
 	},
 	"trimAllHidden": {
 		"message": "整条轨迹都在隐藏范围内"
+	},
+	"selectAllPages": {
+		"message": "选择所有页面"
+	},
+	"selectAllPagesTitle": {
+		"message": "按当前搜索和筛选条件翻遍整个列表，选择其中的所有活动"
+	},
+	"selectNewAllPages": {
+		"message": "在所有页面选择新的"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "翻遍整个列表，选择所有尚未导出为 $FORMAT$ 的活动",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "正在所有页面中选择… $RANGE$ (已选择 $COUNT$ 项)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "已从 $PAGES$ 页中添加 $COUNT$ 项活动。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "已停止 - 目前已添加 $COUNT$ 项活动。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava 未能加载下一页"
+	},
+	"namesDate": {
+		"message": "日期 + 标题"
+	},
+	"noGpsDeselected": {
+		"message": "已取消选择 $COUNT$ 项无 GPS 的活动 - 它们没有 $FORMAT$ 导出，只有原始文件。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportUnavailable": {
+		"message": "Strava 没有此活动的 $FORMAT$ 文件",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "未登录 Strava"
+	},
+	"splitLabel": {
+		"message": "ZIP 拆分大小"
+	},
+	"splitNever": {
+		"message": "不拆分"
+	},
+	"splitTitle": {
+		"message": "大型下载会保存为多个 ZIP (…_part1.zip、…_part2.zip)，每个装满后立即保存，避免大型备份耗尽浏览器内存。大小按压缩前的文件计算。"
+	},
+	"cancelledAfterParts": {
+		"message": "已取消 - 已保存 $COUNT$ 个 ZIP 分卷。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "已将 $COUNT$ 项活动保存到 $PARTS$ 个 ZIP 中。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"csvDate": {
+		"message": "日期 (YYYY-MM-DD)"
+	},
+	"trimCustom": {
+		"message": "自定义…"
+	},
+	"trimCustomValue": {
+		"message": "距离"
+	},
+	"trimCustomUnit": {
+		"message": "单位"
+	},
+	"savePart": {
+		"message": "保存第 $NUMBER$ 部分",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP 第 $NUMBER$ 部分已就绪 - 请点击“保存第 $NUMBER$ 部分” (Chrome 只允许一次无需点击的下载)。",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

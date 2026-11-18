@@ -6,19 +6,25 @@
 //   - Find the activities table (whatever React happens to have rendered).
 //   - Mount a toolbar above it once.
 //   - For each visible row, inject a checkbox at the start and a "GPX" button
-//     at the end - but only when the row has GPS data (distance > 0).
+//     at the end - but only when the row can be exported in the current
+//     format: GPX and TCX need GPS data (distance > 0), Original doesn't.
 //   - A MutationObserver re-runs the injection whenever Strava replaces the
 //     table body (pagination, search, sort). Selection state survives via a
-//     module-scope Map keyed by activity id, so a selection can span pages.
+//     module-scope Map keyed by activity id, so a selection can span pages -
+//     and selection.ts saves it, so it survives a reload too.
 
 import { downloadSingle, downloadBulk, downloadMerged, downloadActivitiesCsv, type BulkOptions } from './downloader.ts';
 import { activityIdsFromCsv } from './csv.ts';
+import { dateOrderOf, isoDate, type DateOrder } from './dates.ts';
 import { clearHistory, exportedAt, exportedTotal, loadHistory, recordExports } from './history.ts';
+import { forgetSavedSelection, loadSelection, saveSelection } from './selection.ts';
+import { defaultLengthUnit, lengthLabel, METRES_PER_FOOT, unitName, type LengthUnit } from './units.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
 import { t } from './i18n.ts';
 import type {
 	ActivityColumn,
 	ActivityRow,
+	BulkResult,
 	ExportFormat,
 	MergeMode,
 	NamePattern,
@@ -70,6 +76,20 @@ interface State {
 	 * resets on every page load and shows a toolbar chip while on.
 	 */
 	trim: number;
+	/** The radius as the user chose it, for the chip: "500 m", "650 ft". */
+	trimLabel: string;
+	/**
+	 * What the Hide start/end menu shows - the dropdown's value, and a custom
+	 * distance as typed with its unit - so a rebuilt toolbar shows it too.
+	 */
+	trimMenu: { choice: string; customValue: string; unit: LengthUnit };
+	/** Start a new zip after this many MB of files, 0 = never split. */
+	splitMb: number;
+	/**
+	 * Day/month order of the table's dates, once any row settles it (see
+	 * dates.ts). Not saved: it's re-learned from the rows on every load.
+	 */
+	dateOrder: DateOrder | null;
 	/** Aborts the in-flight bulk/merge run; null when idle. */
 	abort: AbortController | null;
 	/**
@@ -80,6 +100,13 @@ interface State {
 	lastRun: { failed: FailedActivity[]; retryFormat: ExportFormat | null } | null;
 	/** Row last toggled - the anchor for shift-click range selection. */
 	anchorId: string | null;
+	/**
+	 * A zip part waiting for its "Save part N" click (see waitForPartClick);
+	 * null when none is.
+	 */
+	pendingPart: { n: number; save: () => void } | null;
+	/** Select all pages is running: the selection is saved once, at the end. */
+	selectingPages: boolean;
 }
 
 const STATE: State = {
@@ -90,14 +117,21 @@ const STATE: State = {
 	names: 'id',
 	mergeMode: 'tracks',
 	trim: 0,
+	trimLabel: '',
+	trimMenu: { choice: '0', customValue: '', unit: defaultLengthUnit(navigator.language) },
+	splitMb: 500,
+	dateOrder: null,
 	abort: null,
 	lastRun: null,
 	anchorId: null,
+	pendingPart: null,
+	selectingPages: false,
 };
 
 const FORMAT_STORAGE_KEY = 'exportFormat';
 const NAMES_STORAGE_KEY = 'namePattern';
 const MERGE_MODE_STORAGE_KEY = 'mergeMode';
+const SPLIT_STORAGE_KEY = 'zipSplitMb';
 
 /** Narrow an untrusted stored value to a known format, defaulting to gpx. */
 function parseFormat(value: unknown): ExportFormat {
@@ -106,12 +140,26 @@ function parseFormat(value: unknown): ExportFormat {
 
 /** Narrow an untrusted stored value to a known name pattern, defaulting to id. */
 function parseNames(value: unknown): NamePattern {
-	return value === 'title' || value === 'sport' ? value : 'id';
+	return value === 'title' || value === 'sport' || value === 'date' ? value : 'id';
 }
 
 /** Narrow an untrusted stored value to a known merge mode, defaulting to tracks. */
 function parseMergeMode(value: unknown): MergeMode {
 	return value === 'single' ? value : 'tracks';
+}
+
+/** Zip split sizes offered in the "⋯" menu, in MB (0 = never). */
+const SPLIT_SIZES_MB = [250, 500, 1000, 0];
+
+/** Narrow an untrusted stored value to a split size in MB, defaulting to 500. */
+function parseSplit(value: unknown): number {
+	const mb = Number(value);
+	return value !== '' && value !== null && Number.isFinite(mb) && mb >= 0 ? mb : 500;
+}
+
+/** "250 MB", "1 GB". */
+function sizeLabel(mb: number): string {
+	return mb >= 1000 ? `${mb / 1000} GB` : `${mb} MB`;
 }
 
 /** Hide start/end radii offered in the "⋯" menu, in metres. */
@@ -128,18 +176,24 @@ function radiusLabel(metres: number): string {
 	return metres >= 1000 ? `${metres / 1000} km` : `${metres} m`;
 }
 
-/** The trim radius that applies right now - trimming is GPX-only. */
+/** The trim radius that applies right now - Original files aren't trimmed. */
 function effectiveTrim(): number {
-	return STATE.format === 'gpx' ? STATE.trim : 0;
+	return STATE.format !== 'original' ? STATE.trim : 0;
 }
 
-/** Restore the last-used format and name pattern; storage failures keep the defaults. */
+/** Restore the last-used toolbar settings; storage failures keep the defaults. */
 async function loadPreferences(): Promise<void> {
 	try {
-		const stored = await chrome.storage.local.get([FORMAT_STORAGE_KEY, NAMES_STORAGE_KEY, MERGE_MODE_STORAGE_KEY]);
+		const stored = await chrome.storage.local.get([
+			FORMAT_STORAGE_KEY,
+			NAMES_STORAGE_KEY,
+			MERGE_MODE_STORAGE_KEY,
+			SPLIT_STORAGE_KEY,
+		]);
 		STATE.format = parseFormat(stored[FORMAT_STORAGE_KEY]);
 		STATE.names = parseNames(stored[NAMES_STORAGE_KEY]);
 		STATE.mergeMode = parseMergeMode(stored[MERGE_MODE_STORAGE_KEY]);
+		STATE.splitMb = parseSplit(stored[SPLIT_STORAGE_KEY] ?? 500);
 	} catch {
 		// Keep the defaults - a broken storage area shouldn't block exports.
 	}
@@ -187,7 +241,36 @@ function rowColumns(row: HTMLTableRowElement): ActivityColumn[] {
 	return columns;
 }
 
-/** Pull { id, name, sport_type, columns } from a rendered table row, or null. */
+/** A date as Strava's Date column shows it: "17/11/2026", "2026/11/17", "17.11.2026", … */
+const DATE_TEXT = /\d{1,4}\s?[./\-年]\s?\d{1,2}\s?[./\-月]\s?\d{1,4}/;
+
+/** The locale Strava renders the page in, for weekday names in dates. */
+function pageLocale(): string {
+	return document.documentElement.lang || navigator.language;
+}
+
+/** Text of the row's Date cell: Strava's `col-date` cell, else the first cell that reads as a date. */
+function dateText(row: HTMLTableRowElement): string | null {
+	const cells = Array.from(row.cells).filter((td) => !td.classList.contains('sbgx-cell'));
+	const cell =
+		cells.find((td) => td.classList.contains('col-date')) ?? cells.find((td) => DATE_TEXT.test(td.textContent ?? ''));
+	return cell ? (cell.textContent ?? '').trim() : null;
+}
+
+/** Learn the table's day/month order from the first row whose date settles it. */
+function learnDateOrder(table: HTMLTableElement): void {
+	if (STATE.dateOrder) return;
+	for (const row of Array.from(table.tBodies[0]?.rows ?? [])) {
+		const text = dateText(row);
+		const order = text && dateOrderOf(text, pageLocale());
+		if (order) {
+			STATE.dateOrder = order;
+			return;
+		}
+	}
+}
+
+/** Pull { id, name, sport_type, date, hasGps, columns } from a rendered table row, or null. */
 function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	const link = row.querySelector<HTMLAnchorElement>('a[href*="/activities/"]');
 	if (!link) return null;
@@ -200,7 +283,9 @@ function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	// Sport is usually the first <td> in the row. Best-effort, fine if missing.
 	const sportCell = Array.from(row.cells).find((td) => !td.classList.contains('sbgx-cell'));
 	const sport_type = sportCell ? (sportCell.textContent ?? '').trim() : '';
-	return { id, name, sport_type, columns: rowColumns(row) };
+	const text = dateText(row);
+	const date = text ? isoDate(text, pageLocale(), STATE.dateOrder) : null;
+	return { id, name, sport_type, date, hasGps: rowHasGps(row), columns: rowColumns(row) };
 }
 
 /**
@@ -222,6 +307,16 @@ function rowHasGps(row: HTMLTableRowElement): boolean {
 }
 
 /**
+ * Whether a row can be exported in the current format. GPX and TCX need GPS
+ * data; Strava answers them with a redirect for activities without it. An
+ * indoor activity still has its Original file when one was uploaded - a
+ * trainer ride's power, a strength session's heart rate.
+ */
+function rowSelectable(row: HTMLTableRowElement): boolean {
+	return row.dataset.sbgxHasGps === '1' || (row.dataset.sbgxHasGps === '0' && STATE.format === 'original');
+}
+
+/**
  * Selectable rows currently on screen, in table order, one per activity id
  * (Strava sometimes renders a sticky-header mirror or a transient duplicate
  * `<tr>` for the same activity).
@@ -229,9 +324,9 @@ function rowHasGps(row: HTMLTableRowElement): boolean {
 function visibleSelectableRows(): HTMLTableRowElement[] {
 	const seen = new Set<string>();
 	const rows: HTMLTableRowElement[] = [];
-	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-has-gps="1"]')) {
+	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-id]')) {
 		const id = row.dataset.sbgxId;
-		if (!id || seen.has(id)) continue;
+		if (!id || seen.has(id) || !rowSelectable(row)) continue;
 		seen.add(id);
 		rows.push(row);
 	}
@@ -240,9 +335,33 @@ function visibleSelectableRows(): HTMLTableRowElement[] {
 
 // ---------- Selection ----------
 
+/**
+ * Save the selection for the next page load (see selection.ts) - except
+ * while Select all pages runs, which would otherwise rewrite the whole,
+ * growing selection on every page; it saves once when it's done.
+ */
+function persistSelection(): void {
+	if (STATE.selectingPages) return;
+	saveSelection(() => [...STATE.selected.values()]);
+}
+
 function setSelected(activity: ActivityRow, selected: boolean): void {
 	if (selected) STATE.selected.set(activity.id, activity);
 	else STATE.selected.delete(activity.id);
+	persistSelection();
+}
+
+/**
+ * Select the selectable rows on this page - with `onlyNew`, just those not
+ * yet exported in the current format. Off-page picks stay as they are.
+ */
+function selectVisible(onlyNew: boolean): void {
+	for (const row of visibleSelectableRows()) {
+		const id = row.dataset.sbgxId;
+		if (!id || (onlyNew && exportedAt(id, STATE.format) !== null)) continue;
+		const a = activityFromRow(row);
+		if (a) setSelected(a, true);
+	}
 }
 
 /**
@@ -272,75 +391,92 @@ function injectRow(row: HTMLTableRowElement): void {
 	if (!a) return;
 	row.dataset.sbgxAugmented = '1';
 	row.dataset.sbgxId = a.id;
+	row.dataset.sbgxHasGps = a.hasGps ? '1' : '0';
 
-	const hasGps = rowHasGps(row);
-	row.dataset.sbgxHasGps = hasGps ? '1' : '0';
-
-	// Prepend a cell to keep column alignment even when there's no checkbox.
+	// Both cells always exist, to keep column alignment; what's in them
+	// depends on the format (see renderRowControls).
 	const cbCell = document.createElement('td');
 	cbCell.className = 'sbgx-cell sbgx-cell-check';
-	if (hasGps) {
-		const cb = document.createElement('input');
-		cb.type = 'checkbox';
-		cb.className = 'sbgx-row-cb';
-		cb.checked = STATE.selected.has(a.id);
-		// `click` rather than `change`: only the click event carries shiftKey.
-		// Keyboard toggles (Space) dispatch a click too.
-		cb.addEventListener('click', (e: MouseEvent) => {
-			const anchor = STATE.anchorId;
-			const ranged = e.shiftKey && anchor !== null && anchor !== a.id && selectRange(anchor, a.id, cb.checked);
-			if (!ranged) setSelected(a, cb.checked);
-			// Shift-click also extends the browser's text selection across the
-			// table; drop it so the page doesn't flash blue.
-			if (e.shiftKey) window.getSelection()?.removeAllRanges();
-			STATE.anchorId = a.id;
-			onSelectionChanged();
-		});
-		cbCell.appendChild(cb);
-	}
 	row.insertBefore(cbCell, row.firstChild);
-
-	// Always append the trailing cell, but only render a button when GPS exists.
 	const dlCell = document.createElement('td');
 	dlCell.className = 'sbgx-cell sbgx-cell-dl';
-	if (hasGps) {
-		const done = document.createElement('span');
-		done.className = 'sbgx-done';
-		done.textContent = '✓';
-		renderExportBadge(done, a.id);
-		dlCell.appendChild(done);
-
-		const btn = document.createElement('button');
-		btn.type = 'button';
-		btn.className = 'sbgx-btn sbgx-btn-primary sbgx-btn-row';
-		btn.textContent = formatLabel(STATE.format);
-		btn.title = t('rowButtonTitle', formatLabel(STATE.format));
-		btn.addEventListener('click', async (e: MouseEvent) => {
-			e.preventDefault();
-			e.stopPropagation();
-			if (btn.disabled) return;
-			btn.disabled = true;
-			const old = btn.textContent ?? formatLabel(STATE.format);
-			btn.textContent = '…';
-			// Read the format from STATE at click time so changing the
-			// selector after rendering immediately affects what gets fetched.
-			const format = STATE.format;
-			const trim = effectiveTrim();
-			try {
-				await downloadSingle(a, format, STATE.names, trim);
-				// A trimmed file isn't a backup of the activity.
-				if (trim === 0) rememberExports([a.id], format);
-			} catch (err) {
-				const message = err instanceof Error ? err.message : String(err);
-				alert(t('rowDownloadFailed', [a.id, message]));
-			} finally {
-				btn.disabled = false;
-				btn.textContent = old;
-			}
-		});
-		dlCell.appendChild(btn);
-	}
 	row.appendChild(dlCell);
+	renderRowControls(row);
+}
+
+/**
+ * Give a row its checkbox, ✓ and export button when it can be exported in
+ * the current format, or take them away when it can't - an indoor activity
+ * has controls in Original mode only.
+ */
+function renderRowControls(row: HTMLTableRowElement): void {
+	const cbCell = row.querySelector<HTMLTableCellElement>(':scope > .sbgx-cell-check');
+	const dlCell = row.querySelector<HTMLTableCellElement>(':scope > .sbgx-cell-dl');
+	const id = row.dataset.sbgxId;
+	if (!cbCell || !dlCell || !id) return;
+	if (!rowSelectable(row)) {
+		cbCell.replaceChildren();
+		dlCell.replaceChildren();
+		return;
+	}
+	if (cbCell.childElementCount > 0) return;
+
+	const cb = document.createElement('input');
+	cb.type = 'checkbox';
+	cb.className = 'sbgx-row-cb';
+	cb.checked = STATE.selected.has(id);
+	// `click` rather than `change`: only the click event carries shiftKey.
+	// Keyboard toggles (Space) dispatch a click too.
+	cb.addEventListener('click', (e: MouseEvent) => {
+		const a = activityFromRow(row);
+		if (!a) return;
+		const anchor = STATE.anchorId;
+		const ranged = e.shiftKey && anchor !== null && anchor !== a.id && selectRange(anchor, a.id, cb.checked);
+		if (!ranged) setSelected(a, cb.checked);
+		// Shift-click also extends the browser's text selection across the
+		// table; drop it so the page doesn't flash blue.
+		if (e.shiftKey) window.getSelection()?.removeAllRanges();
+		STATE.anchorId = a.id;
+		onSelectionChanged();
+	});
+	cbCell.appendChild(cb);
+
+	const done = document.createElement('span');
+	done.className = 'sbgx-done';
+	done.textContent = '✓';
+	renderExportBadge(done, id);
+	dlCell.appendChild(done);
+
+	const btn = document.createElement('button');
+	btn.type = 'button';
+	btn.className = 'sbgx-btn sbgx-btn-primary sbgx-btn-row';
+	btn.textContent = formatLabel(STATE.format);
+	btn.title = t('rowButtonTitle', formatLabel(STATE.format));
+	btn.addEventListener('click', async (e: MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		const a = activityFromRow(row);
+		if (btn.disabled || !a) return;
+		btn.disabled = true;
+		const old = btn.textContent ?? formatLabel(STATE.format);
+		btn.textContent = '…';
+		// Read the format from STATE at click time so changing the
+		// selector after rendering immediately affects what gets fetched.
+		const format = STATE.format;
+		const trim = effectiveTrim();
+		try {
+			await downloadSingle(a, format, STATE.names, trim);
+			// A trimmed file isn't a backup of the activity.
+			if (trim === 0) rememberExports([a.id], format);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			alert(t('rowDownloadFailed', [a.id, message]));
+		} finally {
+			btn.disabled = false;
+			btn.textContent = old;
+		}
+	});
+	dlCell.appendChild(btn);
 }
 
 /**
@@ -387,6 +523,8 @@ function buildToolbar(): HTMLDivElement {
         <span>${escapeHtml(t('selectAllVisible'))}</span>
       </label>
       <button class="sbgx-btn sbgx-btn-link" data-role="select-new">${escapeHtml(t('selectNew'))}</button>
+      <button class="sbgx-btn sbgx-btn-link" data-role="select-pages" title="${escapeHtml(t('selectAllPagesTitle'))}">${escapeHtml(t('selectAllPages'))}</button>
+      <button class="sbgx-btn sbgx-btn-link" data-role="select-new-pages">${escapeHtml(t('selectNewAllPages'))}</button>
       <label class="sbgx-tool sbgx-format-wrap">
         <span>${escapeHtml(t('formatLabel'))}</span>
         <select class="sbgx-format" data-role="format">
@@ -401,6 +539,7 @@ function buildToolbar(): HTMLDivElement {
           <option value="id">${escapeHtml(t('namesId'))}</option>
           <option value="title">${escapeHtml(t('namesTitle'))}</option>
           <option value="sport">${escapeHtml(t('namesSport'))}</option>
+          <option value="date">${escapeHtml(t('namesDate'))}</option>
         </select>
       </label>
       <button class="sbgx-btn sbgx-btn-primary" data-role="bulk" disabled>${escapeHtml(t('downloadSelected'))}</button>
@@ -421,6 +560,20 @@ function buildToolbar(): HTMLDivElement {
             <select class="sbgx-format" data-role="trim">
               <option value="0">${escapeHtml(t('trimOff'))}</option>
               ${TRIM_RADII.map((r) => `<option value="${r}">${radiusLabel(r)}</option>`).join('')}
+              <option value="custom">${escapeHtml(t('trimCustom'))}</option>
+            </select>
+          </label>
+          <div class="sbgx-trim-custom" data-role="trim-custom" hidden>
+            <input type="number" class="sbgx-format" min="1" step="any" data-role="trim-value" aria-label="${escapeHtml(t('trimCustomValue'))}" placeholder="${escapeHtml(t('trimCustomValue'))}" />
+            <select class="sbgx-format" data-role="trim-unit" aria-label="${escapeHtml(t('trimCustomUnit'))}">
+              <option value="m">${escapeHtml(unitName('m', navigator.language))}</option>
+              <option value="ft">${escapeHtml(unitName('ft', navigator.language))}</option>
+            </select>
+          </div>
+          <label class="sbgx-menu-field" title="${escapeHtml(t('splitTitle'))}">
+            <span class="sbgx-menu-heading">${escapeHtml(t('splitLabel'))}</span>
+            <select class="sbgx-format" data-role="split">
+              ${SPLIT_SIZES_MB.map((mb) => `<option value="${mb}">${mb > 0 ? sizeLabel(mb) : escapeHtml(t('splitNever'))}</option>`).join('')}
             </select>
           </label>
           <span class="sbgx-menu-heading">${escapeHtml(t('historyHeading'))}</span>
@@ -430,6 +583,7 @@ function buildToolbar(): HTMLDivElement {
         </div>
       </details>
       <button class="sbgx-btn" data-role="cancel" hidden>${escapeHtml(t('cancel'))}</button>
+      <button class="sbgx-btn sbgx-btn-primary" data-role="save-part" hidden></button>
       <span class="sbgx-tool sbgx-count" data-role="count">${escapeHtml(t('selectedCount', '0'))}</span>
       <button class="sbgx-btn sbgx-btn-link" data-role="clear" hidden>${escapeHtml(t('clearSelection'))}</button>
       <span class="sbgx-tool sbgx-trim-chip" data-role="trim-chip" hidden>
@@ -467,23 +621,22 @@ function buildToolbar(): HTMLDivElement {
 	toolbarPart(toolbar, 'select-new').addEventListener('click', () => {
 		// Adds to the selection; activities already exported in the current
 		// format, and off-page picks, stay as they are.
-		for (const row of visibleSelectableRows()) {
-			const id = row.dataset.sbgxId;
-			if (!id || exportedAt(id, STATE.format) !== null) continue;
-			const a = activityFromRow(row);
-			if (a) setSelected(a, true);
-		}
+		selectVisible(true);
 		onSelectionChanged();
 	});
+	toolbarPart(toolbar, 'select-pages').addEventListener('click', () => void handleSelectPages(false));
+	toolbarPart(toolbar, 'select-new-pages').addEventListener('click', () => void handleSelectPages(true));
 
 	toolbarPart(toolbar, 'bulk').addEventListener('click', handleBulkClick);
 	toolbarPart(toolbar, 'merge').addEventListener('click', handleMergeClick);
 	toolbarPart(toolbar, 'csv').addEventListener('click', handleCsvClick);
 	toolbarPart(toolbar, 'cancel').addEventListener('click', () => STATE.abort?.abort());
+	toolbarPart(toolbar, 'save-part').addEventListener('click', () => STATE.pendingPart?.save());
 	toolbarPart(toolbar, 'retry').addEventListener('click', handleRetryClick);
 	toolbarPart(toolbar, 'clear').addEventListener('click', () => {
 		STATE.selected.clear();
 		STATE.anchorId = null;
+		persistSelection();
 		onSelectionChanged();
 	});
 
@@ -497,6 +650,7 @@ function buildToolbar(): HTMLDivElement {
 		savePreference(FORMAT_STORAGE_KEY, STATE.format);
 		refreshRowButtons();
 		renderExportBadges();
+		dropUnexportable();
 		// renderToolbarCounts re-derives the merge button's disabled/title
 		// state from STATE.format, so it has to run on every format change.
 		renderToolbarCounts();
@@ -515,8 +669,9 @@ function buildToolbar(): HTMLDivElement {
 
 /**
  * The "⋯" menu holds settings and actions that are rarely touched: how GPX
- * merges combine activities; hiding the start/end of GPX tracks (whose chip
- * sits on the toolbar, so it can't go unnoticed); and export history -
+ * merges combine activities; hiding the start/end of GPX and TCX tracks
+ * (whose chip sits on the toolbar, so it can't go unnoticed); when to split
+ * large zips; and export history -
  * marking activities from an earlier CSV as exported (so existing users
  * don't start with everything "new"), and forgetting the history.
  */
@@ -524,6 +679,12 @@ function wireMoreMenu(toolbar: HTMLDivElement): void {
 	const more = toolbarPart<HTMLDetailsElement>(toolbar, 'more');
 	document.addEventListener('click', (e) => {
 		if (more.open && !more.contains(e.target as Node)) more.open = false;
+	});
+	// The menu opens leftwards, unless the toolbar has wrapped the "⋯" too
+	// close to the left edge for it to fit.
+	const menu = more.querySelector<HTMLElement>('.sbgx-menu')!;
+	more.addEventListener('toggle', () => {
+		if (more.open) menu.classList.toggle('sbgx-menu-right', more.getBoundingClientRect().right < menu.offsetWidth);
 	});
 
 	const mergeModeSelect = toolbarPart<HTMLSelectElement>(toolbar, 'merge-mode');
@@ -534,16 +695,52 @@ function wireMoreMenu(toolbar: HTMLDivElement): void {
 		renderToolbarCounts();
 	});
 
-	const trimSelect = toolbarPart<HTMLSelectElement>(toolbar, 'trim');
-	trimSelect.value = String(STATE.trim);
-	trimSelect.addEventListener('change', () => {
-		STATE.trim = parseTrim(trimSelect.value);
-		renderToolbarCounts();
+	const splitSelect = toolbarPart<HTMLSelectElement>(toolbar, 'split');
+	splitSelect.value = String(STATE.splitMb);
+	splitSelect.addEventListener('change', () => {
+		STATE.splitMb = parseSplit(splitSelect.value);
+		savePreference(SPLIT_STORAGE_KEY, String(STATE.splitMb));
 	});
-	toolbarPart(toolbar, 'trim-off').addEventListener('click', () => {
-		STATE.trim = 0;
-		trimSelect.value = '0';
+
+	const trimSelect = toolbarPart<HTMLSelectElement>(toolbar, 'trim');
+	const custom = toolbarPart(toolbar, 'trim-custom');
+	const customValue = toolbarPart<HTMLInputElement>(toolbar, 'trim-value');
+	const customUnit = toolbarPart<HTMLSelectElement>(toolbar, 'trim-unit');
+	trimSelect.value = STATE.trimMenu.choice;
+	customValue.value = STATE.trimMenu.customValue;
+	customUnit.value = STATE.trimMenu.unit;
+	custom.hidden = STATE.trimMenu.choice !== 'custom';
+	// Apply whichever radius the menu shows. A custom distance is the
+	// number as typed, in the unit picked - switching the unit doesn't
+	// convert the number, it changes what it means. No valid number = off.
+	const applyTrim = (): void => {
+		custom.hidden = trimSelect.value !== 'custom';
+		STATE.trimMenu = {
+			choice: custom.hidden ? String(parseTrim(trimSelect.value)) : 'custom',
+			customValue: customValue.value,
+			unit: customUnit.value === 'ft' ? 'ft' : 'm',
+		};
+		if (custom.hidden) {
+			STATE.trim = parseTrim(trimSelect.value);
+			STATE.trimLabel = radiusLabel(STATE.trim);
+		} else {
+			const value = customValue.valueAsNumber;
+			const unit: LengthUnit = customUnit.value === 'ft' ? 'ft' : 'm';
+			const valid = Number.isFinite(value) && value > 0;
+			STATE.trim = valid ? value * (unit === 'ft' ? METRES_PER_FOOT : 1) : 0;
+			STATE.trimLabel = valid ? lengthLabel(value, unit, navigator.language) : '';
+		}
 		renderToolbarCounts();
+	};
+	trimSelect.addEventListener('change', () => {
+		applyTrim();
+		if (!custom.hidden) customValue.focus();
+	});
+	customValue.addEventListener('input', applyTrim);
+	customUnit.addEventListener('change', applyTrim);
+	toolbarPart(toolbar, 'trim-off').addEventListener('click', () => {
+		trimSelect.value = '0';
+		applyTrim();
 	});
 
 	const fileInput = toolbarPart<HTMLInputElement>(toolbar, 'history-file');
@@ -601,12 +798,13 @@ function wireMoreMenu(toolbar: HTMLDivElement): void {
 }
 
 /**
- * Walk every injected per-row GPX button and update its visible text + title
- * to match the currently selected format. Called when the format select
- * changes - the click handlers themselves already read STATE.format at click
- * time, so this is purely a labeling refresh.
+ * Bring every row's controls in line with the currently selected format:
+ * indoor rows gain or lose theirs (see renderRowControls), and every per-row
+ * button's text + title names the format. The click handlers themselves
+ * already read STATE.format at click time.
  */
 function refreshRowButtons(): void {
+	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-id]')) renderRowControls(row);
 	const label = formatLabel(STATE.format);
 	const title = t('rowButtonTitle', label);
 	for (const btn of document.querySelectorAll<HTMLButtonElement>('.sbgx-btn-row')) {
@@ -650,6 +848,9 @@ function renderToolbarCounts(): void {
 	clearBtn.hidden = total === 0;
 	clearBtn.disabled = STATE.busy;
 	toolbarPart(STATE.toolbar, 'cancel').hidden = !STATE.busy;
+	const savePart = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'save-part');
+	savePart.hidden = !STATE.pendingPart;
+	savePart.textContent = STATE.pendingPart ? t('savePart', String(STATE.pendingPart.n)) : '';
 
 	// "Select new" only has work to do when an unselected row on this page
 	// hasn't been exported in the current format yet.
@@ -658,6 +859,10 @@ function renderToolbarCounts(): void {
 	selectNewBtn.disabled =
 		STATE.busy || !visibleIds.some((id) => id && !STATE.selected.has(id) && exportedAt(id, STATE.format) === null);
 	selectNewBtn.title = t('selectNewTitle', label);
+	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'select-pages').disabled = STATE.busy;
+	const selectNewPagesBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'select-new-pages');
+	selectNewPagesBtn.disabled = STATE.busy;
+	selectNewPagesBtn.title = t('selectNewAllPagesTitle', label);
 	toolbarPart(STATE.toolbar, 'history-import').textContent = t('historyImport', label);
 	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'history-forget').disabled = exportedTotal() === 0;
 
@@ -665,11 +870,13 @@ function renderToolbarCounts(): void {
 	// toolbar itself, not just inside the "⋯" menu.
 	const trim = effectiveTrim();
 	toolbarPart(STATE.toolbar, 'trim-chip').hidden = trim === 0;
-	toolbarPart(STATE.toolbar, 'trim-chip-text').textContent = trim > 0 ? t('trimChip', radiusLabel(trim)) : '';
+	toolbarPart(STATE.toolbar, 'trim-chip-text').textContent = trim > 0 ? t('trimChip', STATE.trimLabel) : '';
 	const trimSelect = toolbarPart<HTMLSelectElement>(STATE.toolbar, 'trim');
-	trimSelect.disabled = STATE.format !== 'gpx';
+	trimSelect.disabled = STATE.format === 'original';
+	toolbarPart<HTMLInputElement>(STATE.toolbar, 'trim-value').disabled = trimSelect.disabled;
+	toolbarPart<HTMLSelectElement>(STATE.toolbar, 'trim-unit').disabled = trimSelect.disabled;
 	if (trimSelect.disabled) {
-		trimSelect.setAttribute('title', t('trimOnlyGpx'));
+		trimSelect.setAttribute('title', t('trimNotOriginal'));
 	} else {
 		trimSelect.removeAttribute('title');
 	}
@@ -809,6 +1016,20 @@ function onSelectionChanged(): void {
 	renderToolbarCounts();
 }
 
+/**
+ * After switching to GPX or TCX, drop selected activities without GPS -
+ * Strava has no such export for them - and say so, rather than letting the
+ * next download fail on each of them.
+ */
+function dropUnexportable(): void {
+	if (STATE.format === 'original') return;
+	const dropped = [...STATE.selected.values()].filter((a) => !a.hasGps);
+	if (dropped.length === 0) return;
+	for (const a of dropped) setSelected(a, false);
+	syncRowCheckboxes();
+	if (!STATE.busy) setStatus(t('noGpsDeselected', [String(dropped.length), formatLabel(STATE.format)]), 'warn');
+}
+
 /** Everything selected, on this page or others, in the order it was picked. */
 function collectSelectedActivities(): ActivityRow[] {
 	return [...STATE.selected.values()];
@@ -828,6 +1049,36 @@ function showProgress(ev: ProgressEvent, format: ExportFormat): void {
 }
 
 /**
+ * Show "Save part N" and resolve when it's clicked: Chrome lets a page start
+ * one download without a click and holds back or blocks the rest, so every
+ * zip part after the first is saved from a click of its own (see
+ * BulkOptions.confirmPart). Rejects if the run is cancelled meanwhile.
+ */
+function waitForPartClick(n: number, signal: AbortSignal): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const finish = (): void => {
+			STATE.pendingPart = null;
+			signal.removeEventListener('abort', onAbort);
+			renderToolbarCounts();
+		};
+		const onAbort = (): void => {
+			finish();
+			reject(signal.reason instanceof Error ? signal.reason : new Error(t('cancelled')));
+		};
+		signal.addEventListener('abort', onAbort, { once: true });
+		STATE.pendingPart = {
+			n,
+			save: () => {
+				finish();
+				resolve();
+			},
+		};
+		setStatus(t('partReady', String(n)), 'info');
+		renderToolbarCounts();
+	});
+}
+
+/**
  * Shared lifecycle for zip and merge runs: single-flighting via STATE.busy,
  * the Cancel button, progress, and the terminal outcome - success, partial
  * success (with the failure list), cancelled, or failed.
@@ -842,11 +1093,21 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 	renderToolbarCounts();
 	renderFailures();
 	setStatus(t('preparingDownloads', String(activities.length)), 'info', { spinner: true });
+	// Zip parts already saved when a run is cancelled stay saved.
+	let savedParts = 0;
+	const trimRadius = format === 'original' ? 0 : STATE.trim;
 	const options: BulkOptions = {
 		onProgress: (ev) => showProgress(ev, format),
 		signal: controller.signal,
 		names: STATE.names,
-		trimRadius: effectiveTrim(),
+		trimRadius,
+		splitBytes: STATE.splitMb * 1_000_000,
+		onSaved: (ids) => {
+			savedParts++;
+			// Trimmed files aren't backups of the activities, so they don't count.
+			if (trimRadius === 0) rememberExports(ids, format);
+		},
+		confirmPart: (n) => waitForPartClick(n, controller.signal),
 	};
 	const mergeMode = STATE.mergeMode;
 	try {
@@ -854,14 +1115,6 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 			mode === 'merge'
 				? await downloadMerged(activities, format === 'tcx' ? 'tcx' : 'gpx', mergeMode, options)
 				: await downloadBulk(activities, format, options);
-		// Trimmed files aren't backups of the activities, so they don't count.
-		if (mode === 'zip' && !options.trimRadius) {
-			const failedIds = new Set(result.failed.map((f) => f.id));
-			rememberExports(
-				activities.filter((a) => !failedIds.has(a.id)).map((a) => a.id),
-				format,
-			);
-		}
 		const firstFailed = result.failed[0];
 		if (firstFailed) {
 			setStatus(t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason]), 'warn');
@@ -871,11 +1124,14 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 				retryFormat: mode === 'zip' ? format : null,
 			};
 		} else {
-			setStatus(savedMessage(mode, format, mergeMode, result.ok), 'ok');
+			setStatus(savedMessage(mode, format, mergeMode, result), 'ok');
+			// Fully exported: a reload shouldn't bring this batch back into
+			// the next backup. It stays selected on screen.
+			if (mode === 'zip') forgetSavedSelection();
 		}
 	} catch (err) {
 		if (controller.signal.aborted) {
-			setStatus(t('cancelled'), 'warn');
+			setStatus(savedParts > 0 ? t('cancelledAfterParts', String(savedParts)) : t('cancelled'), 'warn');
 		} else {
 			const message = err instanceof Error ? err.message : String(err);
 			setStatus(t('downloadFailed', message), 'err');
@@ -888,11 +1144,14 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 	}
 }
 
-/** The success message for a fully successful run of `count` activities. */
-function savedMessage(mode: 'zip' | 'merge', format: ExportFormat, mergeMode: MergeMode, count: number): string {
-	if (mode === 'zip') return t('savedActivities', String(count));
-	if (format === 'tcx') return t('savedMergedTcx', String(count));
-	return mergeMode === 'single' ? t('savedJoined', String(count)) : t('savedMerged', String(count));
+/** The success message for a fully successful run. */
+function savedMessage(mode: 'zip' | 'merge', format: ExportFormat, mergeMode: MergeMode, result: BulkResult): string {
+	const count = String(result.ok);
+	if (mode === 'zip') {
+		return result.parts > 1 ? t('savedActivitiesParts', [count, String(result.parts)]) : t('savedActivities', count);
+	}
+	if (format === 'tcx') return t('savedMergedTcx', count);
+	return mergeMode === 'single' ? t('savedJoined', count) : t('savedMerged', count);
 }
 
 function handleBulkClick(): Promise<void> {
@@ -933,6 +1192,103 @@ function handleCsvClick(): void {
 	renderFailures();
 }
 
+// ---------- Selecting across pages ----------
+
+/**
+ * One of the arrows of Strava's pager under the table ("1-20 of 3433 ← →"),
+ * or null when there's no page that way - on the first and last page Strava
+ * swaps the button for a disabled <span>.
+ */
+function pagerButton(direction: 'previous_page' | 'next_page'): HTMLButtonElement | null {
+	const el = document.querySelector(`.pagination .${direction}`);
+	return el instanceof HTMLButtonElement && !el.disabled && !el.classList.contains('disabled') ? el : null;
+}
+
+/** The pager's "21-40 of 3433", as Strava words it in the page's language. */
+function pagerText(): string {
+	return (document.querySelector('.pagination .pages')?.textContent ?? '').trim().replace(/\s+/g, ' ');
+}
+
+/** The first row's activity link - it changes when Strava shows another page. */
+function firstRowHref(): string | null {
+	return findActivitiesTable()?.querySelector('tbody a[href*="/activities/"]')?.getAttribute('href') ?? null;
+}
+
+/** Give up on a page that hasn't loaded after this long. */
+const PAGE_TIMEOUT_MS = 30_000;
+
+/**
+ * Click a pager arrow and wait for Strava to render the other page. It
+ * swaps the whole table out (briefly showing none) for the new one.
+ */
+async function turnPage(button: HTMLButtonElement, signal: AbortSignal): Promise<void> {
+	const before = firstRowHref();
+	button.click();
+	const deadline = Date.now() + PAGE_TIMEOUT_MS;
+	for (let now = firstRowHref(); now === null || now === before; now = firstRowHref()) {
+		signal.throwIfAborted();
+		if (Date.now() > deadline) throw new Error(t('pagingTimeout'));
+		await new Promise((resolve) => setTimeout(resolve, 100));
+	}
+	// Augment the new rows now rather than on the observer's next frame.
+	tick();
+}
+
+/**
+ * "Select all pages" / "Select new on all pages": page through Strava's list
+ * with its own pager - back to the first page, then forward to the last -
+ * selecting on every page. It works on whatever the list shows, so Strava's
+ * search and filters scope it. Only Strava's own pages load; no activity
+ * files are fetched until the user downloads. Cancel keeps what was
+ * selected so far.
+ */
+async function handleSelectPages(onlyNew: boolean): Promise<void> {
+	if (STATE.busy) return;
+	const controller = new AbortController();
+	STATE.busy = true;
+	STATE.abort = controller;
+	STATE.lastRun = null;
+	STATE.selectingPages = true;
+	renderFailures();
+	renderToolbarCounts();
+	const before = STATE.selected.size;
+	const pages = new Set<string>();
+	const selectThisPage = (): void => {
+		selectVisible(onlyNew);
+		pages.add(firstRowHref() ?? '');
+		syncRowCheckboxes();
+		renderToolbarCounts();
+		setStatus(t('selectingPages', [pagerText() || String(pages.size), String(STATE.selected.size)]), 'info', {
+			spinner: true,
+		});
+	};
+	try {
+		selectThisPage();
+		for (let back = pagerButton('previous_page'); back; back = pagerButton('previous_page')) {
+			await turnPage(back, controller.signal);
+			selectThisPage();
+		}
+		for (let next = pagerButton('next_page'); next; next = pagerButton('next_page')) {
+			await turnPage(next, controller.signal);
+			selectThisPage();
+		}
+		setStatus(t('selectedPages', [String(STATE.selected.size - before), String(pages.size)]), 'ok');
+	} catch (err) {
+		if (controller.signal.aborted) {
+			setStatus(t('selectPagesStopped', String(STATE.selected.size - before)), 'warn');
+		} else {
+			const message = err instanceof Error ? err.message : String(err);
+			setStatus(t('downloadFailed', message), 'err');
+		}
+	} finally {
+		STATE.busy = false;
+		STATE.abort = null;
+		STATE.selectingPages = false;
+		persistSelection();
+		renderToolbarCounts();
+	}
+}
+
 // ---------- Boot + observer ----------
 
 function tick(): void {
@@ -940,21 +1296,26 @@ function tick(): void {
 	if (!table) return;
 	ensureToolbar(table);
 	injectHeader(table);
+	learnDateOrder(table);
 	injectAllRows(table);
 	renderToolbarCounts();
 }
 
 async function start(): Promise<void> {
-	// Load saved preferences and the export history first so the toolbar and
-	// row buttons render with them from the start instead of flashing the
-	// defaults.
-	await Promise.all([
+	// Load saved preferences, the export history and the selection first so
+	// the toolbar and row buttons render with them from the start instead of
+	// flashing the defaults.
+	const [, , saved] = await Promise.all([
 		loadPreferences(),
 		loadHistory(() => {
 			renderExportBadges();
 			renderToolbarCounts();
 		}),
+		loadSelection(),
 	]);
+	// Activities without GPS were only selectable in Original mode; if the
+	// format has changed since (in another tab, say), they can't be exported.
+	for (const a of saved) if (a.hasGps || STATE.format === 'original') STATE.selected.set(a.id, a);
 	tick();
 	// Strava's React reflows the table on every search / sort / pagination.
 	// A single observer on the body handles all of it; the injection helpers

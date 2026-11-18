@@ -155,7 +155,7 @@
 		"message": "Nazwy:"
 	},
 	"namesTooltip": {
-		"message": "Sposób nazywania pobranych plików. Foldery według sportu działają tylko w plikach ZIP."
+		"message": "Sposób nazywania pobranych plików. Foldery według sportu działają tylko w plikach ZIP. Data + tytuł używa ID, gdy nie da się odczytać daty."
 	},
 	"namesId": {
 		"message": "ID aktywności"
@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Ukryj początek/koniec (tylko GPX)"
+		"message": "Ukryj początek/koniec"
 	},
 	"trimOff": {
 		"message": "Wyłączone"
 	},
 	"trimTitle": {
-		"message": "Przed zapisem usuwa punkty śladu blisko początku i końca każdej aktywności, aby udostępniane pliki nie pokazywały, skąd startujesz. Przycięte pliki kończą się na _trimmed i nie są już identyczne z eksportem ze Stravy. Resetuje się po przeładowaniu strony."
+		"message": "Przed zapisem ukrywa położenia blisko początku i końca każdej aktywności, aby udostępniane pliki nie pokazywały, skąd startujesz. Pliki TCX zachowują tętno, kadencję i moc. Przycięte pliki kończą się na _trimmed i nie są już identyczne z eksportem ze Stravy. Resetuje się po przeładowaniu strony."
 	},
 	"trimChip": {
 		"message": "Ukrywanie $RADIUS$ na początku i końcu",
@@ -361,10 +361,155 @@
 	"trimTurnOff": {
 		"message": "Wyłącz"
 	},
-	"trimOnlyGpx": {
-		"message": "Dostępne tylko w trybie GPX"
+	"trimNotOriginal": {
+		"message": "Niedostępne dla plików oryginalnych"
 	},
 	"trimAllHidden": {
 		"message": "cały ślad mieści się w ukrytej odległości"
+	},
+	"selectAllPages": {
+		"message": "Zaznacz wszystkie strony"
+	},
+	"selectAllPagesTitle": {
+		"message": "Przechodzi przez całą listę, z bieżącym wyszukiwaniem i filtrami, i zaznacza na niej każdą aktywność"
+	},
+	"selectNewAllPages": {
+		"message": "Zaznacz nowe na wszystkich stronach"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Przechodzi przez całą listę i zaznacza każdą aktywność, której jeszcze nie wyeksportowano jako $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Zaznaczanie na wszystkich stronach… $RANGE$ (zaznaczono: $COUNT$)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "Dodano $COUNT$ aktywności z $PAGES$ stron.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Zatrzymano - dotąd dodano $COUNT$ aktywności.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava nie wczytała następnej strony"
+	},
+	"namesDate": {
+		"message": "Data + tytuł"
+	},
+	"noGpsDeselected": {
+		"message": "Odznaczono $COUNT$ aktywności bez GPS - nie mają eksportu $FORMAT$, tylko Oryginalny.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportUnavailable": {
+		"message": "Strava nie ma pliku $FORMAT$ dla tej aktywności",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "nie zalogowano do Stravy"
+	},
+	"splitLabel": {
+		"message": "Dziel pliki ZIP po"
+	},
+	"splitNever": {
+		"message": "Nigdy"
+	},
+	"splitTitle": {
+		"message": "Duże pobrania są zapisywane jako kilka plików ZIP (…_part1.zip, …_part2.zip), każdy od razu, gdy się zapełni, aby duża kopia zapasowa nie wyczerpała pamięci przeglądarki. Rozmiar liczy pliki przed kompresją."
+	},
+	"cancelledAfterParts": {
+		"message": "Anulowano - zapisano już $COUNT$ części ZIP.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "Zapisano $COUNT$ aktywności w $PARTS$ plikach ZIP.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"csvDate": {
+		"message": "Data (YYYY-MM-DD)"
+	},
+	"trimCustom": {
+		"message": "Własna…"
+	},
+	"trimCustomValue": {
+		"message": "Odległość"
+	},
+	"trimCustomUnit": {
+		"message": "Jednostka"
+	},
+	"savePart": {
+		"message": "Zapisz część $NUMBER$",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "Część ZIP $NUMBER$ jest gotowa - kliknij Zapisz część $NUMBER$ (Chrome pozwala tylko na jedno pobieranie bez kliknięcia).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

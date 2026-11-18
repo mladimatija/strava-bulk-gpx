@@ -4,7 +4,8 @@
 //   - /activities/<id>/export_original  (raw upload file - .fit, .gpx, .tcx, etc.)
 //
 // These are the same URLs strava.com's own "Export" menu uses, so the files
-// the user gets are byte-for-byte identical to clicking those links manually.
+// the user gets are byte-for-byte identical to clicking those links manually
+// (except trimmed and merged files, which are built from them).
 //
 // All requests are same-origin from the content script's standpoint, so the
 // browser auto-attaches the user's session cookies - no cookie permission or
@@ -13,7 +14,7 @@
 import JSZip from 'jszip';
 import { activitiesCsv } from './csv.ts';
 import { t } from './i18n.ts';
-import { markTrimmed, trimGpx } from './trim.ts';
+import { markTrimmed, trimGpx, trimTcx } from './trim.ts';
 import type {
 	ActivityRow,
 	BulkFailure,
@@ -23,23 +24,48 @@ import type {
 	NamePattern,
 	ProgressCallback,
 } from './types.ts';
-import { childrenNamed, serializeXml } from './xml.ts';
+import { childrenNamed, GPX_NS, serializeXml, TCX_NS } from './xml.ts';
 
 /** Build the URL for a given activity + format. */
 function exportUrl(id: string, format: ExportFormat): string {
 	return `/activities/${id}/export_${format}`;
 }
 
-/** Tell the browser to download a same-origin URL with our chosen filename. */
-function downloadViaAnchor(href: string, filename: string | null): void {
-	const a = document.createElement('a');
-	a.href = href;
-	if (filename) a.download = filename;
-	// If filename is null (original-format case), omit the download attribute
-	// so the browser uses the Content-Disposition the server returns.
-	document.body.appendChild(a);
-	a.click();
-	a.remove();
+/**
+ * Why an export response isn't a file, or null when it is. Strava answers
+ * an export that doesn't exist - GPX or TCX of an activity without GPS,
+ * Original of a manual entry - with a redirect to an HTML page, and a
+ * signed-out session with a redirect to the login page. Both arrive as
+ * HTTP 200 after the redirect, so `res.ok` alone would save a web page. A
+ * redirect that ends in a file (say, on a CDN) is fine.
+ */
+export function exportProblem(
+	res: Pick<Response, 'ok' | 'status' | 'url' | 'headers'>,
+	format: ExportFormat,
+): string | null {
+	if (!res.ok) return `HTTP ${res.status}`;
+	if (!(res.headers.get('content-type') ?? '').includes('text/html')) return null;
+	// A fetch response's url is absolute: where the redirects ended.
+	if (/^https?:\/\/[^/]+\/(login|session)\b/.test(res.url)) return t('notLoggedIn');
+	return t('exportUnavailable', format === 'original' ? t('formatOriginal') : format.toUpperCase());
+}
+
+/** Fetch an activity's export, throwing with {@link exportProblem}'s reason when it isn't a file. */
+async function fetchExport(id: string, format: ExportFormat): Promise<Response> {
+	const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin' });
+	const problem = exportProblem(res, format);
+	if (problem) throw new Error(problem);
+	return res;
+}
+
+/** Apply Hide start/end to a GPX or TCX export. */
+function trimExport(xml: string, format: 'gpx' | 'tcx', radiusM: number): string {
+	return format === 'gpx' ? trimGpx(xml, radiusM) : trimTcx(xml, radiusM);
+}
+
+/** MIME type of a saved GPX or TCX file. */
+function xmlType(format: 'gpx' | 'tcx'): string {
+	return format === 'gpx' ? 'application/gpx+xml' : 'application/vnd.garmin.tcx+xml';
 }
 
 /** Tell the browser to download a Blob with our chosen filename. */
@@ -60,23 +86,30 @@ function today(): string {
 }
 
 /**
- * Parse a `Content-Disposition: attachment; filename="…"` header. Handles both
- * the bare `filename=` form and the RFC 5987 `filename*=UTF-8''…` form Strava
- * sometimes emits for non-ASCII activity titles.
+ * Parse a `Content-Disposition: attachment; filename="…"` header: the
+ * RFC 5987 `filename*=<charset>'<lang>'…` form Strava sometimes emits for
+ * non-ASCII activity titles (UTF-8, or else read byte by byte as
+ * ISO-8859-1), then the plain `filename=` form, quoted (with `\"` escapes)
+ * or bare.
  */
-function parseContentDispositionFilename(value: string | null): string | null {
+export function parseContentDispositionFilename(value: string | null): string | null {
 	if (!value) return null;
-	// Try the UTF-8-encoded form first (filename*=UTF-8''…), then the plain form.
-	const rfc5987 = /filename\*\s*=\s*UTF-8''([^;]+)/i.exec(value);
-	if (rfc5987?.[1]) {
+	const extended = /filename\*\s*=\s*([\w!#$&+.^`|~-]+)'[^']*'([^;]+)/i.exec(value);
+	if (extended?.[1] && extended[2]) {
+		const [, charset, encoded] = extended;
 		try {
-			return decodeURIComponent(rfc5987[1]).trim() || null;
+			const decoded = /^utf-?8$/i.test(charset)
+				? decodeURIComponent(encoded)
+				: encoded.replace(/%([0-9a-f]{2})/gi, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)));
+			if (decoded.trim()) return decoded.trim();
 		} catch {
 			/* fall through to the plain form */
 		}
 	}
-	const plain = /filename\s*=\s*"?([^";]+)"?/i.exec(value);
-	return plain?.[1]?.trim() ?? null;
+	const quoted = /filename\s*=\s*"((?:[^"\\]|\\.)*)"/i.exec(value);
+	if (quoted?.[1]) return quoted[1].replace(/\\(.)/g, '$1').trim() || null;
+	// Starts with a non-space, so the trimmed name is never empty.
+	return /filename\s*=\s*([^;"\s][^;"]*)/i.exec(value)?.[1]?.trim() ?? null;
 }
 
 /** Sanitize a server-suggested filename so it's safe to use as a zip entry. */
@@ -103,6 +136,32 @@ function fileExtension(name: string): string {
 }
 
 /**
+ * The extension an Original upload's bytes point to, for when Strava's
+ * Content-Disposition doesn't give one: `.fit` (".FIT" at byte 8, per the
+ * FIT header), `.gz`, `.gpx` / `.tcx` by root element, or "" when unknown.
+ */
+export async function sniffExtension(blob: Blob): Promise<string> {
+	const head = new Uint8Array(await blob.slice(0, 512).arrayBuffer());
+	if (head[0] === 0x1f && head[1] === 0x8b) return '.gz';
+	if (String.fromCharCode(...head.slice(8, 12)) === '.FIT') return '.fit';
+	const text = new TextDecoder().decode(head);
+	if (/<gpx[\s>]/.test(text)) return '.gpx';
+	if (/<TrainingCenterDatabase[\s>]/.test(text)) return '.tcx';
+	return '';
+}
+
+/**
+ * An Original upload's file name: Strava's Content-Disposition name, with an
+ * extension sniffed from the bytes when it has none - or `strava_<id>` plus
+ * that extension when there's no usable header.
+ */
+async function originalFileName(res: Response, blob: Blob, id: string): Promise<string> {
+	const name = parseContentDispositionFilename(res.headers.get('content-disposition'));
+	if (name && fileExtension(name)) return name;
+	return `${name ?? `strava_${id}`}${await sniffExtension(blob)}`;
+}
+
+/**
  * Where an activity's file goes: a path inside the zip (possibly with a
  * sport folder), or - via {@link baseName} - a single download's filename.
  * `serverName` is Strava's Content-Disposition filename, which carries the
@@ -115,19 +174,21 @@ function activityFilePath(
 	serverName: string | null,
 ): string {
 	if (names === 'id') {
-		// Original keeps the uploaded file's own name, as it always has.
+		// Original keeps the uploaded file's own name (see originalFileName).
 		if (format === 'original') return serverName ? sanitizeFilename(serverName) : `strava_${activity.id}`;
 		return `strava_${activity.id}.${format}`;
 	}
 	const ext = format === 'original' ? fileExtension(serverName ?? '') : `.${format}`;
-	const file = `${activity.id}_${pathSegment(activity.name)}${ext}`;
+	// Without a date, fall back to the id: it keeps the name unique.
+	const prefix = names === 'date' && activity.date ? activity.date : activity.id;
+	const file = `${prefix}_${pathSegment(activity.name)}${ext}`;
 	const sport = activity.sport_type.trim();
 	return names === 'sport' && sport ? `${pathSegment(sport)}/${file}` : file;
 }
 
 /** `strava_1.gpx` → `strava_1_trimmed.gpx`: a trimmed file is no longer Strava's own export. */
 function trimmedName(path: string): string {
-	return path.replace(/\.gpx$/, '_trimmed.gpx');
+	return path.replace(/\.(gpx|tcx)$/, '_trimmed.$1');
 }
 
 /** Last segment of a zip path - browsers can't create folders from a download. */
@@ -150,13 +211,11 @@ function uniquePath(path: string, used: Set<string>): string {
 }
 
 /**
- * Per-row download. Usually a same-origin anchor click - Strava streams the
- * file via the browser's download manager, which handles the actual writing
- * out of band.
- *
- * Two exceptions fetch the file and save the blob instead: GPX with
- * `trimRadius` (it has to be trimmed first), and Original with a custom name
- * pattern (the extension we need only arrives in the response headers).
+ * Per-row download: fetch the export, check that it's a file
+ * ({@link exportProblem}), and save it under our name - trimmed first when
+ * `trimRadius` is set. Fetching rather than linking is what lets a missing
+ * export be reported: Strava answers one with a redirect to a web page,
+ * which an anchor would save as the file (or navigate to).
  */
 export async function downloadSingle(
 	activity: ActivityRow,
@@ -164,27 +223,20 @@ export async function downloadSingle(
 	names: NamePattern = 'id',
 	trimRadius = 0,
 ): Promise<void> {
-	const id = String(activity.id);
-	if (format === 'gpx' && trimRadius > 0) {
-		const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin' });
-		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		const xml = trimGpx(await res.text(), trimRadius);
-		const name = trimmedName(baseName(activityFilePath(activity, format, names, null)));
-		downloadBlob(name, new Blob([xml], { type: 'application/gpx+xml' }));
+	const res = await fetchExport(activity.id, format);
+	if (format === 'original') {
+		const blob = await res.blob();
+		const serverName = await originalFileName(res, blob, activity.id);
+		downloadBlob(baseName(activityFilePath(activity, format, names, serverName)), blob);
 		return;
 	}
-	if (format !== 'original') {
-		downloadViaAnchor(exportUrl(id, format), baseName(activityFilePath(activity, format, names, null)));
+	const name = baseName(activityFilePath(activity, format, names, null));
+	if (trimRadius > 0) {
+		const xml = trimExport(await res.text(), format, trimRadius);
+		downloadBlob(trimmedName(name), new Blob([xml], { type: xmlType(format) }));
 		return;
 	}
-	if (names === 'id') {
-		downloadViaAnchor(exportUrl(id, format), null);
-		return;
-	}
-	const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin' });
-	if (!res.ok) throw new Error(`HTTP ${res.status}`);
-	const serverName = parseContentDispositionFilename(res.headers.get('content-disposition'));
-	downloadBlob(baseName(activityFilePath(activity, format, names, serverName)), await res.blob());
+	downloadBlob(name, await res.blob());
 }
 
 /** Backwards-compatible alias - older callers passed no format and expected GPX. */
@@ -203,16 +255,41 @@ export interface BulkOptions {
 	 * Notified as the download progresses through its stages. See {@link ProgressEvent}.
 	 */
 	onProgress?: ProgressCallback;
-	/** Aborting stops all fetches and rejects the run - nothing gets saved. */
+	/**
+	 * Aborting stops all fetches and rejects the run. Nothing more is saved -
+	 * but zip parts saved before then stay saved (see `onSaved`).
+	 */
 	signal?: AbortSignal;
 	/** How files are named inside the zip. Defaults to `strava_<id>.<ext>`. */
 	names?: NamePattern;
 	/**
-	 * Hide start/end: drop GPX points within this many metres of each
+	 * Hide start/end: hide GPX/TCX locations within this many metres of each
 	 * activity's start and end (see trim.ts). 0 or absent = off; ignored for
-	 * TCX and Original.
+	 * Original.
 	 */
 	trimRadius?: number;
+	/**
+	 * Zips only: start a new zip once the files in the current one add up to
+	 * this many bytes (before compression), saving each as soon as it's full
+	 * so a large backup never sits in memory whole. 0 or absent = one zip.
+	 */
+	splitBytes?: number;
+	/**
+	 * Zips only: called with the ids of the activities in each saved file -
+	 * every zip part, or the lone file of a single-activity download - so the
+	 * caller can record exports that were saved even if a later part fails
+	 * or the run is cancelled.
+	 */
+	onSaved?: (ids: string[]) => void;
+	/**
+	 * Split zips only: called before saving a part when the run has already
+	 * saved one, resolving once the user has clicked to save it. Chrome lets
+	 * a page start one download without a click and holds back or blocks the
+	 * rest, so each later part needs its own click; until then, fetching
+	 * waits, so at most one full part sits in memory. Without it, parts are
+	 * saved straight away.
+	 */
+	confirmPart?: (n: number) => Promise<void>;
 }
 
 // Modest concurrency. The export endpoint is comfortable with parallel
@@ -299,8 +376,9 @@ async function fetchAll(
 				const a = activities[i]!;
 				try {
 					const res = await fetchThrottled(a.id);
-					if (!res.ok) {
-						failed.push({ id: a.id, reason: `HTTP ${res.status}` });
+					const problem = exportProblem(res, format);
+					if (problem) {
+						failed.push({ id: a.id, reason: problem });
 					} else {
 						await onResponse(a, res, i);
 					}
@@ -329,92 +407,163 @@ async function fetchAll(
 /** Name of the activity summary added to every multi-file zip. */
 const CSV_NAME = 'activities.csv';
 
+/** One zip being filled: its entries, and the activities they belong to. */
+interface ZipPart {
+	zip: JSZip;
+	/** Activity id → path inside the zip, for the CSV's File column. */
+	files: Map<string, string>;
+	/** Bytes of the files added so far, before compression. */
+	bytes: number;
+}
+
+function newZipPart(): ZipPart {
+	return { zip: new JSZip(), files: new Map(), bytes: 0 };
+}
+
 /**
  * Bulk download. One id → one file (no zip). Multiple ids → zip, with an
- * `activities.csv` summary next to the files.
+ * `activities.csv` summary of that zip's files next to them. With
+ * `options.splitBytes`, several zips (`…_part1.zip`, `…_part2.zip`, …), each
+ * saved as soon as it's full - from the second on, once the user clicks
+ * (`options.confirmPart`). File names are unique across all of a run's
+ * zips, since a backup's parts are usually extracted into one folder.
  *
  * Emits progress as a discriminated event:
  *   - { stage: "downloading", completed, total } - fires immediately and after
  *     every fetch finishes (success or fail), so the caller can keep a counter
  *     in sync.
  *   - { stage: "throttled", seconds } - Strava rate-limited us; see {@link fetchAll}.
- *   - { stage: "zipping" } - fires once when fetches are done and JSZip starts
- *     assembling. Useful for keeping a spinner alive during what can be a
- *     multi-second client-side step on large batches.
+ *   - { stage: "zipping" } - fires when JSZip starts assembling a zip. Useful
+ *     for keeping a spinner alive during what can be a multi-second
+ *     client-side step on large batches.
  *
- * Resolves with the count of successes and a list of per-activity failures.
- * Throws if *every* activity failed, or if `signal` aborts.
+ * Resolves with the count of activities saved, a list of per-activity
+ * failures (including those of a zip part that couldn't be saved) and the
+ * number of zips saved. Throws if nothing was saved, or if `signal` aborts -
+ * zip parts saved before that stay saved (see `options.onSaved`).
  */
 export async function downloadBulk(
 	activities: ActivityRow[],
 	format: ExportFormat,
 	options: BulkOptions = {},
 ): Promise<BulkResult> {
-	const { onProgress, signal, names = 'id', trimRadius = 0 } = options;
-	const trim = format === 'gpx' && trimRadius > 0;
-	if (activities.length === 0) return { ok: 0, failed: [] };
+	const { onProgress, signal, names = 'id', trimRadius = 0, splitBytes = 0, onSaved, confirmPart } = options;
+	const trim = format !== 'original' && trimRadius > 0;
+	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
 	if (activities.length === 1) {
 		await downloadSingle(activities[0]!, format, names, trimRadius);
-		return { ok: 1, failed: [] };
+		onSaved?.([activities[0]!.id]);
+		return { ok: 1, failed: [], parts: 1 };
 	}
 
-	const zip = new JSZip();
-	/** Activity id → path inside the zip, for the CSV's File column. */
-	const files = new Map<string, string>();
-	// Reserve the summary's name so no activity file can overwrite it.
+	// Zip filename mentions the format, so a user with several batches doesn't
+	// confuse strava_gpx_…zip with strava_tcx_…zip in their Downloads folder.
+	// One date per run, so the parts of a run that crosses midnight match.
+	const date = today();
+	const zipName = (n: number | null): string => `strava_${format}_${date}${n ? `_part${n}` : ''}.zip`;
+	// Paths taken in any of the run's zips, lower-cased (see uniquePath).
+	// The summary's name is reserved so no activity file can overwrite it.
 	const used = new Set<string>([CSV_NAME]);
+	let part = newZipPart();
+	/** Parts numbered so far: a part's number is fixed when it's set aside. */
+	let numbered = 0;
+	let saved = 0;
+	let ok = 0;
+	/** Activities in zip parts that couldn't be saved. */
+	const lost: BulkFailure[] = [];
+	/** Set-aside parts being saved, one at a time. */
+	let saving: Promise<void> = Promise.resolve();
+
+	/**
+	 * Build and save one zip - part `n`, or the run's only zip when null.
+	 * A part that fails for any reason but Cancel (JSZip running out of
+	 * memory, say) is lost on its own: its activities become failures. The
+	 * only zip's failure fails the run.
+	 */
+	async function saveZip(full: ZipPart, n: number | null): Promise<void> {
+		try {
+			onProgress?.({ stage: 'zipping' });
+			full.zip.file(
+				CSV_NAME,
+				activitiesCsv(
+					activities.filter((a) => full.files.has(a.id)),
+					full.files,
+				),
+			);
+			const blob = await full.zip.generateAsync({
+				type: 'blob',
+				compression: 'DEFLATE',
+				compressionOptions: { level: 6 },
+			});
+			// Cancel may land while JSZip is compressing; honour it before saving.
+			signal?.throwIfAborted();
+			if (saved > 0 && n !== null) {
+				await confirmPart?.(n);
+				signal?.throwIfAborted();
+			}
+			downloadBlob(zipName(n), blob);
+			saved++;
+			onSaved?.([...full.files.keys()]);
+		} catch (e) {
+			if (signal?.aborted || n === null) throw e;
+			const reason = e instanceof Error ? e.message : String(e);
+			for (const id of full.files.keys()) lost.push({ id, reason });
+			ok -= full.files.size;
+		}
+	}
+
+	/** Number a full part and queue it for saving. */
+	function setAside(full: ZipPart): Promise<void> {
+		const n = ++numbered;
+		saving = saving.then(() => saveZip(full, n));
+		return saving;
+	}
 
 	const failed = await fetchAll(activities, format, options, async (a, res) => {
 		// A track trimmed down to nothing throws here, which records this
 		// activity as failed with that reason.
 		const blob = trim
-			? new Blob([trimGpx(await res.text(), trimRadius)], { type: 'application/gpx+xml' })
+			? new Blob([trimExport(await res.text(), format, trimRadius)], { type: xmlType(format) })
 			: await res.blob();
 		// GPX/TCX: known extension. Original: the server's filename carries
 		// the uploaded file's extension (and, for the 'id' pattern, the
 		// whole name).
-		const serverName =
-			format === 'original' ? parseContentDispositionFilename(res.headers.get('content-disposition')) : null;
+		const serverName = format === 'original' ? await originalFileName(res, blob, a.id) : null;
+		// While a full part is being saved - or waits for its click - hold
+		// on, so at most one full part sits in memory.
+		await saving;
+		// Full: set this zip aside and start the next one.
+		if (splitBytes > 0 && part.files.size > 0 && part.bytes + blob.size > splitBytes) {
+			const full = part;
+			part = newZipPart();
+			await setAside(full);
+		}
 		// JSZip silently replaces an entry with the same name, so two uploads
 		// that share a filename would otherwise lose one file.
 		const named = activityFilePath(a, format, names, serverName);
 		const path = uniquePath(trim ? trimmedName(named) : named, used);
-		zip.file(path, blob);
-		files.set(a.id, path);
+		part.zip.file(path, blob);
+		part.files.set(a.id, path);
+		part.bytes += blob.size;
+		ok++;
 	});
 
-	if (files.size === 0) {
-		throw new Error(`All ${activities.length} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
+	await saving;
+	if (part.files.size > 0) {
+		if (numbered > 0) await setAside(part);
+		else await saveZip(part, null);
 	}
-
-	onProgress?.({ stage: 'zipping' });
-	zip.file(
-		CSV_NAME,
-		activitiesCsv(
-			activities.filter((a) => files.has(a.id)),
-			files,
-		),
-	);
-	const blob = await zip.generateAsync({
-		type: 'blob',
-		compression: 'DEFLATE',
-		compressionOptions: { level: 6 },
-	});
-	// Cancel may land while JSZip is compressing; honour it before saving.
-	signal?.throwIfAborted();
-	// Zip filename mentions the format, so a user with several batches doesn't
-	// confuse strava_gpx_…zip with strava_tcx_…zip in their Downloads folder.
-	downloadBlob(`strava_${format}_${today()}.zip`, blob);
-	return { ok: files.size, failed };
+	const allFailed = [...failed, ...lost];
+	if (saved === 0) {
+		throw new Error(`All ${activities.length} downloads failed. First error: ${allFailed[0]?.reason ?? 'unknown'}`);
+	}
+	return { ok, failed: allFailed, parts: saved };
 }
 
 /** Backwards-compatible alias - older callers passed no format and expected GPX. */
 export function downloadBulkGpx(activities: ActivityRow[], options: BulkOptions = {}): Promise<BulkResult> {
 	return downloadBulk(activities, 'gpx', options);
 }
-
-const GPX_NS = 'http://www.topografix.com/GPX/1/1';
-const TCX_NS = 'http://www.garmin.com/xmlschemas/TrainingCenterDatabase/v2';
 
 interface MergeSource {
 	id: string;
@@ -660,8 +809,9 @@ function mergeTcxDocuments(sources: MergeSource[]): string {
  *     (`strava_joined_<date>.gpx`): to upload back to Strava as one activity.
  *   - TCX → one activity with a lap per activity (`strava_merged_<date>.tcx`).
  *
- * With `options.trimRadius` (GPX only) every source is trimmed before merging
- * and the file name gets a `_trimmed` suffix.
+ * With `options.trimRadius` every source is trimmed before merging and the
+ * file name gets a `_trimmed` suffix. (A trimmed TCX merge keeps the note of
+ * its earliest source, whose `<Activity>` it is built on.)
  *
  * Progress events mirror {@link downloadBulk} but the post-fetch stage is
  * `'merging'` instead of `'zipping'` so the UI can show the right string.
@@ -677,15 +827,15 @@ export async function downloadMerged(
 	mode: MergeMode,
 	options: BulkOptions = {},
 ): Promise<BulkResult> {
-	if (activities.length === 0) return { ok: 0, failed: [] };
+	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
 
 	// Indexed by input position rather than pushed as fetches finish, so the
 	// merge never depends on which response happened to arrive first.
 	const fetched: (MergeSource | undefined)[] = [];
-	const trimRadius = format === 'gpx' ? (options.trimRadius ?? 0) : 0;
+	const trimRadius = options.trimRadius ?? 0;
 	const failed = await fetchAll(activities, format, options, async (a, res, i) => {
 		const xml = await res.text();
-		fetched[i] = { id: a.id, name: a.name, xml: trimRadius > 0 ? trimGpx(xml, trimRadius) : xml };
+		fetched[i] = { id: a.id, name: a.name, xml: trimRadius > 0 ? trimExport(xml, format, trimRadius) : xml };
 	});
 	const sources = fetched.filter((s): s is MergeSource => s !== undefined);
 
@@ -696,14 +846,10 @@ export async function downloadMerged(
 	options.onProgress?.({ stage: 'merging' });
 	const merged = format === 'tcx' ? mergeTcxDocuments(sources) : mergeGpxDocuments(sources, mode, trimRadius);
 	options.signal?.throwIfAborted();
-	if (format === 'tcx') {
-		downloadBlob(`strava_merged_${today()}.tcx`, new Blob([merged], { type: 'application/vnd.garmin.tcx+xml' }));
-	} else {
-		const kind = mode === 'single' ? 'joined' : 'merged';
-		const name = `strava_${kind}_${today()}${trimRadius > 0 ? '_trimmed' : ''}.gpx`;
-		downloadBlob(name, new Blob([merged], { type: 'application/gpx+xml' }));
-	}
-	return { ok: sources.length, failed };
+	const kind = format === 'gpx' && mode === 'single' ? 'joined' : 'merged';
+	const name = `strava_${kind}_${today()}${trimRadius > 0 ? '_trimmed' : ''}.${format}`;
+	downloadBlob(name, new Blob([merged], { type: xmlType(format) }));
+	return { ok: sources.length, failed, parts: 1 };
 }
 
 /** Backwards-compatible alias - older callers merged GPX into separate tracks. */

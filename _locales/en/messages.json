@@ -135,7 +135,7 @@
 		"description": "Label preceding the file-naming dropdown in the toolbar."
 	},
 	"namesTooltip": {
-		"message": "How downloaded files are named. Sport folders only apply inside zips.",
+		"message": "How downloaded files are named. Sport folders only apply inside zips. Date + title uses the ID where a date can't be read.",
 		"description": "Hover tooltip on the file-naming dropdown."
 	},
 	"namesId": {
@@ -320,16 +320,16 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Hide start/end (GPX only)",
-		"description": "Label of the '⋯' menu dropdown that removes track points near each activity's start and end before saving (Off / 200 m / 500 m / 1 km)."
+		"message": "Hide start/end",
+		"description": "Heading of the '⋯' menu setting that hides the start and end of GPX and TCX tracks."
 	},
 	"trimOff": {
 		"message": "Off",
 		"description": "'Hide start/end' option: no trimming (the default)."
 	},
 	"trimTitle": {
-		"message": "Removes track points near each activity's start and end before saving, so files you share don't show where you start. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
-		"description": "Tooltip on the 'Hide start/end' setting. Keep '_trimmed' as-is (it's part of the file name)."
+		"message": "Hides the locations near each activity's start and end before saving, so files you share don't show where you start. TCX files keep their heart rate, cadence and power. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
+		"description": "Tooltip on the Hide start/end setting. Keep '_trimmed' verbatim - it's part of the file name."
 	},
 	"trimChip": {
 		"message": "Hiding $RADIUS$ at start and end",
@@ -342,12 +342,138 @@
 		"message": "Turn off",
 		"description": "Tooltip on the ✕ in the 'Hiding … at start and end' chip."
 	},
-	"trimOnlyGpx": {
-		"message": "Only available in GPX mode",
-		"description": "Tooltip on the disabled 'Hide start/end' setting in TCX and Original modes."
+	"trimNotOriginal": {
+		"message": "Not available for Original files",
+		"description": "Tooltip on the disabled 'Hide start/end' setting in Original mode."
 	},
 	"trimAllHidden": {
 		"message": "the whole track is within the hidden distance",
 		"description": "Failure reason (lowercase, shown in parentheses or after a dash) when 'Hide start/end' would remove every point of an activity."
+	},
+	"selectAllPages": {
+		"message": "Select all pages",
+		"description": "Link-style toolbar button. Pages through Strava's whole activity list (with the current search and filters) using its own pager, selecting every exportable activity."
+	},
+	"selectAllPagesTitle": {
+		"message": "Page through the whole list, with your current search and filters, and select every activity on it",
+		"description": "Tooltip on 'Select all pages'."
+	},
+	"selectNewAllPages": {
+		"message": "Select new on all pages",
+		"description": "Link-style toolbar button. Like 'Select all pages', but only selects activities not yet exported in the current format."
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Page through the whole list and select every activity you haven't exported as $FORMAT$ yet",
+		"description": "Tooltip on 'Select new on all pages'. FORMAT is the current format label (GPX/TCX/Original).",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" }
+		}
+	},
+	"selectingPages": {
+		"message": "Selecting on every page… $RANGE$ ($COUNT$ selected)",
+		"description": "Progress while selecting across pages. RANGE is Strava's own pager text (already in the page's language), COUNT the total selected so far.",
+		"placeholders": {
+			"range": { "content": "$1", "example": "21-40 of 3433" },
+			"count": { "content": "$2", "example": "57" }
+		}
+	},
+	"selectedPages": {
+		"message": "Added $COUNT$ activities from $PAGES$ pages.",
+		"description": "Shown when selecting across pages finishes. COUNT is how many activities were added to the selection, PAGES how many pages were visited.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "57" },
+			"pages": { "content": "$2", "example": "3" }
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Stopped - added $COUNT$ activities so far.",
+		"description": "Shown when the user cancels selecting across pages. What was selected so far stays selected.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "57" }
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava didn't load the next page",
+		"description": "Error when Strava's list doesn't show the next page within 30 seconds while selecting across pages."
+	},
+	"namesDate": {
+		"message": "Date + title",
+		"description": "File-naming option: the activity's date (YYYY-MM-DD) and title, e.g. '2026-05-09_Morning Run.gpx'."
+	},
+	"noGpsDeselected": {
+		"message": "Deselected $COUNT$ activities without GPS - they have no $FORMAT$ export, only Original.",
+		"description": "Shown after switching from Original to GPX/TCX when activities without GPS were selected: they were deselected because Strava has no GPX/TCX export for them. Keep the word for 'Original' consistent with formatOriginal.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "4" },
+			"format": { "content": "$2", "example": "GPX" }
+		}
+	},
+	"exportUnavailable": {
+		"message": "Strava has no $FORMAT$ file for this activity",
+		"description": "Failure reason when Strava redirects instead of sending a file - e.g. GPX of an indoor activity, or Original of a manual entry. FORMAT is GPX/TCX/Original.",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" }
+		}
+	},
+	"notLoggedIn": {
+		"message": "not logged in to Strava",
+		"description": "Failure reason (lowercase) when Strava redirects an export to its login page."
+	},
+	"splitLabel": {
+		"message": "Split zips after",
+		"description": "Heading of the '⋯' menu setting that splits large bulk downloads into several zips. Followed by a size, e.g. '500 MB', or 'Never'."
+	},
+	"splitNever": {
+		"message": "Never",
+		"description": "'Split zips after' option: always save one zip."
+	},
+	"splitTitle": {
+		"message": "Large downloads are saved as several zips (…_part1.zip, …_part2.zip), each as soon as it's full, so a big backup doesn't run your browser out of memory. Sizes count the files before compression.",
+		"description": "Tooltip on the 'Split zips after' setting. Keep '_part1.zip' / '_part2.zip' verbatim - they are part of the file names."
+	},
+	"cancelledAfterParts": {
+		"message": "Cancelled - $COUNT$ zip parts were already saved.",
+		"description": "Shown when a split bulk download is cancelled after some zips were already saved.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "2" }
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "Saved $COUNT$ activities in $PARTS$ zips.",
+		"description": "Terminal success message for a bulk download that was split into several zips.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "1200" },
+			"parts": { "content": "$2", "example": "3" }
+		}
+	},
+	"csvDate": {
+		"message": "Date (YYYY-MM-DD)",
+		"description": "Column header in activities.csv: the activity's date as YYYY-MM-DD. Keep 'YYYY-MM-DD' as is - it describes the values."
+	},
+	"trimCustom": {
+		"message": "Custom…",
+		"description": "Last option of the Hide start/end dropdown; shows a distance input and a unit dropdown (m / ft)."
+	},
+	"trimCustomValue": {
+		"message": "Distance",
+		"description": "Placeholder and accessible label of the custom Hide start/end distance input."
+	},
+	"trimCustomUnit": {
+		"message": "Unit",
+		"description": "Accessible label of the unit dropdown (m / ft) next to the custom distance input."
+	},
+	"savePart": {
+		"message": "Save part $NUMBER$",
+		"description": "Toolbar button shown while a zip part waits to be saved. NUMBER is the part's number (2, 3, …).",
+		"placeholders": {
+			"number": { "content": "$1", "example": "2" }
+		}
+	},
+	"partReady": {
+		"message": "Zip part $NUMBER$ is ready - click Save part $NUMBER$ (Chrome allows only one download without a click).",
+		"description": "Status while a zip part waits for its Save part button: Chrome allows a site only one download without a click. Keep the button's wording (savePart) the same here.",
+		"placeholders": {
+			"number": { "content": "$1", "example": "2" }
+		}
 	}
 }

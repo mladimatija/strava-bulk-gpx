@@ -32,7 +32,7 @@ Iterate with `npm run dev` for HMR, or `npm run build` then click the reload ico
 - `npm run format:check` - Prettier verification (use `npm run format` to fix).
 - `npm run type-check` - `tsc --noEmit` against the project tsconfig.
 
-CI runs the same three as separate jobs plus a build job. Run `npm run check` locally before pushing to avoid the CI ping-pong.
+CI runs the same three as separate jobs, plus the unit tests (`npm run test:unit`), a build job and the Playwright E2E suite. Run `npm run check` locally before pushing to avoid the CI ping-pong.
 
 ## Pre-commit hooks
 

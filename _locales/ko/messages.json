@@ -155,7 +155,7 @@
 		"message": "파일 이름:"
 	},
 	"namesTooltip": {
-		"message": "다운로드한 파일의 이름 지정 방식입니다. 스포츠별 폴더는 ZIP 안에서만 적용됩니다."
+		"message": "다운로드한 파일의 이름 지정 방식입니다. 스포츠별 폴더는 ZIP 안에서만 적용됩니다. 날짜 + 제목은 날짜를 읽을 수 없으면 ID를 사용합니다."
 	},
 	"namesId": {
 		"message": "활동 ID"
@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "시작/종료 지점 숨기기 (GPX 전용)"
+		"message": "시작/종료 지점 숨기기"
 	},
 	"trimOff": {
 		"message": "끔"
 	},
 	"trimTitle": {
-		"message": "저장하기 전에 각 활동의 시작·종료 지점 근처 트랙 포인트를 제거하여 공유한 파일에서 출발 위치가 드러나지 않게 합니다. 잘린 파일은 이름이 _trimmed로 끝나며 Strava 내보내기와 더 이상 같지 않습니다. 페이지를 새로 고치면 꺼집니다."
+		"message": "저장하기 전에 각 활동의 시작·종료 지점 근처 위치 정보를 숨겨 공유한 파일에서 출발 위치가 드러나지 않게 합니다. TCX 파일은 심박수, 케이던스, 파워를 그대로 유지합니다. 잘린 파일은 이름이 _trimmed로 끝나며 Strava 내보내기와 더 이상 같지 않습니다. 페이지를 새로 고치면 꺼집니다."
 	},
 	"trimChip": {
 		"message": "시작·종료 $RADIUS$ 숨김",
@@ -361,10 +361,155 @@
 	"trimTurnOff": {
 		"message": "끄기"
 	},
-	"trimOnlyGpx": {
-		"message": "GPX 모드에서만 사용할 수 있습니다"
+	"trimNotOriginal": {
+		"message": "원본 파일에는 사용할 수 없습니다"
 	},
 	"trimAllHidden": {
 		"message": "트랙 전체가 숨김 범위 안에 있습니다"
+	},
+	"selectAllPages": {
+		"message": "모든 페이지 선택"
+	},
+	"selectAllPagesTitle": {
+		"message": "현재 검색과 필터를 유지한 채 목록 전체를 넘기며 모든 활동을 선택합니다"
+	},
+	"selectNewAllPages": {
+		"message": "모든 페이지에서 새 항목 선택"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "목록 전체를 넘기며 아직 $FORMAT$(으)로 내보내지 않은 활동을 모두 선택합니다",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "모든 페이지에서 선택하는 중… $RANGE$ ($COUNT$개 선택됨)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "$PAGES$개 페이지에서 활동 $COUNT$개를 추가했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "중지됨 - 지금까지 활동 $COUNT$개를 추가했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava가 다음 페이지를 불러오지 않았습니다"
+	},
+	"namesDate": {
+		"message": "날짜 + 제목"
+	},
+	"noGpsDeselected": {
+		"message": "GPS가 없는 활동 $COUNT$개의 선택을 해제했습니다. $FORMAT$ 내보내기가 없고 원본만 있습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportUnavailable": {
+		"message": "Strava에 이 활동의 $FORMAT$ 파일이 없습니다",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "Strava에 로그인되어 있지 않음"
+	},
+	"splitLabel": {
+		"message": "ZIP 분할 크기"
+	},
+	"splitNever": {
+		"message": "분할 안 함"
+	},
+	"splitTitle": {
+		"message": "큰 다운로드는 여러 ZIP(…_part1.zip, …_part2.zip)으로 나누어 각각 가득 차는 즉시 저장하므로, 큰 백업으로 브라우저 메모리가 부족해지지 않습니다. 크기는 압축 전 파일 기준입니다."
+	},
+	"cancelledAfterParts": {
+		"message": "취소됨 - ZIP 파트 $COUNT$개는 이미 저장되었습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "활동 $COUNT$개를 ZIP $PARTS$개에 저장했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"csvDate": {
+		"message": "날짜 (YYYY-MM-DD)"
+	},
+	"trimCustom": {
+		"message": "사용자 지정…"
+	},
+	"trimCustomValue": {
+		"message": "거리"
+	},
+	"trimCustomUnit": {
+		"message": "단위"
+	},
+	"savePart": {
+		"message": "파트 $NUMBER$ 저장",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP 파트 $NUMBER$이(가) 준비되었습니다. 파트 $NUMBER$ 저장을 클릭하세요 (Chrome은 클릭 없이 다운로드를 하나만 허용합니다).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

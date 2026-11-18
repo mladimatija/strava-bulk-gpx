@@ -155,7 +155,7 @@
 		"message": "Namen:"
 	},
 	"namesTooltip": {
-		"message": "Hoe gedownloade bestanden worden genoemd. Sportmappen gelden alleen in ZIP-bestanden."
+		"message": "Hoe gedownloade bestanden worden genoemd. Sportmappen gelden alleen in ZIP-bestanden. Datum + titel gebruikt de ID als de datum niet te lezen is."
 	},
 	"namesId": {
 		"message": "Activiteit-ID"
@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Start/einde verbergen (alleen GPX)"
+		"message": "Start/einde verbergen"
 	},
 	"trimOff": {
 		"message": "Uit"
 	},
 	"trimTitle": {
-		"message": "Verwijdert trackpunten bij de start en het einde van elke activiteit vóór het opslaan, zodat gedeelde bestanden niet laten zien waar je start. Ingekorte bestanden eindigen op _trimmed en zijn niet meer gelijk aan de export van Strava. Wordt gereset als je de pagina herlaadt."
+		"message": "Verbergt de locaties bij de start en het einde van elke activiteit vóór het opslaan, zodat gedeelde bestanden niet laten zien waar je start. TCX-bestanden behouden hartslag, cadans en vermogen. Ingekorte bestanden eindigen op _trimmed en zijn niet meer gelijk aan de export van Strava. Wordt gereset als je de pagina herlaadt."
 	},
 	"trimChip": {
 		"message": "$RADIUS$ bij start en einde verborgen",
@@ -361,10 +361,155 @@
 	"trimTurnOff": {
 		"message": "Uitschakelen"
 	},
-	"trimOnlyGpx": {
-		"message": "Alleen beschikbaar in GPX-modus"
+	"trimNotOriginal": {
+		"message": "Niet beschikbaar voor originele bestanden"
 	},
 	"trimAllHidden": {
 		"message": "de hele track valt binnen de verborgen afstand"
+	},
+	"selectAllPages": {
+		"message": "Alle pagina's selecteren"
+	},
+	"selectAllPagesTitle": {
+		"message": "Bladert door de hele lijst, met je huidige zoekopdracht en filters, en selecteert elke activiteit erin"
+	},
+	"selectNewAllPages": {
+		"message": "Nieuwe op alle pagina's selecteren"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Bladert door de hele lijst en selecteert elke activiteit die je nog niet als $FORMAT$ hebt geëxporteerd",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Selecteren op alle pagina's… $RANGE$ ($COUNT$ geselecteerd)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "$COUNT$ activiteiten toegevoegd van $PAGES$ pagina's.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Gestopt - tot nu toe $COUNT$ activiteiten toegevoegd.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava heeft de volgende pagina niet geladen"
+	},
+	"namesDate": {
+		"message": "Datum + titel"
+	},
+	"noGpsDeselected": {
+		"message": "$COUNT$ activiteiten zonder gps gedeselecteerd - ze hebben geen $FORMAT$-export, alleen Origineel.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportUnavailable": {
+		"message": "Strava heeft geen $FORMAT$-bestand voor deze activiteit",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "niet ingelogd bij Strava"
+	},
+	"splitLabel": {
+		"message": "ZIP-bestanden splitsen na"
+	},
+	"splitNever": {
+		"message": "Nooit"
+	},
+	"splitTitle": {
+		"message": "Grote downloads worden als meerdere ZIP-bestanden opgeslagen (…_part1.zip, …_part2.zip), elk zodra het vol is, zodat een grote back-up het geheugen van je browser niet opmaakt. De grootte telt de bestanden vóór compressie."
+	},
+	"cancelledAfterParts": {
+		"message": "Geannuleerd - $COUNT$ ZIP-delen waren al opgeslagen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "$COUNT$ activiteiten opgeslagen in $PARTS$ ZIP-bestanden.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"csvDate": {
+		"message": "Datum (YYYY-MM-DD)"
+	},
+	"trimCustom": {
+		"message": "Aangepast…"
+	},
+	"trimCustomValue": {
+		"message": "Afstand"
+	},
+	"trimCustomUnit": {
+		"message": "Eenheid"
+	},
+	"savePart": {
+		"message": "Deel $NUMBER$ opslaan",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "ZIP-deel $NUMBER$ is klaar - klik op Deel $NUMBER$ opslaan (Chrome staat maar één download zonder klik toe).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

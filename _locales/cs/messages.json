@@ -155,7 +155,7 @@
 		"message": "Názvy:"
 	},
 	"namesTooltip": {
-		"message": "Jak se pojmenují stažené soubory. Složky podle sportu platí jen uvnitř ZIP."
+		"message": "Jak se pojmenují stažené soubory. Složky podle sportu platí jen uvnitř ZIP. Datum + název použije ID, pokud datum nejde přečíst."
 	},
 	"namesId": {
 		"message": "ID aktivity"
@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Skrýt začátek/konec (jen GPX)"
+		"message": "Skrýt začátek/konec"
 	},
 	"trimOff": {
 		"message": "Vypnuto"
 	},
 	"trimTitle": {
-		"message": "Před uložením odstraní body trasy blízko začátku a konce každé aktivity, aby sdílené soubory neprozradily, odkud vyrážíte. Oříznuté soubory končí na _trimmed a už nejsou totožné s exportem ze Stravy. Po opětovném načtení stránky se nastavení vypne."
+		"message": "Před uložením skryje polohy blízko začátku a konce každé aktivity, aby sdílené soubory neprozradily, odkud vyrážíte. Soubory TCX si ponechají tep, kadenci a výkon. Oříznuté soubory končí na _trimmed a už nejsou totožné s exportem ze Stravy. Po opětovném načtení stránky se nastavení vypne."
 	},
 	"trimChip": {
 		"message": "Skrývám $RADIUS$ na začátku a konci",
@@ -361,10 +361,155 @@
 	"trimTurnOff": {
 		"message": "Vypnout"
 	},
-	"trimOnlyGpx": {
-		"message": "Dostupné jen v režimu GPX"
+	"trimNotOriginal": {
+		"message": "Není dostupné pro originální soubory"
 	},
 	"trimAllHidden": {
 		"message": "celá trasa leží ve skryté vzdálenosti"
+	},
+	"selectAllPages": {
+		"message": "Vybrat všechny stránky"
+	},
+	"selectAllPagesTitle": {
+		"message": "Projde celý seznam (s aktuálním hledáním a filtry) a vybere na něm všechny aktivity"
+	},
+	"selectNewAllPages": {
+		"message": "Vybrat nové na všech stránkách"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Projde celý seznam a vybere všechny aktivity, které jste ještě neexportovali jako $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Vybírám na všech stránkách… $RANGE$ (vybráno: $COUNT$)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "Přidáno $COUNT$ aktivit z $PAGES$ stránek.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Zastaveno - zatím přidáno $COUNT$ aktivit.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava nenačetla další stránku"
+	},
+	"namesDate": {
+		"message": "Datum + název"
+	},
+	"noGpsDeselected": {
+		"message": "Zrušen výběr $COUNT$ aktivit bez GPS - nemají export $FORMAT$, jen Originál.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportUnavailable": {
+		"message": "Strava pro tuto aktivitu nemá soubor $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "nejste přihlášeni do Stravy"
+	},
+	"splitLabel": {
+		"message": "Rozdělit ZIP po"
+	},
+	"splitNever": {
+		"message": "Nikdy"
+	},
+	"splitTitle": {
+		"message": "Velká stahování se uloží jako několik ZIP souborů (…_part1.zip, …_part2.zip), každý hned, jak se naplní, aby velká záloha nevyčerpala paměť prohlížeče. Velikost se počítá ze souborů před kompresí."
+	},
+	"cancelledAfterParts": {
+		"message": "Zrušeno - $COUNT$ částí ZIP už bylo uloženo.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "Uloženo $COUNT$ aktivit v $PARTS$ souborech ZIP.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"csvDate": {
+		"message": "Datum (YYYY-MM-DD)"
+	},
+	"trimCustom": {
+		"message": "Vlastní…"
+	},
+	"trimCustomValue": {
+		"message": "Vzdálenost"
+	},
+	"trimCustomUnit": {
+		"message": "Jednotka"
+	},
+	"savePart": {
+		"message": "Uložit část $NUMBER$",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "Část ZIP $NUMBER$ je připravená - klikněte na Uložit část $NUMBER$ (Chrome bez kliknutí povolí jen jedno stahování).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

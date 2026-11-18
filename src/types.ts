@@ -18,6 +18,16 @@ export interface ActivityRow {
 	/** Sport label, e.g. "Run", "Hike", "Workout". Best-effort. */
 	sport_type: string;
 	/**
+	 * When the activity took place, as YYYY-MM-DD, read from the table's Date
+	 * column (see dates.ts). Null when the date couldn't be read unambiguously.
+	 */
+	date: string | null;
+	/**
+	 * Whether the row shows a positive distance. Activities without one have
+	 * no GPX or TCX export - only Original, when a file was uploaded.
+	 */
+	hasGps: boolean;
+	/**
 	 * The row's cells as Strava rendered them, captured when the row was
 	 * selected - the row may be on another page by the time we export, so
 	 * the CSV can't re-read it from the DOM.
@@ -37,6 +47,8 @@ export interface BulkResult {
 	ok: number;
 	/** Per-activity failures, in completion order. */
 	failed: BulkFailure[];
+	/** How many zips were saved - more than 1 when a large download was split. */
+	parts: number;
 }
 
 /**
@@ -86,8 +98,10 @@ export type ExportFormat = 'gpx' | 'tcx' | 'original';
  *               sorts them in upload order
  *   - 'sport' → `<sport>/<id>_<title>.gpx` inside zips; single downloads
  *               can't create folders, so they get the 'title' name
+ *   - 'date'  → `<YYYY-MM-DD>_<title>.gpx`, sorting files by when they
+ *               happened; the 'title' name when the date is unknown
  */
-export type NamePattern = 'id' | 'title' | 'sport';
+export type NamePattern = 'id' | 'title' | 'sport' | 'date';
 
 /**
  * How a GPX merge combines activities (a TCX merge always makes one activity):

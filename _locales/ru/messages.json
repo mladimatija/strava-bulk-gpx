@@ -155,7 +155,7 @@
 		"message": "Имена:"
 	},
 	"namesTooltip": {
-		"message": "Как называются скачанные файлы. Папки по видам спорта применяются только внутри ZIP."
+		"message": "Как называются скачанные файлы. Папки по видам спорта применяются только внутри ZIP. «Дата + название» использует ID, если дату не удаётся прочитать."
 	},
 	"namesId": {
 		"message": "ID тренировки"
@@ -341,13 +341,13 @@
 		}
 	},
 	"trimLabel": {
-		"message": "Скрыть начало/конец (только GPX)"
+		"message": "Скрыть начало/конец"
 	},
 	"trimOff": {
 		"message": "Выкл."
 	},
 	"trimTitle": {
-		"message": "Перед сохранением удаляет точки трека рядом с началом и концом каждой тренировки, чтобы по файлам, которыми вы делитесь, нельзя было понять, откуда вы стартуете. Обрезанные файлы оканчиваются на _trimmed и уже не совпадают с экспортом Strava. Сбрасывается при перезагрузке страницы."
+		"message": "Перед сохранением скрывает координаты рядом с началом и концом каждой тренировки, чтобы по файлам, которыми вы делитесь, нельзя было понять, откуда вы стартуете. В файлах TCX пульс, каденс и мощность сохраняются. Обрезанные файлы оканчиваются на _trimmed и уже не совпадают с экспортом Strava. Сбрасывается при перезагрузке страницы."
 	},
 	"trimChip": {
 		"message": "Скрыто $RADIUS$ в начале и конце",
@@ -361,10 +361,155 @@
 	"trimTurnOff": {
 		"message": "Выключить"
 	},
-	"trimOnlyGpx": {
-		"message": "Доступно только в режиме GPX"
+	"trimNotOriginal": {
+		"message": "Недоступно для оригинальных файлов"
 	},
 	"trimAllHidden": {
 		"message": "весь трек попадает в скрытую зону"
+	},
+	"selectAllPages": {
+		"message": "Выбрать все страницы"
+	},
+	"selectAllPagesTitle": {
+		"message": "Пролистывает весь список с текущим поиском и фильтрами и выбирает все тренировки в нём"
+	},
+	"selectNewAllPages": {
+		"message": "Выбрать новые на всех страницах"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Пролистывает весь список и выбирает все тренировки, которые ещё не экспортированы в $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Выбор на всех страницах… $RANGE$ (выбрано: $COUNT$)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "Добавлено тренировок: $COUNT$ (страниц: $PAGES$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Остановлено - добавлено тренировок: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava не загрузила следующую страницу"
+	},
+	"namesDate": {
+		"message": "Дата + название"
+	},
+	"noGpsDeselected": {
+		"message": "Снят выбор с тренировок без GPS: $COUNT$. Для них нет экспорта $FORMAT$, только Оригинал.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
+	"exportUnavailable": {
+		"message": "У Strava нет файла $FORMAT$ для этой тренировки",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"notLoggedIn": {
+		"message": "вход в Strava не выполнен"
+	},
+	"splitLabel": {
+		"message": "Делить ZIP после"
+	},
+	"splitNever": {
+		"message": "Никогда"
+	},
+	"splitTitle": {
+		"message": "Большие загрузки сохраняются в нескольких ZIP (…_part1.zip, …_part2.zip), каждый сразу, как заполнится, чтобы большой резервной копии хватило памяти браузера. Размер считается по файлам до сжатия."
+	},
+	"cancelledAfterParts": {
+		"message": "Отменено - уже сохранено частей ZIP: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"savedActivitiesParts": {
+		"message": "Сохранено тренировок: $COUNT$ (ZIP-файлов: $PARTS$).",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "1200"
+			},
+			"parts": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"csvDate": {
+		"message": "Дата (YYYY-MM-DD)"
+	},
+	"trimCustom": {
+		"message": "Своё значение…"
+	},
+	"trimCustomValue": {
+		"message": "Расстояние"
+	},
+	"trimCustomUnit": {
+		"message": "Единица"
+	},
+	"savePart": {
+		"message": "Сохранить часть $NUMBER$",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
+	},
+	"partReady": {
+		"message": "Часть ZIP $NUMBER$ готова - нажмите «Сохранить часть $NUMBER$» (Chrome разрешает без нажатия только одну загрузку).",
+		"placeholders": {
+			"number": {
+				"content": "$1",
+				"example": "2"
+			}
+		}
 	}
 }

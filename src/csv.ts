@@ -2,7 +2,9 @@
 // (mirroring Strava's own account archive) and the toolbar's "Export list".
 //
 // Columns are whatever Strava's table shows, labelled by its own (localized)
-// headers, so we never hard-code Strava's column layout.
+// headers, so we never hard-code Strava's column layout - plus the date as
+// YYYY-MM-DD, because Strava's own Date column is display text in the
+// athlete's format and doesn't sort.
 
 import { t } from './i18n.ts';
 import type { ActivityRow } from './types.ts';
@@ -31,7 +33,7 @@ export function activitiesCsv(activities: ActivityRow[], files?: Map<string, str
 		for (const col of a.columns) if (!labels.includes(col.label)) labels.push(col.label);
 	}
 
-	const header = [t('csvActivityId'), t('csvActivityUrl'), ...(files ? [t('csvFile')] : []), ...labels];
+	const header = [t('csvActivityId'), t('csvActivityUrl'), ...(files ? [t('csvFile')] : []), t('csvDate'), ...labels];
 	const lines = [header];
 	for (const a of activities) {
 		const values = new Map(a.columns.map((col) => [col.label, col.value]));
@@ -39,6 +41,7 @@ export function activitiesCsv(activities: ActivityRow[], files?: Map<string, str
 			a.id,
 			new URL(`/activities/${a.id}`, location.origin).href,
 			...(files ? [files.get(a.id) ?? ''] : []),
+			a.date ?? '',
 			...labels.map((label) => values.get(label) ?? ''),
 		]);
 	}
