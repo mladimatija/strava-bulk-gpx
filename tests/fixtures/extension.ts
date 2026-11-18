@@ -31,26 +31,27 @@ interface Fixtures {
 export const test = base.extend<Fixtures>({
 	// Persistent context with the unpacked extension.
 	//
-	// We deliberately run with `headless: false` because:
-	//   1. Playwright's `headless: true` pins Chromium's *old* headless mode,
-	//      which doesn't load extensions at all - `--load-extension` is silently
-	//      ignored and no content script ever runs.
-	//   2. Chrome 137+ disabled `--load-extension` even in non-headless unless
+	// Chromium runs in its *new* headless mode - the full browser, without a
+	// window - so tests don't pop up windows or take focus. Two traps:
+	//   1. Plain `headless: true` launches the old headless shell, which
+	//      doesn't load extensions at all - `--load-extension` is silently
+	//      ignored and no content script ever runs. `channel: 'chromium'` is
+	//      what opts into the new mode.
+	//   2. Chrome 137+ disabled `--load-extension` unless
 	//      `DisableLoadExtensionCommandLineSwitch` is re-enabled via the flag
 	//      below. Skip that flag and the extension never registers.
+	//
+	// Set `PWTEST_HEADED=1` to watch the tests in a visible window.
 	//
 	// By default, we use Playwright's bundled Chromium (reproducible across
 	// environments). Set `PWTEST_BROWSER=chrome` to use your installed Chrome
 	// stable instead - useful for testing against the exact browser the
 	// extension will ship in. Same flag set, different binary.
-	//
-	// For CI: wrap the test command in `xvfb-run --auto-servernum npm test`
-	// so Linux gets a virtual display. See .github/workflows/ci.yml.
 	context: async ({ headless: _headless }, use) => {
 		const useSystemChrome = process.env.PWTEST_BROWSER === 'chrome';
 		const context = await chromium.launchPersistentContext('', {
-			headless: false,
-			...(useSystemChrome ? { channel: 'chrome' } : {}),
+			headless: process.env.PWTEST_HEADED !== '1',
+			channel: useSystemChrome ? 'chrome' : 'chromium',
 			// Force the browser UI language to English so chrome.i18n.getMessage
 			// resolves the en/messages.json strings regardless of which locale
 			// the developer's OS is set to. Without this, a contributor on a

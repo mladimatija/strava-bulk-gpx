@@ -210,7 +210,7 @@ The unit tests cover what the browser suite can't reach: date parsing across Str
 
 `npm run test:screenshots` uses the same fixture to capture the README images into `docs/screenshots/`. The bulk-mode screenshot slows the mocked `/export_gpx` responses so the spinner state stays visible mid-flight.
 
-A note on running the tests: the fixture launches Chromium with `headless: false` (a visible window pops up) because Chrome only loads extensions in headful mode - the old headless mode silently ignores `--load-extension`, and Chrome 137+ additionally requires `--disable-features=DisableLoadExtensionCommandLineSwitch` to permit the flag at all. CI wraps the command in `xvfb-run` so Linux runners have a virtual display. On macOS and Windows the visible browser is fine; if you're on a headless Linux dev machine, prefix `npm test` with `xvfb-run --auto-servernum`.
+A note on running the tests: the fixture launches Chromium in its new headless mode (`channel: 'chromium'`) - the full browser without a window, so the suite doesn't pop up windows or take focus while you work, and needs no display on Linux. The old headless shell, which Playwright's plain `headless: true` launches, silently ignores `--load-extension`, and Chrome 137+ additionally requires `--disable-features=DisableLoadExtensionCommandLineSwitch` to permit the flag at all. To watch the tests in a visible window, set `PWTEST_HEADED=1`.
 
 By default the tests use Playwright's bundled Chromium - pinned to whatever Playwright version is installed, reproducible across machines. To run against your installed Chrome stable instead (closer to what end users have but less reproducible), set `PWTEST_BROWSER=chrome`:
 
