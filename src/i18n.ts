@@ -96,6 +96,7 @@ export type MessageKey =
 	| 'trimTurnOff'
 	| 'trimNotOriginal'
 	| 'trimAllHidden'
+	| 'namesDate'
 	| 'noGpsDeselected'
 	| 'exportUnavailable'
 	| 'notLoggedIn'
@@ -104,6 +105,7 @@ export type MessageKey =
 	| 'splitTitle'
 	| 'cancelledAfterParts'
 	| 'savedActivitiesParts'
+	| 'csvDate'
 	| 'trimCustom'
 	| 'trimCustomValue'
 	| 'trimCustomUnit';
@@ -140,7 +142,8 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	selectedCountWithHidden: '$1 selected ($2 not on this page)',
 	clearSelection: 'Clear selection',
 	namesLabel: 'Names:',
-	namesTooltip: 'How downloaded files are named. Sport folders only apply inside zips.',
+	namesTooltip:
+		"How downloaded files are named. Sport folders only apply inside zips. Date + title uses the ID where a date can't be read.",
 	namesId: 'Activity ID',
 	namesTitle: 'ID + title',
 	namesSport: 'Sport folders',
@@ -187,6 +190,7 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	trimTurnOff: 'Turn off',
 	trimNotOriginal: 'Not available for Original files',
 	trimAllHidden: 'the whole track is within the hidden distance',
+	namesDate: 'Date + title',
 	noGpsDeselected: 'Deselected $1 activities without GPS - they have no $2 export, only Original.',
 	exportUnavailable: 'Strava has no $1 file for this activity',
 	notLoggedIn: 'not logged in to Strava',
@@ -196,6 +200,7 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 		"Large downloads are saved as several zips (…_part1.zip, …_part2.zip), each as soon as it's full, so a big backup doesn't run your browser out of memory. Sizes count the files before compression.",
 	cancelledAfterParts: 'Cancelled - $1 zip parts were already saved.',
 	savedActivitiesParts: 'Saved $1 activities in $2 zips.',
+	csvDate: 'Date (YYYY-MM-DD)',
 	trimCustom: 'Custom…',
 	trimCustomValue: 'Distance',
 	trimCustomUnit: 'Unit',

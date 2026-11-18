@@ -155,7 +155,7 @@
 		"message": "파일 이름:"
 	},
 	"namesTooltip": {
-		"message": "다운로드한 파일의 이름 지정 방식입니다. 스포츠별 폴더는 ZIP 안에서만 적용됩니다."
+		"message": "다운로드한 파일의 이름 지정 방식입니다. 스포츠별 폴더는 ZIP 안에서만 적용됩니다. 날짜 + 제목은 날짜를 읽을 수 없으면 ID를 사용합니다."
 	},
 	"namesId": {
 		"message": "활동 ID"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "트랙 전체가 숨김 범위 안에 있습니다"
 	},
+	"namesDate": {
+		"message": "날짜 + 제목"
+	},
 	"noGpsDeselected": {
 		"message": "GPS가 없는 활동 $COUNT$개의 선택을 해제했습니다. $FORMAT$ 내보내기가 없고 원본만 있습니다.",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "날짜 (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "사용자 지정…"

@@ -245,7 +245,7 @@ export interface BulkOptions {
 	/** How files are named inside the zip. Defaults to `strava_<id>.<ext>`. */
 	names?: NamePattern;
 	/**
-	 * Hide start/end: drop GPX points within this many metres of each
+	 * Hide start/end: hide GPX/TCX locations within this many metres of each
 	 * activity's start and end (see trim.ts). 0 or absent = off; ignored for
 	 * Original.
 	 */

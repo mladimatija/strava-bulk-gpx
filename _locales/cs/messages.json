@@ -155,7 +155,7 @@
 		"message": "Názvy:"
 	},
 	"namesTooltip": {
-		"message": "Jak se pojmenují stažené soubory. Složky podle sportu platí jen uvnitř ZIP."
+		"message": "Jak se pojmenují stažené soubory. Složky podle sportu platí jen uvnitř ZIP. Datum + název použije ID, pokud datum nejde přečíst."
 	},
 	"namesId": {
 		"message": "ID aktivity"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "celá trasa leží ve skryté vzdálenosti"
 	},
+	"namesDate": {
+		"message": "Datum + název"
+	},
 	"noGpsDeselected": {
 		"message": "Zrušen výběr $COUNT$ aktivit bez GPS - nemají export $FORMAT$, jen Originál.",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "Datum (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "Vlastní…"

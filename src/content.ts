@@ -17,6 +17,8 @@ import { downloadSingle, downloadBulk, downloadMerged, downloadActivitiesCsv, ty
 import { activityIdsFromCsv } from './csv.ts';
 import { dateOrderOf, isoDate, type DateOrder } from './dates.ts';
 import { clearHistory, exportedAt, exportedTotal, loadHistory, recordExports } from './history.ts';
+import { loadSelection, saveSelection } from './selection.ts';
+import { defaultLengthUnit, lengthLabel, METRES_PER_FOOT, unitName, type LengthUnit } from './units.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
 import { t } from './i18n.ts';
 import type {
@@ -102,6 +104,7 @@ const STATE: State = {
 	names: 'id',
 	mergeMode: 'tracks',
 	trim: 0,
+	trimLabel: '',
 	splitMb: 500,
 	dateOrder: null,
 	abort: null,
@@ -131,6 +134,7 @@ function parseMergeMode(value: unknown): MergeMode {
 
 /** Zip split sizes offered in the "⋯" menu, in MB (0 = never). */
 const SPLIT_SIZES_MB = [250, 500, 1000, 0];
+/** Narrow an untrusted stored value to a split size in MB, defaulting to 500. */
 }
 
 /** Hide start/end radii offered in the "⋯" menu, in metres. */
@@ -254,7 +258,9 @@ function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	// Sport is usually the first <td> in the row. Best-effort, fine if missing.
 	const sportCell = Array.from(row.cells).find((td) => !td.classList.contains('sbgx-cell'));
 	const sport_type = sportCell ? (sportCell.textContent ?? '').trim() : '';
-	return { id, name, sport_type, hasGps: rowHasGps(row), columns: rowColumns(row) };
+	const text = dateText(row);
+	const date = text ? isoDate(text, pageLocale(), STATE.dateOrder) : null;
+	return { id, name, sport_type, date, hasGps: rowHasGps(row), columns: rowColumns(row) };
 }
 
 /**
@@ -695,7 +701,7 @@ function wireMoreMenu(toolbar: HTMLDivElement): void {
 	customUnit.addEventListener('change', applyTrim);
 	toolbarPart(toolbar, 'trim-off').addEventListener('click', () => {
 		trimSelect.value = '0';
-		renderToolbarCounts();
+		applyTrim();
 	});
 
 	const fileInput = toolbarPart<HTMLInputElement>(toolbar, 'history-file');
@@ -811,7 +817,8 @@ function renderToolbarCounts(): void {
 	selectNewBtn.disabled =
 		STATE.busy || !visibleIds.some((id) => id && !STATE.selected.has(id) && exportedAt(id, STATE.format) === null);
 	selectNewBtn.title = t('selectNewTitle', label);
-	return { id, name, sport_type, hasGps: rowHasGps(row), columns: rowColumns(row) };
+	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'select-pages').disabled = STATE.busy;
+	const selectNewPagesBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'select-new-pages');
 	toolbarPart(STATE.toolbar, 'history-import').textContent = t('historyImport', label);
 	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'history-forget').disabled = exportedTotal() === 0;
 
@@ -1033,14 +1040,6 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 			mode === 'merge'
 				? await downloadMerged(activities, format === 'tcx' ? 'tcx' : 'gpx', mergeMode, options)
 				: await downloadBulk(activities, format, options);
-		// Trimmed files aren't backups of the activities, so they don't count.
-		if (mode === 'zip' && !options.trimRadius) {
-			const failedIds = new Set(result.failed.map((f) => f.id));
-			rememberExports(
-				activities.filter((a) => !failedIds.has(a.id)).map((a) => a.id),
-				format,
-			);
-		}
 		const firstFailed = result.failed[0];
 		if (firstFailed) {
 			setStatus(t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason]), 'warn');
@@ -1050,7 +1049,7 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 				retryFormat: mode === 'zip' ? format : null,
 			};
 		} else {
-			setStatus(savedMessage(mode, format, mergeMode, result.ok), 'ok');
+			setStatus(savedMessage(mode, format, mergeMode, result), 'ok');
 		}
 	} catch (err) {
 		if (controller.signal.aborted) {

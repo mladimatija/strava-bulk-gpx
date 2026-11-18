@@ -155,7 +155,7 @@
 		"message": "Namen:"
 	},
 	"namesTooltip": {
-		"message": "Hoe gedownloade bestanden worden genoemd. Sportmappen gelden alleen in ZIP-bestanden."
+		"message": "Hoe gedownloade bestanden worden genoemd. Sportmappen gelden alleen in ZIP-bestanden. Datum + titel gebruikt de ID als de datum niet te lezen is."
 	},
 	"namesId": {
 		"message": "Activiteit-ID"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "de hele track valt binnen de verborgen afstand"
 	},
+	"namesDate": {
+		"message": "Datum + titel"
+	},
 	"noGpsDeselected": {
 		"message": "$COUNT$ activiteiten zonder gps gedeselecteerd - ze hebben geen $FORMAT$-export, alleen Origineel.",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "Datum (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "Aangepast…"

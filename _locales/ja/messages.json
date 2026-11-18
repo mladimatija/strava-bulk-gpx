@@ -155,7 +155,7 @@
 		"message": "ファイル名:"
 	},
 	"namesTooltip": {
-		"message": "ダウンロードするファイルの名前の付け方。スポーツ別フォルダーは ZIP 内でのみ適用されます。"
+		"message": "ダウンロードするファイルの名前の付け方。スポーツ別フォルダーは ZIP 内でのみ適用されます。日付 + タイトルでは、日付を読み取れない場合は ID を使います。"
 	},
 	"namesId": {
 		"message": "アクティビティ ID"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "トラック全体が非表示の範囲内です"
 	},
+	"namesDate": {
+		"message": "日付 + タイトル"
+	},
 	"noGpsDeselected": {
 		"message": "GPS のないアクティビティ$COUNT$件の選択を解除しました。$FORMAT$ のエクスポートはなく、オリジナルのみです。",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "日付 (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "カスタム…"

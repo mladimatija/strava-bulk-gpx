@@ -135,7 +135,7 @@
 		"description": "Label preceding the file-naming dropdown in the toolbar."
 	},
 	"namesTooltip": {
-		"message": "How downloaded files are named. Sport folders only apply inside zips.",
+		"message": "How downloaded files are named. Sport folders only apply inside zips. Date + title uses the ID where a date can't be read.",
 		"description": "Hover tooltip on the file-naming dropdown."
 	},
 	"namesId": {
@@ -350,6 +350,10 @@
 		"message": "the whole track is within the hidden distance",
 		"description": "Failure reason (lowercase, shown in parentheses or after a dash) when 'Hide start/end' would remove every point of an activity."
 	},
+	"namesDate": {
+		"message": "Date + title",
+		"description": "File-naming option: the activity's date (YYYY-MM-DD) and title, e.g. '2026-05-09_Morning Run.gpx'."
+	},
 	"noGpsDeselected": {
 		"message": "Deselected $COUNT$ activities without GPS - they have no $FORMAT$ export, only Original.",
 		"description": "Shown after switching from Original to GPX/TCX when activities without GPS were selected: they were deselected because Strava has no GPX/TCX export for them. Keep the word for 'Original' consistent with formatOriginal.",
@@ -395,6 +399,10 @@
 			"count": { "content": "$1", "example": "1200" },
 			"parts": { "content": "$2", "example": "3" }
 		}
+	},
+	"csvDate": {
+		"message": "Date (YYYY-MM-DD)",
+		"description": "Column header in activities.csv: the activity's date as YYYY-MM-DD. Keep 'YYYY-MM-DD' as is - it describes the values."
 	},
 	"trimCustom": {
 		"message": "Custom…",

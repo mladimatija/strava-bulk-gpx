@@ -155,7 +155,7 @@
 		"message": "Namen:"
 	},
 	"namesTooltip": {
-		"message": "Wie heruntergeladene Dateien benannt werden. Sportordner gibt es nur in ZIP-Dateien."
+		"message": "Wie heruntergeladene Dateien benannt werden. Sportordner gibt es nur in ZIP-Dateien. Datum + Titel nutzt die ID, wenn sich ein Datum nicht lesen lässt."
 	},
 	"namesId": {
 		"message": "Aktivitäts-ID"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "der ganze Track liegt im ausgeblendeten Bereich"
 	},
+	"namesDate": {
+		"message": "Datum + Titel"
+	},
 	"noGpsDeselected": {
 		"message": "$COUNT$ Aktivitäten ohne GPS abgewählt - für sie gibt es keinen $FORMAT$-Export, nur Original.",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "Datum (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "Eigene …"

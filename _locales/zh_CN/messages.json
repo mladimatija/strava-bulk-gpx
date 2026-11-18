@@ -155,7 +155,7 @@
 		"message": "文件名:"
 	},
 	"namesTooltip": {
-		"message": "下载文件的命名方式。按运动分文件夹仅在 ZIP 中生效。"
+		"message": "下载文件的命名方式。按运动分文件夹仅在 ZIP 中生效。无法读取日期时，“日期 + 标题”会改用 ID。"
 	},
 	"namesId": {
 		"message": "活动 ID"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "整条轨迹都在隐藏范围内"
 	},
+	"namesDate": {
+		"message": "日期 + 标题"
+	},
 	"noGpsDeselected": {
 		"message": "已取消选择 $COUNT$ 项无 GPS 的活动 - 它们没有 $FORMAT$ 导出，只有原始文件。",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "日期 (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "自定义…"

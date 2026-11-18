@@ -155,7 +155,7 @@
 		"message": "Nomes:"
 	},
 	"namesTooltip": {
-		"message": "Como os arquivos baixados são nomeados. As pastas por esporte só valem dentro de ZIPs."
+		"message": "Como os arquivos baixados são nomeados. As pastas por esporte só valem dentro de ZIPs. Data + título usa o ID quando a data não pode ser lida."
 	},
 	"namesId": {
 		"message": "ID da atividade"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "toda a trilha está dentro da distância oculta"
 	},
+	"namesDate": {
+		"message": "Data + título"
+	},
 	"noGpsDeselected": {
 		"message": "$COUNT$ atividades sem GPS foram desmarcadas - elas não têm exportação $FORMAT$, só Original.",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "Data (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "Personalizada…"

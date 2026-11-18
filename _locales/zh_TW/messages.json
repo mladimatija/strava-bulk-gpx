@@ -155,7 +155,7 @@
 		"message": "檔名:"
 	},
 	"namesTooltip": {
-		"message": "下載檔案的命名方式。依運動分資料夾僅在 ZIP 中生效。"
+		"message": "下載檔案的命名方式。依運動分資料夾僅在 ZIP 中生效。無法讀取日期時，「日期 + 標題」會改用 ID。"
 	},
 	"namesId": {
 		"message": "活動 ID"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "整條軌跡都在隱藏範圍內"
 	},
+	"namesDate": {
+		"message": "日期 + 標題"
+	},
 	"noGpsDeselected": {
 		"message": "已取消選擇 $COUNT$ 項無 GPS 的活動 - 它們沒有 $FORMAT$ 匯出，只有原始檔案。",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "日期 (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "自訂…"

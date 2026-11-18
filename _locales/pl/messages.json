@@ -155,7 +155,7 @@
 		"message": "Nazwy:"
 	},
 	"namesTooltip": {
-		"message": "Sposób nazywania pobranych plików. Foldery według sportu działają tylko w plikach ZIP."
+		"message": "Sposób nazywania pobranych plików. Foldery według sportu działają tylko w plikach ZIP. Data + tytuł używa ID, gdy nie da się odczytać daty."
 	},
 	"namesId": {
 		"message": "ID aktywności"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "cały ślad mieści się w ukrytej odległości"
 	},
+	"namesDate": {
+		"message": "Data + tytuł"
+	},
 	"noGpsDeselected": {
 		"message": "Odznaczono $COUNT$ aktywności bez GPS - nie mają eksportu $FORMAT$, tylko Oryginalny.",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "Data (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "Własna…"

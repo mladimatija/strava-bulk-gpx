@@ -155,7 +155,7 @@
 		"message": "Navn:"
 	},
 	"namesTooltip": {
-		"message": "Hvordan nedlastede filer navngis. Sportsmapper gjelder bare i ZIP-filer."
+		"message": "Hvordan nedlastede filer navngis. Sportsmapper gjelder bare i ZIP-filer. Dato + tittel bruker ID-en når datoen ikke kan leses."
 	},
 	"namesId": {
 		"message": "Aktivitets-ID"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "hele sporet er innenfor den skjulte avstanden"
 	},
+	"namesDate": {
+		"message": "Dato + tittel"
+	},
 	"noGpsDeselected": {
 		"message": "Fjernet valget av $COUNT$ aktiviteter uten GPS - de har ingen $FORMAT$-eksport, bare Original.",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "Dato (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "Egendefinert …"

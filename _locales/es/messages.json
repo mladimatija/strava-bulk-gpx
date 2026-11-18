@@ -155,7 +155,7 @@
 		"message": "Nombres:"
 	},
 	"namesTooltip": {
-		"message": "Cómo se nombran los archivos descargados. Las carpetas por deporte solo se aplican dentro de los ZIP."
+		"message": "Cómo se nombran los archivos descargados. Las carpetas por deporte solo se aplican dentro de los ZIP. Fecha + título usa el ID cuando no se puede leer la fecha."
 	},
 	"namesId": {
 		"message": "ID de actividad"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "todo el track está dentro de la distancia oculta"
 	},
+	"namesDate": {
+		"message": "Fecha + título"
+	},
 	"noGpsDeselected": {
 		"message": "Se deseleccionaron $COUNT$ actividades sin GPS: no tienen exportación $FORMAT$, solo Original.",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "Fecha (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "Personalizada…"

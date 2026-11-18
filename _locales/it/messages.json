@@ -155,7 +155,7 @@
 		"message": "Nomi:"
 	},
 	"namesTooltip": {
-		"message": "Come vengono chiamati i file scaricati. Le cartelle per sport valgono solo negli ZIP."
+		"message": "Come vengono chiamati i file scaricati. Le cartelle per sport valgono solo negli ZIP. Data + titolo usa l'ID quando la data non si può leggere."
 	},
 	"namesId": {
 		"message": "ID attività"
@@ -367,6 +367,9 @@
 	"trimAllHidden": {
 		"message": "l'intera traccia è entro la distanza nascosta"
 	},
+	"namesDate": {
+		"message": "Data + titolo"
+	},
 	"noGpsDeselected": {
 		"message": "Deselezionate $COUNT$ attività senza GPS: non hanno un'esportazione $FORMAT$, solo Originale.",
 		"placeholders": {
@@ -422,6 +425,9 @@
 				"example": "3"
 			}
 		}
+	},
+	"csvDate": {
+		"message": "Data (YYYY-MM-DD)"
 	},
 	"trimCustom": {
 		"message": "Personalizzata…"
