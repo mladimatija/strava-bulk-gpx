@@ -24,6 +24,7 @@ import { t } from './i18n.ts';
 import type {
 	ActivityColumn,
 	ActivityRow,
+	BulkResult,
 	ExportFormat,
 	MergeMode,
 	NamePattern,
@@ -134,7 +135,16 @@ function parseMergeMode(value: unknown): MergeMode {
 
 /** Zip split sizes offered in the "⋯" menu, in MB (0 = never). */
 const SPLIT_SIZES_MB = [250, 500, 1000, 0];
+
 /** Narrow an untrusted stored value to a split size in MB, defaulting to 500. */
+function parseSplit(value: unknown): number {
+	const mb = Number(value);
+	return value !== '' && value !== null && Number.isFinite(mb) && mb >= 0 ? mb : 500;
+}
+
+/** "250 MB", "1 GB". */
+function sizeLabel(mb: number): string {
+	return mb >= 1000 ? `${mb / 1000} GB` : `${mb} MB`;
 }
 
 /** Hide start/end radii offered in the "⋯" menu, in metres. */
@@ -819,6 +829,8 @@ function renderToolbarCounts(): void {
 	selectNewBtn.title = t('selectNewTitle', label);
 	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'select-pages').disabled = STATE.busy;
 	const selectNewPagesBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'select-new-pages');
+	selectNewPagesBtn.disabled = STATE.busy;
+	selectNewPagesBtn.title = t('selectNewAllPagesTitle', label);
 	toolbarPart(STATE.toolbar, 'history-import').textContent = t('historyImport', label);
 	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'history-forget').disabled = exportedTotal() === 0;
 
