@@ -3,10 +3,11 @@
 // filters.
 //
 // Stored in chrome.storage.local next to the export history and never
-// transmitted. Restored only within a day of the last change: a selection
-// left over from last week would otherwise quietly join this week's backup.
-// About 300 bytes per activity (its table columns are stored with it), so
-// even 10k selected activities fit easily in the 10 MB quota.
+// transmitted. Restored only within a day of the last change, and not at all
+// once it was fully exported: a leftover selection would otherwise quietly
+// join the next backup. About 300 bytes per activity (its table columns are
+// stored with it), so even 10k selected activities fit easily in the 10 MB
+// quota.
 
 import type { ActivityColumn, ActivityRow } from './types.ts';
 
@@ -55,18 +56,44 @@ export async function loadSelection(): Promise<ActivityRow[]> {
 }
 
 let saveTimer: number | undefined;
+/** The selection to write when the timer fires; null when nothing is pending. */
+let pending: (() => ActivityRow[]) | null = null;
+
+/** Write the pending selection now (best-effort); an empty one is removed. */
+function flush(): void {
+	window.clearTimeout(saveTimer);
+	const rows = pending;
+	pending = null;
+	if (!rows) return;
+	const current = rows();
+	const write =
+		current.length === 0
+			? chrome.storage.local.remove(SELECTION_KEY)
+			: chrome.storage.local.set({ [SELECTION_KEY]: { savedAt: Date.now(), rows: current } satisfies Stored });
+	write.catch((err: unknown) => {
+		console.warn('Could not save the selection', err);
+	});
+}
+
+// A reload within the save delay would otherwise lose the last change.
+window.addEventListener('pagehide', flush);
 
 /** Save the selection shortly (best-effort); an empty one is removed. */
 export function saveSelection(rows: () => ActivityRow[]): void {
 	window.clearTimeout(saveTimer);
-	saveTimer = window.setTimeout(() => {
-		const current = rows();
-		const write =
-			current.length === 0
-				? chrome.storage.local.remove(SELECTION_KEY)
-				: chrome.storage.local.set({ [SELECTION_KEY]: { savedAt: Date.now(), rows: current } satisfies Stored });
-		write.catch((err: unknown) => {
-			console.warn('Could not save the selection', err);
-		});
-	}, SAVE_DELAY_MS);
+	pending = rows;
+	saveTimer = window.setTimeout(flush, SAVE_DELAY_MS);
+}
+
+/**
+ * Drop the saved selection - not the one on screen - after it was fully
+ * exported, so a reload starts empty instead of adding the batch to the next
+ * backup. The next change saves it again.
+ */
+export function forgetSavedSelection(): void {
+	window.clearTimeout(saveTimer);
+	pending = null;
+	chrome.storage.local.remove(SELECTION_KEY).catch((err: unknown) => {
+		console.warn('Could not forget the selection', err);
+	});
 }

@@ -17,7 +17,7 @@ import { downloadSingle, downloadBulk, downloadMerged, downloadActivitiesCsv, ty
 import { activityIdsFromCsv } from './csv.ts';
 import { dateOrderOf, isoDate, type DateOrder } from './dates.ts';
 import { clearHistory, exportedAt, exportedTotal, loadHistory, recordExports } from './history.ts';
-import { loadSelection, saveSelection } from './selection.ts';
+import { forgetSavedSelection, loadSelection, saveSelection } from './selection.ts';
 import { defaultLengthUnit, lengthLabel, METRES_PER_FOOT, unitName, type LengthUnit } from './units.ts';
 import { KOFI_IMAGE } from './kofi-asset.ts';
 import { t } from './i18n.ts';
@@ -100,6 +100,8 @@ interface State {
 	 * null when none is.
 	 */
 	pendingPart: { n: number; save: () => void } | null;
+	/** Select all pages is running: the selection is saved once, at the end. */
+	selectingPages: boolean;
 }
 
 const STATE: State = {
@@ -117,6 +119,7 @@ const STATE: State = {
 	lastRun: null,
 	anchorId: null,
 	pendingPart: null,
+	selectingPages: false,
 };
 
 const FORMAT_STORAGE_KEY = 'exportFormat';
@@ -326,8 +329,13 @@ function visibleSelectableRows(): HTMLTableRowElement[] {
 
 // ---------- Selection ----------
 
-/** Save the selection for the next page load (see selection.ts). */
+/**
+ * Save the selection for the next page load (see selection.ts) - except
+ * while Select all pages runs, which would otherwise rewrite the whole,
+ * growing selection on every page; it saves once when it's done.
+ */
 function persistSelection(): void {
+	if (STATE.selectingPages) return;
 	saveSelection(() => [...STATE.selected.values()]);
 }
 
@@ -692,13 +700,20 @@ function wireMoreMenu(toolbar: HTMLDivElement): void {
 	const custom = toolbarPart(toolbar, 'trim-custom');
 	const customValue = toolbarPart<HTMLInputElement>(toolbar, 'trim-value');
 	const customUnit = toolbarPart<HTMLSelectElement>(toolbar, 'trim-unit');
-	trimSelect.value = String(STATE.trim);
-	customUnit.value = defaultLengthUnit(navigator.language);
+	trimSelect.value = STATE.trimMenu.choice;
+	customValue.value = STATE.trimMenu.customValue;
+	customUnit.value = STATE.trimMenu.unit;
+	custom.hidden = STATE.trimMenu.choice !== 'custom';
 	// Apply whichever radius the menu shows. A custom distance is the
 	// number as typed, in the unit picked - switching the unit doesn't
 	// convert the number, it changes what it means. No valid number = off.
 	const applyTrim = (): void => {
 		custom.hidden = trimSelect.value !== 'custom';
+		STATE.trimMenu = {
+			choice: custom.hidden ? String(parseTrim(trimSelect.value)) : 'custom',
+			customValue: customValue.value,
+			unit: customUnit.value === 'ft' ? 'ft' : 'm',
+		};
 		if (custom.hidden) {
 			STATE.trim = parseTrim(trimSelect.value);
 			STATE.trimLabel = radiusLabel(STATE.trim);
@@ -1258,6 +1273,8 @@ async function handleSelectPages(onlyNew: boolean): Promise<void> {
 	} finally {
 		STATE.busy = false;
 		STATE.abort = null;
+		STATE.selectingPages = false;
+		persistSelection();
 		renderToolbarCounts();
 	}
 }
@@ -1286,7 +1303,9 @@ async function start(): Promise<void> {
 		}),
 		loadSelection(),
 	]);
-	for (const a of saved) STATE.selected.set(a.id, a);
+	// Activities without GPS were only selectable in Original mode; if the
+	// format has changed since (in another tab, say), they can't be exported.
+	for (const a of saved) if (a.hasGps || STATE.format === 'original') STATE.selected.set(a.id, a);
 	tick();
 	// Strava's React reflows the table on every search / sort / pagination.
 	// A single observer on the body handles all of it; the injection helpers
