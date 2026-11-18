@@ -51,3 +51,10 @@ void test('text that is not a date has none', () => {
 	assert.equal(isoDate('31/02/2026', 'en', 'dmy'), null);
 	assert.equal(isoDate('17/11/26', 'en', 'dmy'), null);
 });
+
+void test('an invalid locale tag falls back to the browser default instead of throwing', () => {
+	// Ambiguous, so the weekday is compared - in the default locale (English
+	// under Node), where 8 May 2026 is a Friday.
+	assert.equal(isoDate('Fri, 08/05/2026', 'en_US', null), '2026-05-08');
+	assert.equal(isoDate('Tue, 17/11/2026', 'not a tag!', null), '2026-11-17');
+});

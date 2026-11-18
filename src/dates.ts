@@ -32,6 +32,28 @@ function letters(text: string): string {
 	return text.toLocaleLowerCase().replace(/[^\p{L}]/gu, '');
 }
 
+/** Weekday formatters by locale and style, built once each. */
+const weekdayFormats = new Map<string, Intl.DateTimeFormat>();
+
+/**
+ * A weekday formatter for `locale`. A tag Intl rejects (a malformed
+ * `<html lang>`, say) falls back to the browser's own locale rather than
+ * throwing out of the row injection.
+ */
+function weekdayFormat(locale: string, weekday: 'short' | 'long'): Intl.DateTimeFormat {
+	const key = `${locale}|${weekday}`;
+	let format = weekdayFormats.get(key);
+	if (!format) {
+		try {
+			format = new Intl.DateTimeFormat(locale, { weekday, timeZone: 'UTC' });
+		} catch {
+			format = new Intl.DateTimeFormat(undefined, { weekday, timeZone: 'UTC' });
+		}
+		weekdayFormats.set(key, format);
+	}
+	return format;
+}
+
 /**
  * Whether the weekday word in `text` names the weekday of `iso` in `locale`
  * (short or long form). False when there's no weekday word to compare.
@@ -41,7 +63,7 @@ function weekdayMatches(text: string, iso: string, locale: string): boolean {
 	if (word.length < 2) return false;
 	const date = new Date(`${iso}T12:00:00Z`);
 	return (['short', 'long'] as const).some((weekday) => {
-		const name = letters(new Intl.DateTimeFormat(locale, { weekday, timeZone: 'UTC' }).format(date));
+		const name = letters(weekdayFormat(locale, weekday).format(date));
 		return name.length >= 2 && (name.startsWith(word) || word.startsWith(name));
 	});
 }
