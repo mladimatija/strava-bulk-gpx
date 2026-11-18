@@ -367,6 +367,62 @@
 	"trimAllHidden": {
 		"message": "celá trasa leží ve skryté vzdálenosti"
 	},
+	"selectAllPages": {
+		"message": "Vybrat všechny stránky"
+	},
+	"selectAllPagesTitle": {
+		"message": "Projde celý seznam (s aktuálním hledáním a filtry) a vybere na něm všechny aktivity"
+	},
+	"selectNewAllPages": {
+		"message": "Vybrat nové na všech stránkách"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Projde celý seznam a vybere všechny aktivity, které jste ještě neexportovali jako $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Vybírám na všech stránkách… $RANGE$ (vybráno: $COUNT$)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "Přidáno $COUNT$ aktivit z $PAGES$ stránek.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Zastaveno - zatím přidáno $COUNT$ aktivit.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava nenačetla další stránku"
+	},
 	"namesDate": {
 		"message": "Datum + název"
 	},

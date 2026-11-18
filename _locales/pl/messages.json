@@ -367,6 +367,62 @@
 	"trimAllHidden": {
 		"message": "cały ślad mieści się w ukrytej odległości"
 	},
+	"selectAllPages": {
+		"message": "Zaznacz wszystkie strony"
+	},
+	"selectAllPagesTitle": {
+		"message": "Przechodzi przez całą listę, z bieżącym wyszukiwaniem i filtrami, i zaznacza na niej każdą aktywność"
+	},
+	"selectNewAllPages": {
+		"message": "Zaznacz nowe na wszystkich stronach"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Przechodzi przez całą listę i zaznacza każdą aktywność, której jeszcze nie wyeksportowano jako $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Zaznaczanie na wszystkich stronach… $RANGE$ (zaznaczono: $COUNT$)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "Dodano $COUNT$ aktywności z $PAGES$ stron.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Zatrzymano - dotąd dodano $COUNT$ aktywności.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava nie wczytała następnej strony"
+	},
 	"namesDate": {
 		"message": "Data + tytuł"
 	},

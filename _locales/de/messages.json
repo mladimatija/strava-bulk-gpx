@@ -367,6 +367,62 @@
 	"trimAllHidden": {
 		"message": "der ganze Track liegt im ausgeblendeten Bereich"
 	},
+	"selectAllPages": {
+		"message": "Alle Seiten auswählen"
+	},
+	"selectAllPagesTitle": {
+		"message": "Blättert durch die ganze Liste (mit deiner aktuellen Suche und deinen Filtern) und wählt jede Aktivität darauf aus"
+	},
+	"selectNewAllPages": {
+		"message": "Neue auf allen Seiten auswählen"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Blättert durch die ganze Liste und wählt jede Aktivität aus, die du noch nicht als $FORMAT$ exportiert hast",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Auswahl auf allen Seiten … $RANGE$ ($COUNT$ ausgewählt)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "$COUNT$ Aktivitäten von $PAGES$ Seiten hinzugefügt.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Gestoppt - bisher $COUNT$ Aktivitäten hinzugefügt.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava hat die nächste Seite nicht geladen"
+	},
 	"namesDate": {
 		"message": "Datum + Titel"
 	},

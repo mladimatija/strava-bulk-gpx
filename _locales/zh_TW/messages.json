@@ -367,6 +367,62 @@
 	"trimAllHidden": {
 		"message": "整條軌跡都在隱藏範圍內"
 	},
+	"selectAllPages": {
+		"message": "選擇所有頁面"
+	},
+	"selectAllPagesTitle": {
+		"message": "依目前的搜尋與篩選條件翻遍整個列表，選擇其中的所有活動"
+	},
+	"selectNewAllPages": {
+		"message": "在所有頁面選擇新的"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "翻遍整個列表，選擇所有尚未匯出為 $FORMAT$ 的活動",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "正在所有頁面中選擇… $RANGE$ (已選擇 $COUNT$ 項)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "已從 $PAGES$ 頁中加入 $COUNT$ 項活動。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "已停止 - 目前已加入 $COUNT$ 項活動。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava 未能載入下一頁"
+	},
 	"namesDate": {
 		"message": "日期 + 標題"
 	},

@@ -4,6 +4,7 @@
 import { readFileSync } from 'node:fs';
 import JSZip from 'jszip';
 import { test, expect, type Page } from '../fixtures/extension.ts';
+import { fakeRowsHtml, installFakePager, type FakeRow } from '../fixtures/pages.ts';
 
 interface CapturedClick {
 	href: string;

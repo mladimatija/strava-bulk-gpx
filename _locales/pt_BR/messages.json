@@ -367,6 +367,62 @@
 	"trimAllHidden": {
 		"message": "toda a trilha está dentro da distância oculta"
 	},
+	"selectAllPages": {
+		"message": "Selecionar todas as páginas"
+	},
+	"selectAllPagesTitle": {
+		"message": "Percorre a lista inteira, com a busca e os filtros atuais, e seleciona todas as atividades dela"
+	},
+	"selectNewAllPages": {
+		"message": "Selecionar novas em todas as páginas"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Percorre a lista inteira e seleciona todas as atividades que você ainda não exportou como $FORMAT$",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Selecionando em todas as páginas… $RANGE$ ($COUNT$ selecionadas)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "$COUNT$ atividades adicionadas de $PAGES$ páginas.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Interrompido - $COUNT$ atividades adicionadas até agora.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "O Strava não carregou a próxima página"
+	},
 	"namesDate": {
 		"message": "Data + título"
 	},

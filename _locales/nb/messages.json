@@ -367,6 +367,62 @@
 	"trimAllHidden": {
 		"message": "hele sporet er innenfor den skjulte avstanden"
 	},
+	"selectAllPages": {
+		"message": "Velg alle sider"
+	},
+	"selectAllPagesTitle": {
+		"message": "Blar gjennom hele listen, med gjeldende søk og filtre, og velger hver aktivitet i den"
+	},
+	"selectNewAllPages": {
+		"message": "Velg nye på alle sider"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Blar gjennom hele listen og velger hver aktivitet du ikke har eksportert som $FORMAT$ ennå",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Velger på alle sider … $RANGE$ ($COUNT$ valgt)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "La til $COUNT$ aktiviteter fra $PAGES$ sider.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Stoppet - la til $COUNT$ aktiviteter så langt.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava lastet ikke inn neste side"
+	},
 	"namesDate": {
 		"message": "Dato + tittel"
 	},

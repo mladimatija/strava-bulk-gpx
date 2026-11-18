@@ -367,6 +367,62 @@
 	"trimAllHidden": {
 		"message": "トラック全体が非表示の範囲内です"
 	},
+	"selectAllPages": {
+		"message": "全ページを選択"
+	},
+	"selectAllPagesTitle": {
+		"message": "現在の検索とフィルターのまま一覧全体をページ送りし、すべてのアクティビティを選択します"
+	},
+	"selectNewAllPages": {
+		"message": "全ページの新規を選択"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "一覧全体をページ送りし、まだ $FORMAT$ でエクスポートしていないアクティビティをすべて選択します",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "全ページで選択中… $RANGE$ ($COUNT$件選択中)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "$PAGES$ページから$COUNT$件のアクティビティを追加しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "停止しました。ここまでに$COUNT$件を追加しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava が次のページを読み込みませんでした"
+	},
 	"namesDate": {
 		"message": "日付 + タイトル"
 	},

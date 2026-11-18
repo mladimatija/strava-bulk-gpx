@@ -217,8 +217,10 @@
 .sbgx-menu {
 	position: absolute;
 	top: calc(100% + 4px);
-	/* Opens leftwards from the button: the "⋯" sits mid-toolbar, and a
-	   rightward panel would spill past the toolbar's edge. */
+	/* Opens leftwards from the button: the "⋯" usually sits mid-toolbar,
+	   and a rightward panel would spill past the toolbar's edge. When the
+	   toolbar wraps and puts it near the left edge, content.ts flips it
+	   (.sbgx-menu-right) so it doesn't open off-screen. */
 	right: 0;
 	/* Above Strava's own row controls - its Share drop-downs are
 	   z-index: 30 in the same stacking context. */
@@ -233,6 +235,10 @@
 	border: 1px solid #e0e3e8;
 	border-radius: 6px;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.sbgx-menu.sbgx-menu-right {
+	right: auto;
+	left: 0;
 }
 .sbgx-menu .sbgx-btn {
 	text-align: left;

@@ -367,6 +367,62 @@
 	"trimAllHidden": {
 		"message": "整条轨迹都在隐藏范围内"
 	},
+	"selectAllPages": {
+		"message": "选择所有页面"
+	},
+	"selectAllPagesTitle": {
+		"message": "按当前搜索和筛选条件翻遍整个列表，选择其中的所有活动"
+	},
+	"selectNewAllPages": {
+		"message": "在所有页面选择新的"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "翻遍整个列表，选择所有尚未导出为 $FORMAT$ 的活动",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "正在所有页面中选择… $RANGE$ (已选择 $COUNT$ 项)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "已从 $PAGES$ 页中添加 $COUNT$ 项活动。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "已停止 - 目前已添加 $COUNT$ 项活动。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava 未能加载下一页"
+	},
 	"namesDate": {
 		"message": "日期 + 标题"
 	},

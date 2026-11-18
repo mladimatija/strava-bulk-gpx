@@ -96,6 +96,14 @@ export type MessageKey =
 	| 'trimTurnOff'
 	| 'trimNotOriginal'
 	| 'trimAllHidden'
+	| 'selectAllPages'
+	| 'selectAllPagesTitle'
+	| 'selectNewAllPages'
+	| 'selectNewAllPagesTitle'
+	| 'selectingPages'
+	| 'selectedPages'
+	| 'selectPagesStopped'
+	| 'pagingTimeout'
 	| 'namesDate'
 	| 'noGpsDeselected'
 	| 'exportUnavailable'
@@ -190,6 +198,15 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	trimTurnOff: 'Turn off',
 	trimNotOriginal: 'Not available for Original files',
 	trimAllHidden: 'the whole track is within the hidden distance',
+	selectAllPages: 'Select all pages',
+	selectAllPagesTitle:
+		'Page through the whole list, with your current search and filters, and select every activity on it',
+	selectNewAllPages: 'Select new on all pages',
+	selectNewAllPagesTitle: "Page through the whole list and select every activity you haven't exported as $1 yet",
+	selectingPages: 'Selecting on every page… $1 ($2 selected)',
+	selectedPages: 'Added $1 activities from $2 pages.',
+	selectPagesStopped: 'Stopped - added $1 activities so far.',
+	pagingTimeout: "Strava didn't load the next page",
 	namesDate: 'Date + title',
 	noGpsDeselected: 'Deselected $1 activities without GPS - they have no $2 export, only Original.',
 	exportUnavailable: 'Strava has no $1 file for this activity',

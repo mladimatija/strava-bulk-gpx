@@ -367,6 +367,62 @@
 	"trimAllHidden": {
 		"message": "de hele track valt binnen de verborgen afstand"
 	},
+	"selectAllPages": {
+		"message": "Alle pagina's selecteren"
+	},
+	"selectAllPagesTitle": {
+		"message": "Bladert door de hele lijst, met je huidige zoekopdracht en filters, en selecteert elke activiteit erin"
+	},
+	"selectNewAllPages": {
+		"message": "Nieuwe op alle pagina's selecteren"
+	},
+	"selectNewAllPagesTitle": {
+		"message": "Bladert door de hele lijst en selecteert elke activiteit die je nog niet als $FORMAT$ hebt geëxporteerd",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"selectingPages": {
+		"message": "Selecteren op alle pagina's… $RANGE$ ($COUNT$ geselecteerd)",
+		"placeholders": {
+			"range": {
+				"content": "$1",
+				"example": "21-40 of 3433"
+			},
+			"count": {
+				"content": "$2",
+				"example": "57"
+			}
+		}
+	},
+	"selectedPages": {
+		"message": "$COUNT$ activiteiten toegevoegd van $PAGES$ pagina's.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			},
+			"pages": {
+				"content": "$2",
+				"example": "3"
+			}
+		}
+	},
+	"selectPagesStopped": {
+		"message": "Gestopt - tot nu toe $COUNT$ activiteiten toegevoegd.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "57"
+			}
+		}
+	},
+	"pagingTimeout": {
+		"message": "Strava heeft de volgende pagina niet geladen"
+	},
 	"namesDate": {
 		"message": "Datum + titel"
 	},
