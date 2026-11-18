@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "トラック全体が非表示の範囲内です"
 	},
+	"noGpsDeselected": {
+		"message": "GPS のないアクティビティ$COUNT$件の選択を解除しました。$FORMAT$ のエクスポートはなく、オリジナルのみです。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "このアクティビティには Strava の $FORMAT$ ファイルがありません",
 		"placeholders": {

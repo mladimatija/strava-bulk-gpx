@@ -18,6 +18,11 @@ export interface ActivityRow {
 	/** Sport label, e.g. "Run", "Hike", "Workout". Best-effort. */
 	sport_type: string;
 	/**
+	 * Whether the row shows a positive distance. Activities without one have
+	 * no GPX or TCX export - only Original, when a file was uploaded.
+	 */
+	hasGps: boolean;
+	/**
 	 * The row's cells as Strava rendered them, captured when the row was
 	 * selected - the row may be on another page by the time we export, so
 	 * the CSV can't re-read it from the DOM.

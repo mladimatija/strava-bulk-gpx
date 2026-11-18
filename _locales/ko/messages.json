@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "트랙 전체가 숨김 범위 안에 있습니다"
 	},
+	"noGpsDeselected": {
+		"message": "GPS가 없는 활동 $COUNT$개의 선택을 해제했습니다. $FORMAT$ 내보내기가 없고 원본만 있습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "Strava에 이 활동의 $FORMAT$ 파일이 없습니다",
 		"placeholders": {

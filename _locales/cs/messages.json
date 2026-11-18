@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "celá trasa leží ve skryté vzdálenosti"
 	},
+	"noGpsDeselected": {
+		"message": "Zrušen výběr $COUNT$ aktivit bez GPS - nemají export $FORMAT$, jen Originál.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "Strava pro tuto aktivitu nemá soubor $FORMAT$",
 		"placeholders": {

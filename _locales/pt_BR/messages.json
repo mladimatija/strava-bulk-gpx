@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "toda a trilha está dentro da distância oculta"
 	},
+	"noGpsDeselected": {
+		"message": "$COUNT$ atividades sem GPS foram desmarcadas - elas não têm exportação $FORMAT$, só Original.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "O Strava não tem arquivo $FORMAT$ para esta atividade",
 		"placeholders": {

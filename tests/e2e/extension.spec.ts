@@ -625,7 +625,7 @@ test.describe('CSV', () => {
 		// "Sat, 09/05/2026" alone could be 9 May or 5 September (both
 		// Saturdays); "Fri, 08/05/2026" further down settles it as day-first.
 		expect(lines).toContain(
-			'9000000001,https://www.strava.com/activities/9000000001,strava_9000000001.gpx,Trail Run,' +
+			'9000000001,https://www.strava.com/activities/9000000001,strava_9000000001.gpx,2026-05-09,Trail Run,' +
 				'"Sat, 09/05/2026",Traversa v19 feat. Ex Acini Novi Šćapi,5:32:41,48.11 km,"1,889 m",109',
 		);
 		expect(lines).toHaveLength(4);
@@ -644,8 +644,8 @@ test.describe('CSV', () => {
 		const { name, bytes } = await downloadFrom(extensionPage, () => extensionPage.locator('[data-role="csv"]').click());
 		expect(name).toMatch(/^strava_activities_\d{4}-\d{2}-\d{2}\.csv$/);
 		const lines = csvLines(bytes.toString('utf8'));
-		expect(lines[0]).toBe('Activity ID,URL,Sport,Date,Title,Time,Distance,Elevation,Relative Effort');
-		expect(lines[1]).toContain(',Lunch Trail Run,');
+		expect(lines[0]).toBe('Activity ID,URL,Date (YYYY-MM-DD),Sport,Date,Title,Time,Distance,Elevation,Relative Effort');
+		expect(lines[1]).toContain(',2026-05-08,Trail Run,"Fri, 08/05/2026",Lunch Trail Run,');
 		expect(lines[2]).toContain(",'=1+1,");
 		expect(exportRequests).toEqual([]);
 		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved a list of 2 activities.');
@@ -807,6 +807,14 @@ test.describe('⋯ menu', () => {
 		});
 		expect(covered.overlapping).toBeGreaterThan(0);
 		expect(covered.onTop).toBe(true);
+	});
+
+	test('opens rightwards when the toolbar wraps it to the left edge', async ({ extensionPage }) => {
+		await extensionPage.setViewportSize({ width: 1000, height: 800 });
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		const box = (await extensionPage.locator('.sbgx-menu').boundingBox())!;
+		expect(box.x).toBeGreaterThanOrEqual(0);
+		expect(box.x + box.width).toBeLessThanOrEqual(1000);
 	});
 });
 
@@ -1063,7 +1071,9 @@ test.describe('hide start/end', () => {
 		await expect(extensionPage.locator('select[data-role="trim"]')).toHaveValue('0');
 	});
 
-	test('trimmed zips are marked and skip history; a fully hidden track fails; GPX only', async ({ extensionPage }) => {
+	test('trimmed zips are marked and skip history; a fully hidden track fails; not for Original', async ({
+		extensionPage,
+	}) => {
 		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
 			const id = idFromUrl(route.request().url());
 			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: lineGpx(id, OUT_AND_BACK) });

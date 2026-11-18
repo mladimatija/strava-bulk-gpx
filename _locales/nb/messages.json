@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "hele sporet er innenfor den skjulte avstanden"
 	},
+	"noGpsDeselected": {
+		"message": "Fjernet valget av $COUNT$ aktiviteter uten GPS - de har ingen $FORMAT$-eksport, bare Original.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "Strava har ingen $FORMAT$-fil for denne aktiviteten",
 		"placeholders": {

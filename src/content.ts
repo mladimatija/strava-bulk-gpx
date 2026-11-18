@@ -6,7 +6,8 @@
 //   - Find the activities table (whatever React happens to have rendered).
 //   - Mount a toolbar above it once.
 //   - For each visible row, inject a checkbox at the start and a "GPX" button
-//     at the end - but only when the row has GPS data (distance > 0).
+//     at the end - but only when the row can be exported in the current
+//     format: GPX and TCX need GPS data (distance > 0), Original doesn't.
 //   - A MutationObserver re-runs the injection whenever Strava replaces the
 //     table body (pagination, search, sort). Selection state survives via a
 //     module-scope Map keyed by activity id, so a selection can span pages.
@@ -200,7 +201,7 @@ function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
 	// Sport is usually the first <td> in the row. Best-effort, fine if missing.
 	const sportCell = Array.from(row.cells).find((td) => !td.classList.contains('sbgx-cell'));
 	const sport_type = sportCell ? (sportCell.textContent ?? '').trim() : '';
-	return { id, name, sport_type, columns: rowColumns(row) };
+	return { id, name, sport_type, hasGps: rowHasGps(row), columns: rowColumns(row) };
 }
 
 /**
@@ -222,6 +223,16 @@ function rowHasGps(row: HTMLTableRowElement): boolean {
 }
 
 /**
+ * Whether a row can be exported in the current format. GPX and TCX need GPS
+ * data; Strava answers them with a redirect for activities without it. An
+ * indoor activity still has its Original file when one was uploaded - a
+ * trainer ride's power, a strength session's heart rate.
+ */
+function rowSelectable(row: HTMLTableRowElement): boolean {
+	return row.dataset.sbgxHasGps === '1' || (row.dataset.sbgxHasGps === '0' && STATE.format === 'original');
+}
+
+/**
  * Selectable rows currently on screen, in table order, one per activity id
  * (Strava sometimes renders a sticky-header mirror or a transient duplicate
  * `<tr>` for the same activity).
@@ -229,9 +240,9 @@ function rowHasGps(row: HTMLTableRowElement): boolean {
 function visibleSelectableRows(): HTMLTableRowElement[] {
 	const seen = new Set<string>();
 	const rows: HTMLTableRowElement[] = [];
-	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-has-gps="1"]')) {
+	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-id]')) {
 		const id = row.dataset.sbgxId;
-		if (!id || seen.has(id)) continue;
+		if (!id || seen.has(id) || !rowSelectable(row)) continue;
 		seen.add(id);
 		rows.push(row);
 	}
@@ -272,75 +283,92 @@ function injectRow(row: HTMLTableRowElement): void {
 	if (!a) return;
 	row.dataset.sbgxAugmented = '1';
 	row.dataset.sbgxId = a.id;
+	row.dataset.sbgxHasGps = a.hasGps ? '1' : '0';
 
-	const hasGps = rowHasGps(row);
-	row.dataset.sbgxHasGps = hasGps ? '1' : '0';
-
-	// Prepend a cell to keep column alignment even when there's no checkbox.
+	// Both cells always exist, to keep column alignment; what's in them
+	// depends on the format (see renderRowControls).
 	const cbCell = document.createElement('td');
 	cbCell.className = 'sbgx-cell sbgx-cell-check';
-	if (hasGps) {
-		const cb = document.createElement('input');
-		cb.type = 'checkbox';
-		cb.className = 'sbgx-row-cb';
-		cb.checked = STATE.selected.has(a.id);
-		// `click` rather than `change`: only the click event carries shiftKey.
-		// Keyboard toggles (Space) dispatch a click too.
-		cb.addEventListener('click', (e: MouseEvent) => {
-			const anchor = STATE.anchorId;
-			const ranged = e.shiftKey && anchor !== null && anchor !== a.id && selectRange(anchor, a.id, cb.checked);
-			if (!ranged) setSelected(a, cb.checked);
-			// Shift-click also extends the browser's text selection across the
-			// table; drop it so the page doesn't flash blue.
-			if (e.shiftKey) window.getSelection()?.removeAllRanges();
-			STATE.anchorId = a.id;
-			onSelectionChanged();
-		});
-		cbCell.appendChild(cb);
-	}
 	row.insertBefore(cbCell, row.firstChild);
-
-	// Always append the trailing cell, but only render a button when GPS exists.
 	const dlCell = document.createElement('td');
 	dlCell.className = 'sbgx-cell sbgx-cell-dl';
-	if (hasGps) {
-		const done = document.createElement('span');
-		done.className = 'sbgx-done';
-		done.textContent = '✓';
-		renderExportBadge(done, a.id);
-		dlCell.appendChild(done);
-
-		const btn = document.createElement('button');
-		btn.type = 'button';
-		btn.className = 'sbgx-btn sbgx-btn-primary sbgx-btn-row';
-		btn.textContent = formatLabel(STATE.format);
-		btn.title = t('rowButtonTitle', formatLabel(STATE.format));
-		btn.addEventListener('click', async (e: MouseEvent) => {
-			e.preventDefault();
-			e.stopPropagation();
-			if (btn.disabled) return;
-			btn.disabled = true;
-			const old = btn.textContent ?? formatLabel(STATE.format);
-			btn.textContent = '…';
-			// Read the format from STATE at click time so changing the
-			// selector after rendering immediately affects what gets fetched.
-			const format = STATE.format;
-			const trim = effectiveTrim();
-			try {
-				await downloadSingle(a, format, STATE.names, trim);
-				// A trimmed file isn't a backup of the activity.
-				if (trim === 0) rememberExports([a.id], format);
-			} catch (err) {
-				const message = err instanceof Error ? err.message : String(err);
-				alert(t('rowDownloadFailed', [a.id, message]));
-			} finally {
-				btn.disabled = false;
-				btn.textContent = old;
-			}
-		});
-		dlCell.appendChild(btn);
-	}
 	row.appendChild(dlCell);
+	renderRowControls(row);
+}
+
+/**
+ * Give a row its checkbox, ✓ and export button when it can be exported in
+ * the current format, or take them away when it can't - an indoor activity
+ * has controls in Original mode only.
+ */
+function renderRowControls(row: HTMLTableRowElement): void {
+	const cbCell = row.querySelector<HTMLTableCellElement>(':scope > .sbgx-cell-check');
+	const dlCell = row.querySelector<HTMLTableCellElement>(':scope > .sbgx-cell-dl');
+	const id = row.dataset.sbgxId;
+	if (!cbCell || !dlCell || !id) return;
+	if (!rowSelectable(row)) {
+		cbCell.replaceChildren();
+		dlCell.replaceChildren();
+		return;
+	}
+	if (cbCell.childElementCount > 0) return;
+
+	const cb = document.createElement('input');
+	cb.type = 'checkbox';
+	cb.className = 'sbgx-row-cb';
+	cb.checked = STATE.selected.has(id);
+	// `click` rather than `change`: only the click event carries shiftKey.
+	// Keyboard toggles (Space) dispatch a click too.
+	cb.addEventListener('click', (e: MouseEvent) => {
+		const a = activityFromRow(row);
+		if (!a) return;
+		const anchor = STATE.anchorId;
+		const ranged = e.shiftKey && anchor !== null && anchor !== a.id && selectRange(anchor, a.id, cb.checked);
+		if (!ranged) setSelected(a, cb.checked);
+		// Shift-click also extends the browser's text selection across the
+		// table; drop it so the page doesn't flash blue.
+		if (e.shiftKey) window.getSelection()?.removeAllRanges();
+		STATE.anchorId = a.id;
+		onSelectionChanged();
+	});
+	cbCell.appendChild(cb);
+
+	const done = document.createElement('span');
+	done.className = 'sbgx-done';
+	done.textContent = '✓';
+	renderExportBadge(done, id);
+	dlCell.appendChild(done);
+
+	const btn = document.createElement('button');
+	btn.type = 'button';
+	btn.className = 'sbgx-btn sbgx-btn-primary sbgx-btn-row';
+	btn.textContent = formatLabel(STATE.format);
+	btn.title = t('rowButtonTitle', formatLabel(STATE.format));
+	btn.addEventListener('click', async (e: MouseEvent) => {
+		e.preventDefault();
+		e.stopPropagation();
+		const a = activityFromRow(row);
+		if (btn.disabled || !a) return;
+		btn.disabled = true;
+		const old = btn.textContent ?? formatLabel(STATE.format);
+		btn.textContent = '…';
+		// Read the format from STATE at click time so changing the
+		// selector after rendering immediately affects what gets fetched.
+		const format = STATE.format;
+		const trim = effectiveTrim();
+		try {
+			await downloadSingle(a, format, STATE.names, trim);
+			// A trimmed file isn't a backup of the activity.
+			if (trim === 0) rememberExports([a.id], format);
+		} catch (err) {
+			const message = err instanceof Error ? err.message : String(err);
+			alert(t('rowDownloadFailed', [a.id, message]));
+		} finally {
+			btn.disabled = false;
+			btn.textContent = old;
+		}
+	});
+	dlCell.appendChild(btn);
 }
 
 /**
@@ -497,6 +525,7 @@ function buildToolbar(): HTMLDivElement {
 		savePreference(FORMAT_STORAGE_KEY, STATE.format);
 		refreshRowButtons();
 		renderExportBadges();
+		dropUnexportable();
 		// renderToolbarCounts re-derives the merge button's disabled/title
 		// state from STATE.format, so it has to run on every format change.
 		renderToolbarCounts();
@@ -601,12 +630,13 @@ function wireMoreMenu(toolbar: HTMLDivElement): void {
 }
 
 /**
- * Walk every injected per-row GPX button and update its visible text + title
- * to match the currently selected format. Called when the format select
- * changes - the click handlers themselves already read STATE.format at click
- * time, so this is purely a labeling refresh.
+ * Bring every row's controls in line with the currently selected format:
+ * indoor rows gain or lose theirs (see renderRowControls), and every per-row
+ * button's text + title names the format. The click handlers themselves
+ * already read STATE.format at click time.
  */
 function refreshRowButtons(): void {
+	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-id]')) renderRowControls(row);
 	const label = formatLabel(STATE.format);
 	const title = t('rowButtonTitle', label);
 	for (const btn of document.querySelectorAll<HTMLButtonElement>('.sbgx-btn-row')) {
@@ -807,6 +837,20 @@ function onSelectionChanged(): void {
 		renderFailures();
 	}
 	renderToolbarCounts();
+}
+
+/**
+ * After switching to GPX or TCX, drop selected activities without GPS -
+ * Strava has no such export for them - and say so, rather than letting the
+ * next download fail on each of them.
+ */
+function dropUnexportable(): void {
+	if (STATE.format === 'original') return;
+	const dropped = [...STATE.selected.values()].filter((a) => !a.hasGps);
+	if (dropped.length === 0) return;
+	for (const a of dropped) setSelected(a, false);
+	syncRowCheckboxes();
+	if (!STATE.busy) setStatus(t('noGpsDeselected', [String(dropped.length), formatLabel(STATE.format)]), 'warn');
 }
 
 /** Everything selected, on this page or others, in the order it was picked. */

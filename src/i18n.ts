@@ -96,6 +96,7 @@ export type MessageKey =
 	| 'trimTurnOff'
 	| 'trimOnlyGpx'
 	| 'trimAllHidden'
+	| 'noGpsDeselected'
 	| 'exportUnavailable'
 	| 'notLoggedIn';
 
@@ -178,6 +179,7 @@ const EN_FALLBACK: Record<MessageKey, string> = {
 	trimTurnOff: 'Turn off',
 	trimOnlyGpx: 'Only available in GPX mode',
 	trimAllHidden: 'the whole track is within the hidden distance',
+	noGpsDeselected: 'Deselected $1 activities without GPS - they have no $2 export, only Original.',
 	exportUnavailable: 'Strava has no $1 file for this activity',
 	notLoggedIn: 'not logged in to Strava',
 };

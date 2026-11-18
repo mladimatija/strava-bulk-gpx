@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "整条轨迹都在隐藏范围内"
 	},
+	"noGpsDeselected": {
+		"message": "已取消选择 $COUNT$ 项无 GPS 的活动 - 它们没有 $FORMAT$ 导出，只有原始文件。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "Strava 没有此活动的 $FORMAT$ 文件",
 		"placeholders": {

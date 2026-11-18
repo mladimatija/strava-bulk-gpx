@@ -57,6 +57,16 @@ async function fetchExport(id: string, format: ExportFormat): Promise<Response> 
 	return res;
 }
 
+/** Apply Hide start/end to a GPX or TCX export. */
+function trimExport(xml: string, format: 'gpx' | 'tcx', radiusM: number): string {
+	return format === 'gpx' ? trimGpx(xml, radiusM) : trimTcx(xml, radiusM);
+}
+
+/** MIME type of a saved GPX or TCX file. */
+function xmlType(format: 'gpx' | 'tcx'): string {
+	return format === 'gpx' ? 'application/gpx+xml' : 'application/vnd.garmin.tcx+xml';
+}
+
 /** Tell the browser to download a same-origin URL with our chosen filename. */
 function downloadViaAnchor(href: string, filename: string | null): void {
 	const a = document.createElement('a');
@@ -195,12 +205,11 @@ export async function downloadSingle(
 	trimRadius = 0,
 ): Promise<void> {
 	const id = String(activity.id);
-	if (format === 'gpx' && trimRadius > 0) {
-		const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin' });
-		if (!res.ok) throw new Error(`HTTP ${res.status}`);
-		const xml = trimGpx(await res.text(), trimRadius);
+	if (format !== 'original' && trimRadius > 0) {
+		const res = await fetchExport(id, format);
+		const xml = trimExport(await res.text(), format, trimRadius);
 		const name = trimmedName(baseName(activityFilePath(activity, format, names, null)));
-		downloadBlob(name, new Blob([xml], { type: 'application/gpx+xml' }));
+		downloadBlob(name, new Blob([xml], { type: xmlType(format) }));
 		return;
 	}
 	if (format !== 'original') {
@@ -238,6 +247,19 @@ export interface BulkOptions {
 	 * TCX and Original.
 	 */
 	trimRadius?: number;
+	/**
+	 * Zips only: start a new zip once the files in the current one add up to
+	 * this many bytes (before compression), saving each as soon as it's full
+	 * so a large backup never sits in memory whole. 0 or absent = one zip.
+	 */
+	splitBytes?: number;
+	/**
+	 * Zips only: called with the ids of the activities in each saved file -
+	 * every zip part, or the lone file of a single-activity download - so the
+	 * caller can record exports that were saved even if a later part fails
+	 * or the run is cancelled.
+	 */
+	onSaved?: (ids: string[]) => void;
 }
 
 // Modest concurrency. The export endpoint is comfortable with parallel
@@ -368,8 +390,9 @@ const CSV_NAME = 'activities.csv';
  *     assembling. Useful for keeping a spinner alive during what can be a
  *     multi-second client-side step on large batches.
  *
- * Resolves with the count of successes and a list of per-activity failures.
- * Throws if *every* activity failed, or if `signal` aborts.
+ * Resolves with the count of successes, a list of per-activity failures and
+ * the number of zips saved. Throws if *every* activity failed, or if `signal`
+ * aborts - zip parts saved before that stay saved (see `options.onSaved`).
  */
 export async function downloadBulk(
 	activities: ActivityRow[],

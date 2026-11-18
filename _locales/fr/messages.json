@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "toute la trace est dans la distance masquée"
 	},
+	"noGpsDeselected": {
+		"message": "$COUNT$ activités sans GPS désélectionnées - elles n'ont pas d'export $FORMAT$, seulement Original.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "Strava n'a pas de fichier $FORMAT$ pour cette activité",
 		"placeholders": {

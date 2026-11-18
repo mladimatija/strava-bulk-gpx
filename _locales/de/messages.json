@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "der ganze Track liegt im ausgeblendeten Bereich"
 	},
+	"noGpsDeselected": {
+		"message": "$COUNT$ Aktivitäten ohne GPS abgewählt - für sie gibt es keinen $FORMAT$-Export, nur Original.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "Strava hat für diese Aktivität keine $FORMAT$-Datei",
 		"placeholders": {

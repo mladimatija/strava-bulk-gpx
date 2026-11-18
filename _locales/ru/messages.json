@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "весь трек попадает в скрытую зону"
 	},
+	"noGpsDeselected": {
+		"message": "Снят выбор с тренировок без GPS: $COUNT$. Для них нет экспорта $FORMAT$, только Оригинал.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "У Strava нет файла $FORMAT$ для этой тренировки",
 		"placeholders": {

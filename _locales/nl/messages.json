@@ -367,6 +367,19 @@
 	"trimAllHidden": {
 		"message": "de hele track valt binnen de verborgen afstand"
 	},
+	"noGpsDeselected": {
+		"message": "$COUNT$ activiteiten zonder gps gedeselecteerd - ze hebben geen $FORMAT$-export, alleen Origineel.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "4"
+			},
+			"format": {
+				"content": "$2",
+				"example": "GPX"
+			}
+		}
+	},
 	"exportUnavailable": {
 		"message": "Strava heeft geen $FORMAT$-bestand voor deze activiteit",
 		"placeholders": {

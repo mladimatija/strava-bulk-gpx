@@ -350,6 +350,14 @@
 		"message": "the whole track is within the hidden distance",
 		"description": "Failure reason (lowercase, shown in parentheses or after a dash) when 'Hide start/end' would remove every point of an activity."
 	},
+	"noGpsDeselected": {
+		"message": "Deselected $COUNT$ activities without GPS - they have no $FORMAT$ export, only Original.",
+		"description": "Shown after switching from Original to GPX/TCX when activities without GPS were selected: they were deselected because Strava has no GPX/TCX export for them. Keep the word for 'Original' consistent with formatOriginal.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "4" },
+			"format": { "content": "$2", "example": "GPX" }
+		}
+	},
 	"exportUnavailable": {
 		"message": "Strava has no $FORMAT$ file for this activity",
 		"description": "Failure reason when Strava redirects instead of sending a file - e.g. GPX of an indoor activity, or Original of a manual entry. FORMAT is GPX/TCX/Original.",
