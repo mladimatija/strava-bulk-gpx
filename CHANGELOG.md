@@ -4,6 +4,8 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-27
+
 ### Added
 
 - **Save selected to a folder.** **⋯ → Save selected to a folder…** asks for a folder (the browser's own picker) and writes each file straight into it as it arrives: no zip, no **Save part N** clicks, and nothing in memory beyond the file being written. Sport folders become real subfolders, and a `strava_activities_<date>.csv` lists what was written. A file already there under the same name is replaced when it's the same size, and otherwise left alone - the new one gets `-2`, `-3`, …. Export history is recorded as files land (in batches of 25), so **Cancel** keeps what's in the folder and says how many files that is; **Retry N failed** writes into the same folder. Uses the File System Access API - no new permission - and is hidden where the browser has no folder picker. Checked in the e2e suite against a real directory handle (the page's origin-private folder), since Chrome's picker can't be driven by a test.
