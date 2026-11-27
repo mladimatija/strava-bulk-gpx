@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "Las $COUNT$ descargas fallaron. Primer error: $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "No se pudo leer ninguno de los archivos TCX."
+	},
+	"invalidFile": {
+		"message": "No se pudo leer el archivo $FORMAT$ de Strava",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (para mapas web)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "Combinar selección en GeoJSON"
+	},
+	"mergeGeojsonTitle": {
+		"message": "Un archivo GeoJSON con una línea por actividad, en orden cronológico: para mapas web y herramientas SIG. Se omiten la frecuencia cardíaca y otros datos de sensores."
+	},
+	"mergingGeojson": {
+		"message": "Combinando en GeoJSON…"
+	},
+	"savedGeojson": {
+		"message": "GeoJSON guardado con $COUNT$ actividades.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "Ninguna de las actividades tiene un track."
+	},
+	"folderHeading": {
+		"message": "Copia en carpeta"
+	},
+	"saveToFolder": {
+		"message": "Guardar selección en una carpeta…"
+	},
+	"saveToFolderTitle": {
+		"message": "Escribe cada archivo directamente en la carpeta que elijas: sin ZIP y sin límite de tamaño."
+	},
+	"savedToFolder": {
+		"message": "$COUNT$ actividades guardadas en la carpeta.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "Cancelado: ya se guardaron $COUNT$ archivos en la carpeta.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }

@@ -18,214 +18,19 @@
  * isolated content-script world. Without a fallback, the toolbar throws
  * `Cannot read properties of undefined (reading 'getMessage')` at mount.
  *
- * The map below mirrors `_locales/en/messages.json` and is used only when
- * the live `chrome.i18n` lookup fails. Substitutions follow the same `$1`,
- * `$2`, ... syntax Chrome's i18n placeholders compile to.
+ * `i18n-messages.ts` holds that copy. It is generated from
+ * `_locales/en/messages.json` (`npm run i18n`), so the two can't drift, and
+ * is used only when the live `chrome.i18n` lookup fails. Substitutions
+ * follow the same `$1`, `$2`, ... syntax Chrome's i18n placeholders compile
+ * to.
  *
  * See `_locales/en/messages.json` for the source-of-truth string set.
  */
 
-export type MessageKey =
-	| 'extensionName'
-	| 'extensionDescription'
-	| 'selectAllVisible'
-	| 'downloadSelected'
-	| 'selectedCount'
-	| 'gpxButton'
-	| 'gpxButtonTitle'
-	| 'preparingDownloads'
-	| 'downloadingProgress'
-	| 'buildingZip'
-	| 'savedActivities'
-	| 'savedWithSkips'
-	| 'downloadFailed'
-	| 'rowDownloadFailed'
-	| 'koFiTitle'
-	| 'formatLabel'
-	| 'formatTcx'
-	| 'formatOriginal'
-	| 'rowButtonTitle'
-	| 'mergeSelected'
-	| 'mergingGpx'
-	| 'savedMerged'
-	| 'selectedCountWithHidden'
-	| 'clearSelection'
-	| 'namesLabel'
-	| 'namesTooltip'
-	| 'namesId'
-	| 'namesTitle'
-	| 'namesSport'
-	| 'exportCsv'
-	| 'savedCsv'
-	| 'cancel'
-	| 'cancelled'
-	| 'retryFailed'
-	| 'showFailures'
-	| 'rateLimited'
-	| 'csvActivityId'
-	| 'csvActivityUrl'
-	| 'csvFile'
-	| 'exportTcx'
-	| 'selectNew'
-	| 'selectNewTitle'
-	| 'exportedOn'
-	| 'moreOptions'
-	| 'historyHeading'
-	| 'historyImport'
-	| 'historyImported'
-	| 'historyImportEmpty'
-	| 'historyForget'
-	| 'historyForgetConfirm'
-	| 'historyForgotten'
-	| 'mergeModeLabel'
-	| 'mergeModeTracks'
-	| 'mergeModeSingle'
-	| 'joinSelected'
-	| 'joinTitle'
-	| 'mergeSelectedTcx'
-	| 'mergeTcxTitle'
-	| 'mergeNotOriginal'
-	| 'mergingTcx'
-	| 'savedJoined'
-	| 'savedMergedTcx'
-	| 'mergeOverlap'
-	| 'trimLabel'
-	| 'trimOff'
-	| 'trimTitle'
-	| 'trimChip'
-	| 'trimTurnOff'
-	| 'trimNotOriginal'
-	| 'trimAllHidden'
-	| 'selectAllPages'
-	| 'selectAllPagesTitle'
-	| 'selectNewAllPages'
-	| 'selectNewAllPagesTitle'
-	| 'selectingPages'
-	| 'selectedPages'
-	| 'selectPagesStopped'
-	| 'pagingTimeout'
-	| 'namesDate'
-	| 'noGpsDeselected'
-	| 'exportUnavailable'
-	| 'notLoggedIn'
-	| 'splitLabel'
-	| 'splitNever'
-	| 'splitTitle'
-	| 'cancelledAfterParts'
-	| 'savedActivitiesParts'
-	| 'csvDate'
-	| 'trimCustom'
-	| 'trimCustomValue'
-	| 'trimCustomUnit'
-	| 'savePart'
-	| 'partReady';
+import { EN_MESSAGES } from './i18n-messages.ts';
 
-/**
- * English string templates, byte-identical to `_locales/en/messages.json`.
- * Placeholders use Chrome's `$NAME$` form during build but compile down to
- * `$1`, `$2`, ... at runtime, which is what we reproduce here.
- */
-const EN_FALLBACK: Record<MessageKey, string> = {
-	extensionName: 'Strava Bulk GPX Export',
-	extensionDescription:
-		"Bulk export from Strava's My Activities - GPX, TCX, original files, or one merged GPX. Runs locally in your browser.",
-	selectAllVisible: 'Select all visible',
-	downloadSelected: 'Download selected',
-	selectedCount: '$1 selected',
-	gpxButton: 'GPX',
-	gpxButtonTitle: 'Download GPX for this activity',
-	preparingDownloads: 'Preparing $1 downloads…',
-	downloadingProgress: 'Downloading $1 / $2…',
-	buildingZip: 'Building zip…',
-	savedActivities: 'Saved $1 activities.',
-	savedWithSkips: 'Saved $1, skipped $2 ($3)',
-	downloadFailed: 'Failed: $1',
-	rowDownloadFailed: "Couldn't download $1: $2",
-	koFiTitle: 'Buy Me a Coffee at ko-fi.com',
-	formatLabel: 'Format:',
-	formatTcx: 'TCX',
-	formatOriginal: 'Original',
-	rowButtonTitle: 'Download $1 for this activity',
-	mergeSelected: 'Merge selected into one GPX',
-	mergingGpx: 'Merging into one GPX…',
-	savedMerged: 'Saved merged GPX with $1 activities.',
-	selectedCountWithHidden: '$1 selected ($2 not on this page)',
-	clearSelection: 'Clear selection',
-	namesLabel: 'Names:',
-	namesTooltip:
-		"How downloaded files are named. Sport folders only apply inside zips. Date + title uses the ID where a date can't be read.",
-	namesId: 'Activity ID',
-	namesTitle: 'ID + title',
-	namesSport: 'Sport folders',
-	exportCsv: 'Export list (CSV)',
-	savedCsv: 'Saved a list of $1 activities.',
-	cancel: 'Cancel',
-	cancelled: 'Cancelled - nothing was saved.',
-	retryFailed: 'Retry $1 failed',
-	showFailures: 'Show failed activities',
-	rateLimited: 'Strava is limiting requests - retrying in $1 s…',
-	csvActivityId: 'Activity ID',
-	csvActivityUrl: 'URL',
-	csvFile: 'File',
-	exportTcx: 'Export TCX',
-	selectNew: 'Select new',
-	selectNewTitle: "Select the activities on this page you haven't exported as $1 yet",
-	exportedOn: 'Exported as $1 on $2',
-	moreOptions: 'More options',
-	historyHeading: 'Export history',
-	historyImport: 'Mark activities from a CSV as exported ($1)…',
-	historyImported: 'Marked $1 activities as exported ($2).',
-	historyImportEmpty: 'No activity IDs found in that file.',
-	historyForget: 'Forget export history',
-	historyForgetConfirm: 'Click again to confirm',
-	historyForgotten: 'Export history cleared.',
-	mergeModeLabel: 'Merge GPX into',
-	mergeModeTracks: 'Separate tracks (for maps)',
-	mergeModeSingle: 'One activity (for re-upload)',
-	joinSelected: 'Join selected into one activity',
-	joinTitle:
-		'One track with each activity as a segment, in time order - for uploading to Strava as a single activity. Delete the originals first, or Strava may reject it as a duplicate.',
-	mergeSelectedTcx: 'Merge selected into one TCX',
-	mergeTcxTitle: 'One activity with each selected activity as a lap, in time order.',
-	mergeNotOriginal: 'Merging works in GPX and TCX modes, not for Original files',
-	mergingTcx: 'Merging into one TCX…',
-	savedJoined: 'Saved one activity joined from $1 activities.',
-	savedMergedTcx: 'Saved merged TCX with $1 activities.',
-	mergeOverlap: "Can't join activities that overlap in time: $1 and $2",
-	trimLabel: 'Hide start/end',
-	trimOff: 'Off',
-	trimTitle:
-		"Hides the locations near each activity's start and end before saving, so files you share don't show where you start. TCX files keep their heart rate, cadence and power. Trimmed files end in _trimmed and are no longer identical to Strava's export. Resets when you reload the page.",
-	trimChip: 'Hiding $1 at start and end',
-	trimTurnOff: 'Turn off',
-	trimNotOriginal: 'Not available for Original files',
-	trimAllHidden: 'the whole track is within the hidden distance',
-	selectAllPages: 'Select all pages',
-	selectAllPagesTitle:
-		'Page through the whole list, with your current search and filters, and select every activity on it',
-	selectNewAllPages: 'Select new on all pages',
-	selectNewAllPagesTitle: "Page through the whole list and select every activity you haven't exported as $1 yet",
-	selectingPages: 'Selecting on every page… $1 ($2 selected)',
-	selectedPages: 'Added $1 activities from $2 pages.',
-	selectPagesStopped: 'Stopped - added $1 activities so far.',
-	pagingTimeout: "Strava didn't load the next page",
-	namesDate: 'Date + title',
-	noGpsDeselected: 'Deselected $1 activities without GPS - they have no $2 export, only Original.',
-	exportUnavailable: 'Strava has no $1 file for this activity',
-	notLoggedIn: 'not logged in to Strava',
-	splitLabel: 'Split zips after',
-	splitNever: 'Never',
-	splitTitle:
-		"Large downloads are saved as several zips (…_part1.zip, …_part2.zip), each as soon as it's full, so a big backup doesn't run your browser out of memory. Sizes count the files before compression.",
-	cancelledAfterParts: 'Cancelled - $1 zip parts were already saved.',
-	savedActivitiesParts: 'Saved $1 activities in $2 zips.',
-	csvDate: 'Date (YYYY-MM-DD)',
-	trimCustom: 'Custom…',
-	trimCustomValue: 'Distance',
-	trimCustomUnit: 'Unit',
-	savePart: 'Save part $1',
-	partReady: 'Zip part $1 is ready - click Save part $1 (Chrome allows only one download without a click).',
-};
+/** Every message key in `_locales/en/messages.json`. */
+export type MessageKey = keyof typeof EN_MESSAGES;
 
 /**
  * Apply Chrome-style `$1`, `$2`, ... substitutions to a template string.
@@ -244,7 +49,7 @@ function applySubstitutions(template: string, substitutions?: string | string[])
  * The lookup order is:
  *   1. `chrome.i18n.getMessage(key, substitutions)` - resolves the right
  *      locale and returns the translated string.
- *   2. `EN_FALLBACK[key]` with substitutions applied locally - used when
+ *   2. `EN_MESSAGES[key]` with substitutions applied locally - used when
  *      `chrome.i18n` is unavailable in the current execution context.
  *   3. The key itself - last-resort fallback so missing entries are visible
  *      in the UI during development rather than collapsing to "".
@@ -264,7 +69,7 @@ export function t(key: MessageKey, substitutions?: string | string[]): string {
 		// fall through to the fallback path
 	}
 
-	const template = EN_FALLBACK[key];
+	const template: string | undefined = EN_MESSAGES[key];
 	if (template) return applySubstitutions(template, substitutions);
 	return key;
 }

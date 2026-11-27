@@ -20,6 +20,7 @@
 		"build": "vite build",
 		"icons": "node scripts/build-icons.js",
 		"kofi": "node scripts/build-kofi.js",
+		"i18n": "node scripts/build-i18n.js",
 		"promo": "node scripts/build-promo.js",
 		"package": "npm run build && cd dist && zip -r ../strava-bulk-gpx.zip .",
 		"pretest": "npm run build",
@@ -37,10 +38,13 @@
 		"@eslint/js": "^10.0.1",
 		"@playwright/test": "^1.65.1",
 		"@types/chrome": "^0.3.7",
+		"@types/jsdom": "^30.0.0",
 		"@types/node": "^26.2.0",
 		"eslint": "^10.15.0",
 		"eslint-config-prettier": "^10.1.8",
 		"globals": "^17.11.0",
+		"jsdom": "^31.0.1",
+		"jszip": "^3.10.2",
 		"lint-staged": "^17.6.1",
 		"prettier": "^3.10.1",
 		"sharp": "^0.35.3",
@@ -50,7 +54,7 @@
 		"vite": "^8.3.8"
 	},
 	"dependencies": {
-		"jszip": "^3.10.1"
+		"fflate": "^0.8.3"
 	},
 	"simple-git-hooks": {
 		"pre-commit": "npx lint-staged"

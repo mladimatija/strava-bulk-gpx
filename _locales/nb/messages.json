@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "Alle $COUNT$ nedlastinger mislyktes. Første feil: $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "Ingen av TCX-filene kunne leses."
+	},
+	"invalidFile": {
+		"message": "$FORMAT$-filen fra Strava kunne ikke leses",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (for nettkart)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "Slå sammen valgte til GeoJSON"
+	},
+	"mergeGeojsonTitle": {
+		"message": "Én GeoJSON-fil med en linje per aktivitet, i tidsrekkefølge - for nettkart og GIS-verktøy. Puls og andre sensordata utelates."
+	},
+	"mergingGeojson": {
+		"message": "Slår sammen til GeoJSON…"
+	},
+	"savedGeojson": {
+		"message": "Lagret GeoJSON med $COUNT$ aktiviteter.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "Ingen av aktivitetene har et spor."
+	},
+	"folderHeading": {
+		"message": "Sikkerhetskopi til mappe"
+	},
+	"saveToFolder": {
+		"message": "Lagre valgte i en mappe…"
+	},
+	"saveToFolderTitle": {
+		"message": "Skriver hver fil rett til en mappe du velger - uten ZIP og uten størrelsesgrense."
+	},
+	"savedToFolder": {
+		"message": "$COUNT$ aktiviteter lagret i mappen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "Avbrutt - $COUNT$ filer var allerede lagret i mappen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }

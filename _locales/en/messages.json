@@ -475,5 +475,77 @@
 		"placeholders": {
 			"number": { "content": "$1", "example": "2" }
 		}
+	},
+	"allFailed": {
+		"message": "All $COUNT$ downloads failed. First error: $REASON$",
+		"description": "Error when not one activity of a run could be saved. COUNT is how many were tried; REASON is the first failure's reason verbatim and may stay in English.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "12" },
+			"reason": { "content": "$2", "example": "HTTP 500" }
+		}
+	},
+	"tcxUnreadable": {
+		"message": "None of the TCX files could be read.",
+		"description": "Error when a TCX merge finds no usable TCX among the downloaded files."
+	},
+	"invalidFile": {
+		"message": "Strava's $FORMAT$ file couldn't be read",
+		"description": "Failure reason when a GPX or TCX export from Strava isn't well-formed XML. FORMAT is GPX or TCX.",
+		"placeholders": {
+			"format": { "content": "$1", "example": "GPX" }
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (for web maps)",
+		"description": "Third option of the 'Merge GPX into' dropdown: the merge produces a GeoJSON file instead of a GPX. Keep 'GeoJSON'."
+	},
+	"mergeSelectedGeojson": {
+		"message": "Merge selected into GeoJSON",
+		"description": "Merge button label while the GPX merge mode is GeoJSON. Keep 'GeoJSON'."
+	},
+	"mergeGeojsonTitle": {
+		"message": "One GeoJSON file with a line per activity, in time order - for web maps and GIS tools. Heart rate and other sensor data are left out.",
+		"description": "Tooltip of the merge button in GeoJSON mode."
+	},
+	"mergingGeojson": {
+		"message": "Merging into GeoJSON…",
+		"description": "Status while the GeoJSON file is being assembled."
+	},
+	"savedGeojson": {
+		"message": "Saved GeoJSON with $COUNT$ activities.",
+		"description": "Success message after a GeoJSON merge. COUNT is the number of activities in it.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "5" }
+		}
+	},
+	"geojsonEmpty": {
+		"message": "None of the activities has a track.",
+		"description": "Error when no selected activity has a track to put in the GeoJSON file."
+	},
+	"folderHeading": {
+		"message": "Folder backup",
+		"description": "Heading in the ⋯ menu above the 'Save selected to a folder…' button."
+	},
+	"saveToFolder": {
+		"message": "Save selected to a folder…",
+		"description": "Button in the ⋯ menu: opens the browser's folder picker, then writes every selected activity's file into that folder."
+	},
+	"saveToFolderTitle": {
+		"message": "Writes each file straight into a folder you pick - no zip, and no limit on size.",
+		"description": "Tooltip of the 'Save selected to a folder…' button."
+	},
+	"savedToFolder": {
+		"message": "Saved $COUNT$ activities to the folder.",
+		"description": "Success message after a folder backup. COUNT is the number of activities written.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "120" }
+		}
+	},
+	"cancelledFolder": {
+		"message": "Cancelled - $COUNT$ files were already saved to the folder.",
+		"description": "Status after cancelling a folder backup part-way. COUNT is the number of files already written; they stay in the folder.",
+		"placeholders": {
+			"count": { "content": "$1", "example": "40" }
+		}
 	}
 }

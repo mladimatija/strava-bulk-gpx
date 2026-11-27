@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "全部 $COUNT$ 項下載均失敗。第一個錯誤: $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "沒有任何 TCX 檔案可以讀取。"
+	},
+	"invalidFile": {
+		"message": "無法讀取 Strava 的 $FORMAT$ 檔案",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (用於網頁地圖)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "合併所選為 GeoJSON"
+	},
+	"mergeGeojsonTitle": {
+		"message": "一個 GeoJSON 檔案，每項活動一條線，依時間順序排列 - 用於網頁地圖和 GIS 工具。不包含心率等感測器資料。"
+	},
+	"mergingGeojson": {
+		"message": "正在合併為 GeoJSON…"
+	},
+	"savedGeojson": {
+		"message": "已儲存 GeoJSON，包含 $COUNT$ 項活動。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "所選活動都沒有軌跡。"
+	},
+	"folderHeading": {
+		"message": "備份到資料夾"
+	},
+	"saveToFolder": {
+		"message": "將所選儲存到資料夾…"
+	},
+	"saveToFolderTitle": {
+		"message": "將每個檔案直接寫入你選擇的資料夾 - 不壓縮成 ZIP，也沒有大小限制。"
+	},
+	"savedToFolder": {
+		"message": "已將 $COUNT$ 項活動儲存到資料夾。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "已取消 - 已有 $COUNT$ 個檔案儲存到資料夾。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }

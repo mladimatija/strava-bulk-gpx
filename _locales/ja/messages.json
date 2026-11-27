@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "$COUNT$ 件のダウンロードがすべて失敗しました。最初のエラー: $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "TCX ファイルを 1 つも読み取れませんでした。"
+	},
+	"invalidFile": {
+		"message": "Strava の $FORMAT$ ファイルを読み取れませんでした",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (ウェブ地図用)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "選択項目を GeoJSON に統合"
+	},
+	"mergeGeojsonTitle": {
+		"message": "アクティビティごとに 1 本の線を時系列順に収めた GeoJSON ファイルです。ウェブ地図や GIS ツール向けで、心拍数などのセンサーデータは含まれません。"
+	},
+	"mergingGeojson": {
+		"message": "GeoJSON に統合中…"
+	},
+	"savedGeojson": {
+		"message": "$COUNT$ 件のアクティビティを統合した GeoJSON を保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "トラックのあるアクティビティがありません。"
+	},
+	"folderHeading": {
+		"message": "フォルダーへのバックアップ"
+	},
+	"saveToFolder": {
+		"message": "選択項目をフォルダーに保存…"
+	},
+	"saveToFolderTitle": {
+		"message": "選んだフォルダーに各ファイルを直接書き込みます。ZIP にはせず、サイズの上限もありません。"
+	},
+	"savedToFolder": {
+		"message": "$COUNT$件のアクティビティをフォルダーに保存しました。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "キャンセルしました。$COUNT$個のファイルはフォルダーに保存済みです。",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }
