@@ -62,7 +62,7 @@ Use the bug report or feature request template (you'll be prompted on https://gi
 
 ## Releases
 
-Releases are tagged `vMAJOR.MINOR.PATCH`. Pushing a tag triggers `release.yml`, which builds, runs `check`, packages `dist/` as `strava-bulk-gpx.zip`, and attaches it to a GitHub Release with auto-generated release notes.
+Releases are tagged `vMAJOR.MINOR.PATCH`. Pushing a tag triggers `release.yml`, which runs `check` and the unit tests, builds, packages `dist/` as `strava-bulk-gpx.zip`, and attaches it to a GitHub Release with auto-generated release notes. If the repository has Chrome Web Store credentials (below), it then uploads the same zip to the store as a draft.
 
 `package.json.version` is the source of truth - `manifest.json.version` is overwritten at build time by `vite.config.ts` (a small `toChromeVersion()` helper strips SemVer prerelease suffixes so Chrome's manifest format stays happy), so don't edit it directly.
 
@@ -85,7 +85,18 @@ To cut a release, bump the version inside the PR and tag only after it's merged 
    git push origin vX.Y.Z    # triggers release.yml
    ```
 
-4. Once `release.yml` has published the GitHub Release, upload its `strava-bulk-gpx.zip` to the Chrome Web Store by hand.
+4. Once `release.yml` has published the GitHub Release, get its `strava-bulk-gpx.zip` into the Chrome Web Store: by hand through the dashboard, or - with the credentials below - `release.yml` has already uploaded it as a draft. Either way, update the listing texts, screenshots and privacy answers in the dashboard if the release changed them, then submit for review.
+
+### Uploading to the Chrome Web Store from `release.yml` (optional)
+
+`scripts/upload-to-store.js` uploads the release zip through the [Chrome Web Store API](https://developer.chrome.com/docs/webstore/using-api) (V2). The workflow step runs only when the `CWS_REFRESH_TOKEN` secret exists, so forks and a repository without credentials are unaffected. To turn it on:
+
+1. In a Google Cloud project, enable the Chrome Web Store API, configure the OAuth consent screen, and create an OAuth client. Authorize it for the `https://www.googleapis.com/auth/chromewebstore` scope with the Google account that owns the extension, and keep the refresh token (the API guide walks through this with the OAuth 2.0 Playground).
+2. Add repository **secrets** `CWS_CLIENT_ID`, `CWS_CLIENT_SECRET` and `CWS_REFRESH_TOKEN`.
+3. Add repository **variables** `CWS_PUBLISHER_ID` (Developer Dashboard → Publisher → Settings) and `CWS_EXTENSION_ID` (the item's 32-character id).
+4. Leave the variable `CWS_AUTO_PUBLISH` unset to upload a draft only. Set it to `true` to submit each upload for review straight away - only sensible for releases that change nothing in the listing.
+
+The store rejects an upload whose manifest version isn't higher than the published one, so re-running the workflow for the same tag fails at this step; the GitHub release is already published by then.
 
 Avoid `npm version` without `--no-git-tag-version` (it tags the bump commit on the branch) and `git push --follow-tags` (it pushes that tag, and so publishes a release, before the PR is merged).
 
