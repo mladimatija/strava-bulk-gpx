@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "Všech $COUNT$ stažení selhalo. První chyba: $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "Žádný ze souborů TCX se nepodařilo přečíst."
+	},
+	"invalidFile": {
+		"message": "Soubor $FORMAT$ ze Stravy se nepodařilo přečíst",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (pro webové mapy)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "Sloučit vybrané do GeoJSON"
+	},
+	"mergeGeojsonTitle": {
+		"message": "Jeden soubor GeoJSON s čárou pro každou aktivitu, v časovém pořadí - pro webové mapy a nástroje GIS. Tepová frekvence a další data ze senzorů se vynechají."
+	},
+	"mergingGeojson": {
+		"message": "Slučování do GeoJSON…"
+	},
+	"savedGeojson": {
+		"message": "Uložen GeoJSON s $COUNT$ aktivitami.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "Žádná z aktivit nemá trasu."
+	},
+	"folderHeading": {
+		"message": "Záloha do složky"
+	},
+	"saveToFolder": {
+		"message": "Uložit vybrané do složky…"
+	},
+	"saveToFolderTitle": {
+		"message": "Zapíše každý soubor přímo do složky, kterou vyberete - bez ZIPu a bez omezení velikosti."
+	},
+	"savedToFolder": {
+		"message": "Uloženo $COUNT$ aktivit do složky.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "Zrušeno - $COUNT$ souborů už bylo do složky uloženo.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }

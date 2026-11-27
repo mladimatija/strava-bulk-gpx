@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "다운로드 $COUNT$개가 모두 실패했습니다. 첫 번째 오류: $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "TCX 파일을 하나도 읽을 수 없습니다."
+	},
+	"invalidFile": {
+		"message": "Strava의 $FORMAT$ 파일을 읽을 수 없습니다",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (웹 지도용)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "선택 항목을 GeoJSON으로 병합"
+	},
+	"mergeGeojsonTitle": {
+		"message": "활동마다 선 하나를 시간순으로 담은 GeoJSON 파일입니다. 웹 지도와 GIS 도구용이며, 심박수 등 센서 데이터는 제외됩니다."
+	},
+	"mergingGeojson": {
+		"message": "GeoJSON으로 병합 중…"
+	},
+	"savedGeojson": {
+		"message": "$COUNT$개 활동을 병합한 GeoJSON을 저장했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "트랙이 있는 활동이 없습니다."
+	},
+	"folderHeading": {
+		"message": "폴더 백업"
+	},
+	"saveToFolder": {
+		"message": "선택 항목을 폴더에 저장…"
+	},
+	"saveToFolderTitle": {
+		"message": "선택한 폴더에 각 파일을 바로 기록합니다. ZIP 없이, 크기 제한 없이 저장됩니다."
+	},
+	"savedToFolder": {
+		"message": "$COUNT$개 활동을 폴더에 저장했습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "취소됨 - 파일 $COUNT$개는 이미 폴더에 저장되었습니다.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }

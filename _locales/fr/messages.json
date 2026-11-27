@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "Les $COUNT$ téléchargements ont échoué. Première erreur : $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "Aucun des fichiers TCX n'a pu être lu."
+	},
+	"invalidFile": {
+		"message": "Le fichier $FORMAT$ de Strava n'a pas pu être lu",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (pour les cartes web)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "Fusionner la sélection en GeoJSON"
+	},
+	"mergeGeojsonTitle": {
+		"message": "Un fichier GeoJSON avec une ligne par activité, dans l'ordre chronologique - pour les cartes web et les outils SIG. La fréquence cardiaque et les autres données de capteurs sont omises."
+	},
+	"mergingGeojson": {
+		"message": "Fusion en GeoJSON…"
+	},
+	"savedGeojson": {
+		"message": "GeoJSON enregistré avec $COUNT$ activités.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "Aucune des activités n'a de trace."
+	},
+	"folderHeading": {
+		"message": "Sauvegarde dans un dossier"
+	},
+	"saveToFolder": {
+		"message": "Enregistrer la sélection dans un dossier…"
+	},
+	"saveToFolderTitle": {
+		"message": "Écrit chaque fichier directement dans le dossier de votre choix - sans ZIP et sans limite de taille."
+	},
+	"savedToFolder": {
+		"message": "$COUNT$ activités enregistrées dans le dossier.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "Annulé - $COUNT$ fichiers étaient déjà enregistrés dans le dossier.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }

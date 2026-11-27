@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "Alle $COUNT$ downloads zijn mislukt. Eerste fout: $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "Geen van de TCX-bestanden kon worden gelezen."
+	},
+	"invalidFile": {
+		"message": "Het $FORMAT$-bestand van Strava kon niet worden gelezen",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (voor webkaarten)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "Geselecteerde activiteiten samenvoegen tot GeoJSON"
+	},
+	"mergeGeojsonTitle": {
+		"message": "Eén GeoJSON-bestand met een lijn per activiteit, in tijdsvolgorde - voor webkaarten en GIS-tools. Hartslag en andere sensorgegevens worden weggelaten."
+	},
+	"mergingGeojson": {
+		"message": "Samenvoegen tot GeoJSON…"
+	},
+	"savedGeojson": {
+		"message": "GeoJSON met $COUNT$ activiteiten opgeslagen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "Geen van de activiteiten heeft een track."
+	},
+	"folderHeading": {
+		"message": "Back-up naar map"
+	},
+	"saveToFolder": {
+		"message": "Selectie opslaan in een map…"
+	},
+	"saveToFolderTitle": {
+		"message": "Schrijft elk bestand rechtstreeks naar een map die je kiest - zonder ZIP en zonder groottelimiet."
+	},
+	"savedToFolder": {
+		"message": "$COUNT$ activiteiten opgeslagen in de map.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "Geannuleerd - $COUNT$ bestanden waren al in de map opgeslagen.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }

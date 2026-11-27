@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "Не удалось выполнить ни одну из загрузок ($COUNT$). Первая ошибка: $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "Не удалось прочитать ни один из файлов TCX."
+	},
+	"invalidFile": {
+		"message": "Не удалось прочитать файл $FORMAT$ от Strava",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (для веб-карт)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "Объединить выбранные в GeoJSON"
+	},
+	"mergeGeojsonTitle": {
+		"message": "Один файл GeoJSON с линией для каждой тренировки, в хронологическом порядке - для веб-карт и ГИС-инструментов. Пульс и другие данные датчиков не включаются."
+	},
+	"mergingGeojson": {
+		"message": "Объединение в GeoJSON…"
+	},
+	"savedGeojson": {
+		"message": "Сохранён GeoJSON с $COUNT$ тренировками.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "Ни у одной из тренировок нет трека."
+	},
+	"folderHeading": {
+		"message": "Резервная копия в папку"
+	},
+	"saveToFolder": {
+		"message": "Сохранить выбранные в папку…"
+	},
+	"saveToFolderTitle": {
+		"message": "Записывает каждый файл прямо в выбранную вами папку - без ZIP и без ограничения размера."
+	},
+	"savedToFolder": {
+		"message": "Сохранено тренировок в папку: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "Отменено - в папку уже сохранено файлов: $COUNT$.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }

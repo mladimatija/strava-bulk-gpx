@@ -108,5 +108,7 @@ export type NamePattern = 'id' | 'title' | 'sport' | 'date';
  *   - 'tracks' → one `<trk>` per activity, to view a trip in a mapping tool
  *   - 'single' → one `<trk>` with a `<trkseg>` per activity, to upload back
  *                to Strava as a single activity
+ *   - 'geojson' → a GeoJSON FeatureCollection with a line per activity, for
+ *                 web maps and GIS tools
  */
-export type MergeMode = 'tracks' | 'single';
+export type MergeMode = 'tracks' | 'single' | 'geojson';

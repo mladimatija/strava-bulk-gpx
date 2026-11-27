@@ -511,5 +511,81 @@
 				"example": "2"
 			}
 		}
+	},
+	"allFailed": {
+		"message": "Wszystkie pobrania ($COUNT$) nie powiodły się. Pierwszy błąd: $REASON$",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "12"
+			},
+			"reason": {
+				"content": "$2",
+				"example": "HTTP 500"
+			}
+		}
+	},
+	"tcxUnreadable": {
+		"message": "Nie udało się odczytać żadnego z plików TCX."
+	},
+	"invalidFile": {
+		"message": "Nie udało się odczytać pliku $FORMAT$ ze Stravy",
+		"placeholders": {
+			"format": {
+				"content": "$1",
+				"example": "GPX"
+			}
+		}
+	},
+	"mergeModeGeojson": {
+		"message": "GeoJSON (do map internetowych)"
+	},
+	"mergeSelectedGeojson": {
+		"message": "Połącz zaznaczone w GeoJSON"
+	},
+	"mergeGeojsonTitle": {
+		"message": "Jeden plik GeoJSON z linią dla każdej aktywności, w kolejności czasowej - do map internetowych i narzędzi GIS. Tętno i inne dane z czujników są pomijane."
+	},
+	"mergingGeojson": {
+		"message": "Łączenie w GeoJSON…"
+	},
+	"savedGeojson": {
+		"message": "Zapisano GeoJSON z $COUNT$ aktywnościami.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "5"
+			}
+		}
+	},
+	"geojsonEmpty": {
+		"message": "Żadna z aktywności nie ma śladu."
+	},
+	"folderHeading": {
+		"message": "Kopia do folderu"
+	},
+	"saveToFolder": {
+		"message": "Zapisz zaznaczone w folderze…"
+	},
+	"saveToFolderTitle": {
+		"message": "Zapisuje każdy plik bezpośrednio w wybranym folderze - bez ZIP-a i bez limitu rozmiaru."
+	},
+	"savedToFolder": {
+		"message": "Zapisano $COUNT$ aktywności w folderze.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "120"
+			}
+		}
+	},
+	"cancelledFolder": {
+		"message": "Anulowano - w folderze zapisano już $COUNT$ plików.",
+		"placeholders": {
+			"count": {
+				"content": "$1",
+				"example": "40"
+			}
+		}
 	}
 }
