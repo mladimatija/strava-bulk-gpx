@@ -43,10 +43,12 @@ When you open <https://www.strava.com/athlete/training>, the extension:
 - Large downloads are split into several zips - `strava_<format>_<date>_part1.zip`, `_part2.zip`, … - each saved as soon as it's full, so a backup of thousands of activities never has to fit in the browser's memory at once. Chrome lets a site start only one download without a click, so from the second part on a **Save part N** button appears, and fetching waits until you click it. **⋯ → Split zips after** sets the size (250 MB, 500 MB by default, 1 GB, or never), counted before compression; each part has its own `activities.csv`, and file names are unique across all the parts, so they can be extracted into one folder. Cancelling keeps the parts already saved.
 - Click **Merge selected into one GPX** → a single `strava_merged_<date>.gpx` containing one `<trk>` per activity, in chronological order. Useful when you want a multi-day trip rendered as one track collection in RideWithGPS / Gaia / Komoot, or archived as a single file.
 - Set **⋯ → Merge GPX into → One activity (for re-upload)** and the button becomes **Join selected into one activity** → `strava_joined_<date>.gpx` with a single track and one segment per activity, in time order. That's the shape to upload back to Strava as one activity - say, a ride you accidentally stopped and restarted. Delete the original activities first: while the earliest one exists, Strava rejects the joined file as a "duplicate of" it (checked on strava.com in November 2026). Deleting them also deletes their kudos and comments. Activities that overlap in time are refused.
+- Set **⋯ → Merge GPX into → GeoJSON (for web maps)** and the button becomes **Merge selected into GeoJSON** → `strava_merged_<date>.geojson`: a FeatureCollection with one line per activity, in time order, each carrying the activity's id, name, sport, start time and Strava URL. It loads directly into web maps (Leaflet, MapLibre, geojson.io) and GIS tools such as QGIS. Heart rate and other sensor data are left out - GeoJSON has no standard place for them.
 - In TCX mode the button reads **Merge selected into one TCX** → `strava_merged_<date>.tcx`: one activity with each selected activity as a lap, in time order, with distances carrying on from one to the next. In Original mode the merge button is disabled, with a tooltip explaining why (original uploads are mostly binary FIT files).
 - **⋯ → Hide start/end** hides the locations within 200 m, 500 m, 1 km or a **Custom…** distance of each activity's start and end before saving a GPX or TCX. A custom distance is typed in metres or feet - feet by default where your browser's locale measures in feet - and switching the unit keeps the number you typed. Strava's own map-visibility hiding only applies on strava.com, so your own exports otherwise show exactly where you start. Points elsewhere on the route that come within that distance of the start or end are hidden too, and the track is split there rather than drawn straight across the gap. GPX files lose those points; TCX files keep them with their time, heart rate, cadence and power, and lose only the position. Trimmed files end in `_trimmed`, carry a note in the file (`<metadata><desc>` in GPX, `<Notes>` in TCX), and don't count as exported. While it's on, a chip on the toolbar says so; it switches itself off when the page reloads. Original files (mostly binary FIT) can't be trimmed.
+- **⋯ → Save selected to a folder…** asks for a folder and writes each file straight into it as it arrives - no zip, no **Save part N** clicks, and nothing held in memory beyond the file being written, so it suits backups of any size. With **Sport folders** naming it creates real subfolders. A `strava_activities_<date>.csv` listing what was written goes next to the files. Running it again into the same folder replaces files that are the same size (the same export as before); a different file under a taken name gets a `-2`, `-3`, … suffix instead, so nothing is overwritten by something else. Chrome asks you to confirm the folder, and the access lasts for that page visit only. (It needs the browser's folder picker, which Chromium-based browsers have; where it's missing, the menu doesn't offer it.)
 - Click **Export list (CSV)** → `strava_activities_<date>.csv` with the selected activities' table columns. No activity files are fetched.
-- While a download or merge runs, **Cancel** stops it without saving anything (beyond zip parts already saved). If Strava rate-limits the requests (HTTP 429), the extension waits as long as Strava asks and retries. If some activities still fail, the toolbar lists each one with the reason, and for zip downloads offers **Retry N failed** to fetch only those. An export Strava doesn't have - it answers with a redirect to a web page - is listed as a failure rather than saved as a file.
+- While a download or merge runs, **Cancel** stops it without saving anything (beyond zip parts already saved, or files already written to a folder). If Strava rate-limits the requests (HTTP 429), the extension waits as long as Strava asks and retries - for a row's own download button too. If some activities still fail, the toolbar lists each one with the reason, and for zip and folder downloads offers **Retry N failed** to fetch only those. An export Strava doesn't have - it answers with a redirect to a web page - is listed as a failure rather than saved as a file.
 
 The **Names** dropdown (remembered between visits) picks how files are named:
 
@@ -91,7 +93,7 @@ The extension uses Strava's own native export endpoints:
 - `https://www.strava.com/activities/<id>/export_tcx`
 - `https://www.strava.com/activities/<id>/export_original`
 
-These are the URLs behind Strava's own _Export GPX_ and _Export Original_ links on individual activity pages (TCX is served the same way, just not listed). The downloaded files are byte-for-byte identical to what you'd get by clicking those links manually - except merged files, which are built from them, and GPX/TCX files saved with **Hide start/end** on, which are trimmed in your browser and named `…_trimmed.gpx` / `…_trimmed.tcx` so they can't be mistaken for the originals. **Select all pages** doesn't use any other endpoint: it clicks Strava's own pager, and Strava loads its list pages as it would for you. Bulk mode is just N concurrent calls to the chosen endpoint, with the responses streamed into a zip in your browser; a single download is one such call, saved under the chosen name. For the **Original** format the per-file extension comes from the `Content-Disposition` header Strava returns - or, when it has none, from the file itself (FIT, gzip, GPX, TCX) - so a `.fit` from a Garmin and a `.gpx` from a phone end up correctly named in the same zip.
+These are the URLs behind Strava's own _Export GPX_ and _Export Original_ links on individual activity pages (TCX is served the same way, just not listed). The downloaded files are byte-for-byte identical to what you'd get by clicking those links manually - except merged files, which are built from them, and GPX/TCX files saved with **Hide start/end** on, which are trimmed in your browser and named `…_trimmed.gpx` / `…_trimmed.tcx` so they can't be mistaken for the originals. **Select all pages** doesn't use any other endpoint: it clicks Strava's own pager, and Strava loads its list pages as it would for you. Bulk mode is just N concurrent calls to the chosen endpoint, with the responses compressed into a zip in your browser as they arrive (or written to the folder you picked); a single download is one such call, saved under the chosen name. For the **Original** format the per-file extension comes from the `Content-Disposition` header Strava returns - or, when it has none, from the file itself (FIT, gzip, GPX, TCX) - so a `.fit` from a Garmin and a `.gpx` from a phone end up correctly named in the same zip.
 
 ## Install
 
@@ -156,11 +158,20 @@ The project layout:
 ├── scripts/
 │   ├── clean.js            # wipes dist/ before each build
 │   ├── build-icons.js      # sharp-based SVG → PNG renderer
-│   └── build-kofi.js       # fetches kofi6.png and emits src/kofi-asset.ts
+│   ├── build-kofi.js       # fetches kofi6.png and emits src/kofi-asset.ts
+│   └── build-i18n.js       # emits src/i18n-messages.ts from _locales/en/messages.json
 └── src/
-    ├── content.ts          # mounts the toolbar, observes Strava's React table
+    ├── content.ts          # entry: wires the toolbar and rows, runs exports, observes Strava's table
+    ├── state.ts            # the content script's state and saved preferences
+    ├── table.ts            # reads Strava's table: rows → activities
+    ├── distance.ts         # reads a Distance cell in any unit or language
+    ├── paging.ts           # Strava's pager, for Select all pages
+    ├── toolbar-html.ts     # the toolbar's markup
     ├── activity-page.ts    # adds Export TCX to an activity page's "…" menu
-    ├── downloader.ts       # single + bulk download orchestration, merging
+    ├── downloader.ts       # fetching exports; single, zip, folder and merged downloads
+    ├── merge.ts            # merging exports into one GPX, TCX or GeoJSON
+    ├── zip.ts              # streaming zip writer (fflate)
+    ├── folder.ts           # writing into a picked folder (File System Access API)
     ├── csv.ts              # activities.csv / "Export list" generation
     ├── dates.ts            # activity dates from Strava's Date column
     ├── history.ts          # export history (chrome.storage.local)
@@ -169,6 +180,7 @@ The project layout:
     ├── units.ts            # metres/feet for a custom Hide start/end distance
     ├── xml.ts              # small DOM helpers shared by merge and trim
     ├── i18n.ts             # typed t() over chrome.i18n, with English fallback
+    ├── i18n-messages.ts    # generated English fallback strings (npm run i18n)
     ├── types.ts            # shared interfaces (ActivityRow, ProgressEvent, …)
     ├── kofi-asset.ts       # generated base64 data URL for the Ko-fi button
     └── styles.css          # toolbar + row styling, sbgx-* namespaced
@@ -188,7 +200,7 @@ btn.textContent = t('downloadSelected');
 setStatus(t('downloadingProgress', [String(completed), String(total)]), 'info', { spinner: true });
 ```
 
-The `MessageKey` union in `src/i18n.ts` is the compile-time check: a typo in a key is a TypeScript error, not a silent runtime empty-string.
+`MessageKey` in `src/i18n.ts` is the compile-time check: a typo in a key is a TypeScript error, not a silent runtime empty-string. It comes from `src/i18n-messages.ts`, which `npm run i18n` generates from `_locales/en/messages.json` - run it after adding or changing an English message. A unit test fails when the generated file is out of date, when a locale is missing a message, or when a translation's `$PLACEHOLDER$`s differ from the English one's.
 
 See [`_locales/README.md`](_locales/README.md) for the list of shipped locales and how to add a new one.
 
@@ -206,7 +218,9 @@ npm run test:screenshots # regenerates docs/screenshots/*.png from the same fixt
 
 The E2E tests load the built extension into a real Chromium instance and intercept the `https://www.strava.com/athlete/training` URL to serve `tests/fixtures/strava-training.html` instead - so Chrome thinks the content script is running on Strava, but the page is our own fake table. Activity-page tests do the same for `/activities/<id>` with `tests/fixtures/strava-activity.html`, a copy of the real "…" menu's structure. Export responses are stubbed per test. No real Strava account needed.
 
-The unit tests cover what the browser suite can't reach: date parsing across Strava's display formats (`src/dates.ts`) and how an export response is classified (`exportProblem`) - Playwright doesn't route the request that follows a redirect, so a redirect to Strava's login page can't be simulated end to end. Node 24 runs them as TypeScript directly.
+The unit tests cover the pure modules directly, and what the browser suite can't reach: date parsing across Strava's display formats (`src/dates.ts`), reading distances in any unit or language (`src/distance.ts`), merging and trimming (`src/merge.ts`, `src/trim.ts`), the CSV, the zip writer, folder writes against an in-memory folder, the message files, and how an export response is classified (`exportProblem`) - Playwright doesn't route the request that follows a redirect, so a redirect to Strava's login page can't be simulated end to end. Node 24 runs them as TypeScript directly; the modules that build XML get a DOM from jsdom (`tests/unit/helpers/dom.ts`).
+
+The folder tests in the browser suite can't answer Chrome's folder picker, so they point the content script's `showDirectoryPicker` at the page's origin-private folder - a real directory handle - and read the files back from there.
 
 `npm run test:screenshots` uses the same fixture to capture the README images into `docs/screenshots/`. The bulk-mode screenshot slows the mocked `/export_gpx` responses so the spinner state stays visible mid-flight.
 

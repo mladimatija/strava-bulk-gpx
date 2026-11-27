@@ -4,6 +4,31 @@ All notable changes will be documented here. Format loosely follows [Keep a Chan
 
 ## [Unreleased]
 
+### Added
+
+- **Save selected to a folder.** **⋯ → Save selected to a folder…** asks for a folder (the browser's own picker) and writes each file straight into it as it arrives: no zip, no **Save part N** clicks, and nothing in memory beyond the file being written. Sport folders become real subfolders, and a `strava_activities_<date>.csv` lists what was written. A file already there under the same name is replaced when it's the same size, and otherwise left alone - the new one gets `-2`, `-3`, …. Export history is recorded as files land (in batches of 25), so **Cancel** keeps what's in the folder and says how many files that is; **Retry N failed** writes into the same folder. Uses the File System Access API - no new permission - and is hidden where the browser has no folder picker. Checked in the e2e suite against a real directory handle (the page's origin-private folder), since Chrome's picker can't be driven by a test.
+- **Merge into GeoJSON.** A third **⋯ → Merge GPX into** option: `strava_merged_<date>.geojson`, a FeatureCollection (RFC 7946) with a LineString per activity - a MultiLineString when it has several segments - in time order, with the activity's id, name, sport, start time and URL as properties. For web maps and GIS tools. Per-point times and sensor data are left out.
+
+### Changed
+
+- **Zips are built with fflate instead of JSZip**, compressing each file as it's added rather than holding every file until the end, so a zip part's memory use is its compressed size. The content script went from 142 KB to 62 KB.
+- **Row download failures show on the status line** (and in the button's tooltip) instead of a blocking `alert()`.
+- **`content.ts` is split up**: state and preferences (`state.ts`), reading Strava's table (`table.ts`, `distance.ts`), the pager (`paging.ts`), the toolbar's markup (`toolbar-html.ts`), merging (`merge.ts`), the zip writer (`zip.ts`) and folder writes (`folder.ts`).
+- **The English fallback strings are generated** from `_locales/en/messages.json` (`npm run i18n` → `src/i18n-messages.ts`) instead of being kept in step by hand.
+- **Unit tests for merging, trimming, the CSV, the zip writer, folder writes and the message files** (56, up from 17), with jsdom supplying the DOM for the XML modules. The message-file tests check that every locale has every message with the same placeholders, and that the store description fits 132 characters.
+- **The page observer does less work.** A burst of mutations schedules one pass instead of one per mutation, and the toolbar's own updates (the status line changes with every file) no longer trigger any.
+- **Releases can upload to the Chrome Web Store.** `release.yml` uploads the release zip through the Chrome Web Store API (V2) when the repository has the credentials configured, and submits it for review only when `CWS_AUTO_PUBLISH` is `true`. Without credentials the step is skipped, as before. It also runs the unit tests before packaging.
+
+### Fixed
+
+- **Activities shown in other units had no GPX/TCX controls.** A row counted as having GPS only when its distance read `km` or `mi`, so swims listed in metres or yards - and every row on a page where Strava translates the unit - got no checkbox or button outside Original mode. Any unit now counts; the distance is read from Strava's `col-dist` cell where the table has one, and the title cell is never mistaken for a distance. Not checked against strava.com in other languages - the fixtures cover it.
+- **Row downloads ignored rate limits.** A row's own button failed at once on HTTP 429; it now waits for Strava's `Retry-After` and retries, like bulk downloads, with the wait shown on the status line.
+- **Untranslated errors.** "All N downloads failed…", "None of the TCX files could be read." and the invalid-file reasons were English in every language.
+
+### Removed
+
+- The unused `downloadSingleGpx`, `downloadBulkGpx` and `downloadMergedGpx` aliases.
+
 ## [1.4.0] - 2026-11-18
 
 ### Added
