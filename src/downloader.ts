@@ -11,10 +11,11 @@
 // browser auto-attaches the user's session cookies - no cookie permission or
 // host_permissions needed.
 
-import JSZip from 'jszip';
 import { activitiesCsv } from './csv.ts';
+import { existingSize, writeFile } from './folder.ts';
 import { t } from './i18n.ts';
-import { markTrimmed, trimGpx, trimTcx } from './trim.ts';
+import { mergeGeoJson, mergeGpxDocuments, mergeTcxDocuments, type MergeSource } from './merge.ts';
+import { trimGpx, trimTcx } from './trim.ts';
 import type {
 	ActivityRow,
 	BulkFailure,
@@ -24,7 +25,7 @@ import type {
 	NamePattern,
 	ProgressCallback,
 } from './types.ts';
-import { childrenNamed, GPX_NS, serializeXml, TCX_NS } from './xml.ts';
+import { ZipPart } from './zip.ts';
 
 /** Build the URL for a given activity + format. */
 function exportUrl(id: string, format: ExportFormat): string {
@@ -50,12 +51,71 @@ export function exportProblem(
 	return t('exportUnavailable', format === 'original' ? t('formatOriginal') : format.toUpperCase());
 }
 
-/** Fetch an activity's export, throwing with {@link exportProblem}'s reason when it isn't a file. */
-async function fetchExport(id: string, format: ExportFormat): Promise<Response> {
-	const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin' });
-	const problem = exportProblem(res, format);
-	if (problem) throw new Error(problem);
-	return res;
+/** Retry a throttled (HTTP 429) request at most this many times before giving up on it. */
+const MAX_THROTTLE_RETRIES = 3;
+
+/**
+ * Seconds to wait before retrying a 429: Strava's Retry-After (seconds or an
+ * HTTP date) when present, else exponential backoff (5 s, 10 s, 20 s).
+ * Clamped to 1-60 s so a bad header can't stall the run indefinitely.
+ */
+export function retryDelaySeconds(res: Pick<Response, 'headers'>, attempt: number, now = Date.now()): number {
+	let seconds = 5 * 2 ** attempt;
+	const header = res.headers.get('retry-after');
+	if (header) {
+		const parsed = /^\s*\d+\s*$/.test(header) ? Number(header) : (Date.parse(header) - now) / 1000;
+		if (Number.isFinite(parsed)) seconds = parsed;
+	}
+	return Math.min(60, Math.max(1, Math.ceil(seconds)));
+}
+
+/** Wait `ms`, returning early if `signal` aborts (the caller's next fetch then rejects). */
+function sleep(ms: number, signal?: AbortSignal): Promise<void> {
+	return new Promise((resolve) => {
+		const timer = setTimeout(resolve, ms);
+		signal?.addEventListener(
+			'abort',
+			() => {
+				clearTimeout(timer);
+				resolve();
+			},
+			{ once: true },
+		);
+	});
+}
+
+/**
+ * The pause shared by the requests of one run: once Strava throttles one
+ * request the others would hit the same limit, so nobody fetches before
+ * `resumeAt`.
+ */
+interface Throttle {
+	resumeAt: number;
+}
+
+/**
+ * Fetch an activity's export, waiting out Strava's rate limit: a 429 pauses
+ * everything sharing `throttle` for Strava's Retry-After, then the request
+ * is retried - up to {@link MAX_THROTTLE_RETRIES} times, after which the 429
+ * is returned like any other response. Used by row downloads as much as by
+ * bulk runs, so a single click during a throttled spell waits too.
+ */
+async function fetchThrottled(
+	id: string,
+	format: ExportFormat,
+	throttle: Throttle,
+	signal?: AbortSignal,
+	onProgress?: ProgressCallback,
+): Promise<Response> {
+	for (let attempt = 0; ; attempt++) {
+		const wait = throttle.resumeAt - Date.now();
+		if (wait > 0) await sleep(wait, signal);
+		const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin', signal });
+		if (res.status !== 429 || attempt >= MAX_THROTTLE_RETRIES) return res;
+		const seconds = retryDelaySeconds(res, attempt);
+		throttle.resumeAt = Math.max(throttle.resumeAt, Date.now() + seconds * 1000);
+		onProgress?.({ stage: 'throttled', seconds });
+	}
 }
 
 /** Apply Hide start/end to a GPX or TCX export. */
@@ -140,10 +200,10 @@ function fileExtension(name: string): string {
  * Content-Disposition doesn't give one: `.fit` (".FIT" at byte 8, per the
  * FIT header), `.gz`, `.gpx` / `.tcx` by root element, or "" when unknown.
  */
-export async function sniffExtension(blob: Blob): Promise<string> {
-	const head = new Uint8Array(await blob.slice(0, 512).arrayBuffer());
+export function sniffExtension(bytes: Uint8Array): string {
+	const head = bytes.subarray(0, 512);
 	if (head[0] === 0x1f && head[1] === 0x8b) return '.gz';
-	if (String.fromCharCode(...head.slice(8, 12)) === '.FIT') return '.fit';
+	if (String.fromCharCode(...head.subarray(8, 12)) === '.FIT') return '.fit';
 	const text = new TextDecoder().decode(head);
 	if (/<gpx[\s>]/.test(text)) return '.gpx';
 	if (/<TrainingCenterDatabase[\s>]/.test(text)) return '.tcx';
@@ -155,10 +215,10 @@ export async function sniffExtension(blob: Blob): Promise<string> {
  * extension sniffed from the bytes when it has none - or `strava_<id>` plus
  * that extension when there's no usable header.
  */
-async function originalFileName(res: Response, blob: Blob, id: string): Promise<string> {
+function originalFileName(res: Response, bytes: Uint8Array, id: string): string {
 	const name = parseContentDispositionFilename(res.headers.get('content-disposition'));
 	if (name && fileExtension(name)) return name;
-	return `${name ?? `strava_${id}`}${await sniffExtension(blob)}`;
+	return `${name ?? `strava_${id}`}${sniffExtension(bytes)}`;
 }
 
 /**
@@ -210,38 +270,65 @@ function uniquePath(path: string, used: Set<string>): string {
 	return candidate;
 }
 
+/** An activity's export, ready to save: where it goes and its bytes. */
+interface ExportFile {
+	/** Path inside a zip or folder; a single download uses its last segment. */
+	path: string;
+	data: Uint8Array<ArrayBuffer>;
+}
+
+/**
+ * Read a fetched export into the file to save: trimmed first when
+ * `trimRadius` is set (GPX/TCX only), and named by `names` - an Original by
+ * Strava's own file name, or its bytes (see {@link originalFileName}).
+ *
+ * Throws, with a reason fit for the failure list, when a track would be
+ * trimmed down to nothing.
+ */
+async function exportFile(
+	activity: ActivityRow,
+	res: Response,
+	format: ExportFormat,
+	names: NamePattern,
+	trimRadius: number,
+): Promise<ExportFile> {
+	if (format !== 'original' && trimRadius > 0) {
+		const xml = trimExport(await res.text(), format, trimRadius);
+		const path = trimmedName(activityFilePath(activity, format, names, null));
+		return { path, data: new TextEncoder().encode(xml) };
+	}
+	const data = new Uint8Array(await res.arrayBuffer());
+	const serverName = format === 'original' ? originalFileName(res, data, activity.id) : null;
+	return { path: activityFilePath(activity, format, names, serverName), data };
+}
+
+/** MIME type of a saved export. */
+function fileType(format: ExportFormat): string {
+	return format === 'original' ? 'application/octet-stream' : xmlType(format);
+}
+
 /**
  * Per-row download: fetch the export, check that it's a file
  * ({@link exportProblem}), and save it under our name - trimmed first when
  * `trimRadius` is set. Fetching rather than linking is what lets a missing
  * export be reported: Strava answers one with a redirect to a web page,
  * which an anchor would save as the file (or navigate to).
+ *
+ * A rate-limited request waits and retries like a bulk run's
+ * ({@link fetchThrottled}); `onProgress` hears about the wait.
  */
 export async function downloadSingle(
 	activity: ActivityRow,
 	format: ExportFormat,
 	names: NamePattern = 'id',
 	trimRadius = 0,
+	onProgress?: ProgressCallback,
 ): Promise<void> {
-	const res = await fetchExport(activity.id, format);
-	if (format === 'original') {
-		const blob = await res.blob();
-		const serverName = await originalFileName(res, blob, activity.id);
-		downloadBlob(baseName(activityFilePath(activity, format, names, serverName)), blob);
-		return;
-	}
-	const name = baseName(activityFilePath(activity, format, names, null));
-	if (trimRadius > 0) {
-		const xml = trimExport(await res.text(), format, trimRadius);
-		downloadBlob(trimmedName(name), new Blob([xml], { type: xmlType(format) }));
-		return;
-	}
-	downloadBlob(name, await res.blob());
-}
-
-/** Backwards-compatible alias - older callers passed no format and expected GPX. */
-export function downloadSingleGpx(activity: ActivityRow): Promise<void> {
-	return downloadSingle(activity, 'gpx');
+	const res = await fetchThrottled(activity.id, format, { resumeAt: 0 }, undefined, onProgress);
+	const problem = exportProblem(res, format);
+	if (problem) throw new Error(problem);
+	const { path, data } = await exportFile(activity, res, format, names, trimRadius);
+	downloadBlob(baseName(path), new Blob([data], { type: fileType(format) }));
 }
 
 /** Save a CSV of the given activities' table columns. No network involved. */
@@ -257,10 +344,10 @@ export interface BulkOptions {
 	onProgress?: ProgressCallback;
 	/**
 	 * Aborting stops all fetches and rejects the run. Nothing more is saved -
-	 * but zip parts saved before then stay saved (see `onSaved`).
+	 * but zip parts and folder files saved before then stay saved (see `onSaved`).
 	 */
 	signal?: AbortSignal;
-	/** How files are named inside the zip. Defaults to `strava_<id>.<ext>`. */
+	/** How files are named. Defaults to `strava_<id>.<ext>`. */
 	names?: NamePattern;
 	/**
 	 * Hide start/end: hide GPX/TCX locations within this many metres of each
@@ -275,10 +362,10 @@ export interface BulkOptions {
 	 */
 	splitBytes?: number;
 	/**
-	 * Zips only: called with the ids of the activities in each saved file -
-	 * every zip part, or the lone file of a single-activity download - so the
-	 * caller can record exports that were saved even if a later part fails
-	 * or the run is cancelled.
+	 * Zips and folders: called with the ids of the activities in each saved
+	 * file - every zip part, the lone file of a single-activity download, or
+	 * a batch of files written to a folder - so the caller can record exports
+	 * that were saved even if a later part fails or the run is cancelled.
 	 */
 	onSaved?: (ids: string[]) => void;
 	/**
@@ -297,48 +384,14 @@ export interface BulkOptions {
 // between throughput and politeness.
 const CONCURRENCY = 3;
 
-/** Retry a throttled (HTTP 429) request at most this many times before giving up on it. */
-const MAX_THROTTLE_RETRIES = 3;
-
-/**
- * Seconds to wait before retrying a 429: Strava's Retry-After (seconds or an
- * HTTP date) when present, else exponential backoff (5 s, 10 s, 20 s).
- * Clamped to 1-60 s so a bad header can't stall the run indefinitely.
- */
-function retryDelaySeconds(res: Response, attempt: number): number {
-	let seconds = 5 * 2 ** attempt;
-	const header = res.headers.get('retry-after');
-	if (header) {
-		const parsed = /^\s*\d+\s*$/.test(header) ? Number(header) : (Date.parse(header) - Date.now()) / 1000;
-		if (Number.isFinite(parsed)) seconds = parsed;
-	}
-	return Math.min(60, Math.max(1, Math.ceil(seconds)));
-}
-
-/** Wait `ms`, returning early if `signal` aborts (the caller's next fetch then rejects). */
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-	return new Promise((resolve) => {
-		const timer = setTimeout(resolve, ms);
-		signal?.addEventListener(
-			'abort',
-			() => {
-				clearTimeout(timer);
-				resolve();
-			},
-			{ once: true },
-		);
-	});
-}
-
 /**
  * Fetch every activity's export with {@link CONCURRENCY} requests in flight,
  * handing each successful response to `onResponse` (with the activity's input
  * index, so callers can keep input order). Emits 'downloading' progress before
  * the first fetch and after each one settles.
  *
- * A 429 pauses the whole pool - once Strava throttles one request the others
- * would hit the same limit - then retries that activity, up to
- * {@link MAX_THROTTLE_RETRIES} times before recording it as failed.
+ * A 429 pauses the whole pool, then retries that activity (see
+ * {@link fetchThrottled}) before recording it as failed.
  *
  * Resolves with the per-activity failures in completion order. Rejects with
  * the signal's reason if `signal` aborts.
@@ -353,20 +406,7 @@ async function fetchAll(
 	const failed: BulkFailure[] = [];
 	let completed = 0;
 	let cursor = 0;
-	// Shared across workers: nobody fetches before this timestamp.
-	let resumeAt = 0;
-
-	async function fetchThrottled(id: string): Promise<Response> {
-		for (let attempt = 0; ; attempt++) {
-			const wait = resumeAt - Date.now();
-			if (wait > 0) await sleep(wait, signal);
-			const res = await fetch(exportUrl(id, format), { method: 'GET', credentials: 'same-origin', signal });
-			if (res.status !== 429 || attempt >= MAX_THROTTLE_RETRIES) return res;
-			const seconds = retryDelaySeconds(res, attempt);
-			resumeAt = Math.max(resumeAt, Date.now() + seconds * 1000);
-			onProgress?.({ stage: 'throttled', seconds });
-		}
-	}
+	const throttle: Throttle = { resumeAt: 0 };
 
 	onProgress?.({ stage: 'downloading', completed, total });
 	await Promise.all(
@@ -375,7 +415,7 @@ async function fetchAll(
 				const i = cursor++;
 				const a = activities[i]!;
 				try {
-					const res = await fetchThrottled(a.id);
+					const res = await fetchThrottled(a.id, format, throttle, signal, onProgress);
 					const problem = exportProblem(res, format);
 					if (problem) {
 						failed.push({ id: a.id, reason: problem });
@@ -393,7 +433,7 @@ async function fetchAll(
 				// While the pool is paused, other workers' in-flight requests
 				// still land - keep showing the wait rather than flipping
 				// straight back to the counter.
-				const pausedFor = Math.ceil((resumeAt - Date.now()) / 1000);
+				const pausedFor = Math.ceil((throttle.resumeAt - Date.now()) / 1000);
 				onProgress?.(
 					pausedFor > 0 ? { stage: 'throttled', seconds: pausedFor } : { stage: 'downloading', completed, total },
 				);
@@ -404,21 +444,13 @@ async function fetchAll(
 	return failed;
 }
 
+/** The error of a run in which nothing could be saved. */
+function allFailed(total: number, failed: BulkFailure[]): Error {
+	return new Error(t('allFailed', [String(total), failed[0]?.reason ?? '?']));
+}
+
 /** Name of the activity summary added to every multi-file zip. */
 const CSV_NAME = 'activities.csv';
-
-/** One zip being filled: its entries, and the activities they belong to. */
-interface ZipPart {
-	zip: JSZip;
-	/** Activity id → path inside the zip, for the CSV's File column. */
-	files: Map<string, string>;
-	/** Bytes of the files added so far, before compression. */
-	bytes: number;
-}
-
-function newZipPart(): ZipPart {
-	return { zip: new JSZip(), files: new Map(), bytes: 0 };
-}
 
 /**
  * Bulk download. One id → one file (no zip). Multiple ids → zip, with an
@@ -433,9 +465,7 @@ function newZipPart(): ZipPart {
  *     every fetch finishes (success or fail), so the caller can keep a counter
  *     in sync.
  *   - { stage: "throttled", seconds } - Strava rate-limited us; see {@link fetchAll}.
- *   - { stage: "zipping" } - fires when JSZip starts assembling a zip. Useful
- *     for keeping a spinner alive during what can be a multi-second
- *     client-side step on large batches.
+ *   - { stage: "zipping" } - fires when a zip is closed and about to be saved.
  *
  * Resolves with the count of activities saved, a list of per-activity
  * failures (including those of a zip part that couldn't be saved) and the
@@ -448,10 +478,9 @@ export async function downloadBulk(
 	options: BulkOptions = {},
 ): Promise<BulkResult> {
 	const { onProgress, signal, names = 'id', trimRadius = 0, splitBytes = 0, onSaved, confirmPart } = options;
-	const trim = format !== 'original' && trimRadius > 0;
 	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
 	if (activities.length === 1) {
-		await downloadSingle(activities[0]!, format, names, trimRadius);
+		await downloadSingle(activities[0]!, format, names, trimRadius, onProgress);
 		onSaved?.([activities[0]!.id]);
 		return { ok: 1, failed: [], parts: 1 };
 	}
@@ -464,7 +493,7 @@ export async function downloadBulk(
 	// Paths taken in any of the run's zips, lower-cased (see uniquePath).
 	// The summary's name is reserved so no activity file can overwrite it.
 	const used = new Set<string>([CSV_NAME]);
-	let part = newZipPart();
+	let part = new ZipPart();
 	/** Parts numbered so far: a part's number is fixed when it's set aside. */
 	let numbered = 0;
 	let saved = 0;
@@ -475,27 +504,20 @@ export async function downloadBulk(
 	let saving: Promise<void> = Promise.resolve();
 
 	/**
-	 * Build and save one zip - part `n`, or the run's only zip when null.
-	 * A part that fails for any reason but Cancel (JSZip running out of
-	 * memory, say) is lost on its own: its activities become failures. The
-	 * only zip's failure fails the run.
+	 * Close and save one zip - part `n`, or the run's only zip when null.
+	 * A part that fails for any reason but Cancel (running out of memory,
+	 * say) is lost on its own: its activities become failures. The only
+	 * zip's failure fails the run.
 	 */
 	async function saveZip(full: ZipPart, n: number | null): Promise<void> {
 		try {
 			onProgress?.({ stage: 'zipping' });
-			full.zip.file(
-				CSV_NAME,
-				activitiesCsv(
-					activities.filter((a) => full.files.has(a.id)),
-					full.files,
-				),
+			const csv = activitiesCsv(
+				activities.filter((a) => full.files.has(a.id)),
+				full.files,
 			);
-			const blob = await full.zip.generateAsync({
-				type: 'blob',
-				compression: 'DEFLATE',
-				compressionOptions: { level: 6 },
-			});
-			// Cancel may land while JSZip is compressing; honour it before saving.
+			full.add(CSV_NAME, new TextEncoder().encode(csv));
+			const blob = full.finish();
 			signal?.throwIfAborted();
 			if (saved > 0 && n !== null) {
 				await confirmPart?.(n);
@@ -522,29 +544,19 @@ export async function downloadBulk(
 	const failed = await fetchAll(activities, format, options, async (a, res) => {
 		// A track trimmed down to nothing throws here, which records this
 		// activity as failed with that reason.
-		const blob = trim
-			? new Blob([trimExport(await res.text(), format, trimRadius)], { type: xmlType(format) })
-			: await res.blob();
-		// GPX/TCX: known extension. Original: the server's filename carries
-		// the uploaded file's extension (and, for the 'id' pattern, the
-		// whole name).
-		const serverName = format === 'original' ? await originalFileName(res, blob, a.id) : null;
+		const file = await exportFile(a, res, format, names, trimRadius);
 		// While a full part is being saved - or waits for its click - hold
 		// on, so at most one full part sits in memory.
 		await saving;
 		// Full: set this zip aside and start the next one.
-		if (splitBytes > 0 && part.files.size > 0 && part.bytes + blob.size > splitBytes) {
+		if (splitBytes > 0 && part.files.size > 0 && part.bytes + file.data.byteLength > splitBytes) {
 			const full = part;
-			part = newZipPart();
+			part = new ZipPart();
 			await setAside(full);
 		}
-		// JSZip silently replaces an entry with the same name, so two uploads
-		// that share a filename would otherwise lose one file.
-		const named = activityFilePath(a, format, names, serverName);
-		const path = uniquePath(trim ? trimmedName(named) : named, used);
-		part.zip.file(path, blob);
-		part.files.set(a.id, path);
-		part.bytes += blob.size;
+		// Two uploads that share a filename must not end up as one entry.
+		// No `await` from here on: the part can't be closed under this file.
+		part.addActivity(a.id, uniquePath(file.path, used), file.data);
 		ok++;
 	});
 
@@ -553,260 +565,85 @@ export async function downloadBulk(
 		if (numbered > 0) await setAside(part);
 		else await saveZip(part, null);
 	}
-	const allFailed = [...failed, ...lost];
-	if (saved === 0) {
-		throw new Error(`All ${activities.length} downloads failed. First error: ${allFailed[0]?.reason ?? 'unknown'}`);
-	}
-	return { ok, failed: allFailed, parts: saved };
+	const everyFailure = [...failed, ...lost];
+	if (saved === 0) throw allFailed(activities.length, everyFailure);
+	return { ok, failed: everyFailure, parts: saved };
 }
 
-/** Backwards-compatible alias - older callers passed no format and expected GPX. */
-export function downloadBulkGpx(activities: ActivityRow[], options: BulkOptions = {}): Promise<BulkResult> {
-	return downloadBulk(activities, 'gpx', options);
-}
-
-interface MergeSource {
-	id: string;
-	name: string;
-	xml: string;
-}
-
-/** A parsed merge source and its time span (ms since the epoch; NaN when unknown). */
-interface ParsedSource {
-	src: MergeSource;
-	doc: Document;
-	start: number;
-	end: number;
-}
+/** Record folder exports in batches of this many, so history isn't rewritten per file. */
+const FOLDER_SAVED_BATCH = 25;
 
 /**
- * When a GPX document starts, in ms since the epoch: its first track point's
- * `<time>`, else the first `<time>` anywhere (Strava puts the start time in
- * `<metadata>`). NaN when it has none.
- */
-function gpxStartTime(doc: Document): number {
-	const firstPoint = doc.getElementsByTagName('trkpt')[0];
-	const time = firstPoint?.getElementsByTagName('time')[0] ?? doc.getElementsByTagName('time')[0];
-	return Date.parse(time?.textContent ?? '');
-}
-
-/** When a GPX document ends: its last track point's `<time>`, or NaN. */
-function gpxEndTime(doc: Document): number {
-	const points = doc.getElementsByTagName('trkpt');
-	const time = points[points.length - 1]?.getElementsByTagName('time')[0];
-	return Date.parse(time?.textContent ?? '');
-}
-
-/**
- * Parse every source and order them by start time, so a multi-day trip reads
- * day 1 → day N whatever order the rows were listed or fetched in. Sources
- * without a start time keep their relative order, after the timed ones.
+ * Folder backup: fetch every selected activity's export and write each file
+ * straight into `dir` (a folder the user picked) as it arrives, then a
+ * `strava_activities_<date>.csv` listing what was written. Nothing is zipped
+ * and nothing accumulates in memory, so it suits backups of any size; with
+ * the Sport folders naming, real subfolders are created.
  *
- * DOMParser returns an error document with a <parsererror> root rather than
- * throwing on malformed XML. Those sources are skipped - the activity still
- * counts as a successful fetch upstream, but its content can't be merged.
- * (Better than corrupting the whole output.)
+ * A file already in the folder under the same name is replaced when it has
+ * the same size (the same activity, exported before); otherwise the new file
+ * gets a `-2`, `-3`, … suffix, so two different activities never overwrite
+ * each other across runs.
+ *
+ * Resolves like {@link downloadBulk}, with `parts` 0. Throws if nothing was
+ * written, or if `signal` aborts - files written before that stay, and
+ * `options.onSaved` has heard about them.
  */
-function parseSources(sources: MergeSource[], span: (doc: Document) => [number, number]): ParsedSource[] {
-	const parser = new DOMParser();
-	return sources
-		.map((src) => {
-			const doc = parser.parseFromString(src.xml, 'application/xml');
-			const [start, end] = span(doc);
-			return { src, doc, start, end };
-		})
-		.filter(({ doc }) => doc.getElementsByTagName('parsererror').length === 0)
-		.sort((a, b) => {
-			const aUntimed = Number.isNaN(a.start);
-			const bUntimed = Number.isNaN(b.start);
-			if (aUntimed || bUntimed) return Number(aUntimed) - Number(bUntimed);
-			return a.start - b.start;
+export async function downloadToFolder(
+	activities: ActivityRow[],
+	format: ExportFormat,
+	dir: FileSystemDirectoryHandle,
+	options: BulkOptions = {},
+): Promise<BulkResult> {
+	const { names = 'id', trimRadius = 0, onSaved } = options;
+	if (activities.length === 0) return { ok: 0, failed: [], parts: 0 };
+
+	const used = new Set<string>();
+	const files = new Map<string, string>();
+	let unreported: string[] = [];
+	const report = (): void => {
+		if (unreported.length > 0) onSaved?.(unreported);
+		unreported = [];
+	};
+
+	let failed: BulkFailure[];
+	try {
+		failed = await fetchAll(activities, format, options, async (a, res) => {
+			const file = await exportFile(a, res, format, names, trimRadius);
+			let path = uniquePath(file.path, used);
+			for (let size = await existingSize(dir, path); size !== null && size !== file.data.byteLength;) {
+				path = uniquePath(file.path, used);
+				size = await existingSize(dir, path);
+			}
+			await writeFile(dir, path, file.data);
+			files.set(a.id, path);
+			unreported.push(a.id);
+			if (unreported.length >= FOLDER_SAVED_BATCH) report();
 		});
-}
-
-/**
- * Joining activities into one only makes sense when they follow each other.
- * If one starts before the previous one ends (say, two devices recorded the
- * same ride), interleaving their points would zigzag - so refuse, naming the
- * first overlapping pair.
- */
-function assertNoOverlap(parsed: ParsedSource[]): void {
-	for (let i = 1; i < parsed.length; i++) {
-		const prev = parsed[i - 1]!;
-		const cur = parsed[i]!;
-		if (cur.start < prev.end) throw new Error(t('mergeOverlap', [prev.src.name, cur.src.name]));
+	} finally {
+		// Also on Cancel: what's in the folder counts as exported.
+		report();
 	}
-}
+	if (files.size === 0) throw allFailed(activities.length, failed);
 
-/**
- * One `<trk>` holding every source's `<trkseg>`s in time order. GPX defines a
- * new segment as "the receiver was turned off", so this reads as one journey
- * with gaps - the shape needed to upload several activities back to Strava
- * as a single one. Named after the first activity and keeps its `<type>`
- * (the sport), which must precede the segments.
- */
-function joinTracks(outDoc: Document, parsed: ParsedSource[]): Element {
-	const trk = outDoc.createElementNS(GPX_NS, 'trk');
-	const first = parsed[0];
-	const firstTrk = first?.doc.getElementsByTagName('trk')[0];
-	const nameEl = outDoc.createElementNS(GPX_NS, 'name');
-	nameEl.textContent = (firstTrk && childrenNamed(firstTrk, 'name')[0]?.textContent) ?? first?.src.name ?? '';
-	trk.appendChild(nameEl);
-	const type = firstTrk && childrenNamed(firstTrk, 'type')[0];
-	if (type) trk.appendChild(outDoc.importNode(type, true));
-	for (const { doc } of parsed) {
-		for (const seg of Array.from(doc.getElementsByTagName('trkseg'))) {
-			trk.appendChild(outDoc.importNode(seg, true));
-		}
-	}
-	return trk;
-}
-
-/**
- * Assemble a single GPX 1.1 document from the `<wpt>`, `<rte>`, and `<trk>`
- * content of every source GPX, in chronological order. The output preserves
- * namespaces, including any Strava-specific extensions on track points (heart
- * rate, cadence, etc.) - `importNode(node, true)` copies the whole subtree
- * without stripping anything.
- *
- * `mode` decides what happens to the tracks: 'tracks' keeps one `<trk>` per
- * activity; 'single' joins them into one (see {@link joinTracks}) and refuses
- * overlapping activities. A `trimRadius` > 0 means the sources were trimmed;
- * the merged file then carries the same note in its metadata.
- *
- * If a source `<trk>` has no `<name>` child, we inject one using the activity
- * title, so the merged file is still readable in tools like Garmin BaseCamp
- * that list tracks by name.
- */
-function mergeGpxDocuments(sources: MergeSource[], mode: MergeMode, trimRadius: number): string {
-	const parser = new DOMParser();
-
-	const outDoc = parser.parseFromString(
-		`<?xml version="1.0" encoding="UTF-8"?>` +
-			`<gpx version="1.1" creator="Strava Bulk GPX Export" ` +
-			`xmlns="${GPX_NS}" ` +
-			`xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ` +
-			`xsi:schemaLocation="${GPX_NS} http://www.topografix.com/GPX/1/1/gpx.xsd"/>`,
-		'application/xml',
+	const csv = activitiesCsv(
+		activities.filter((a) => files.has(a.id)),
+		files,
 	);
-	const root = outDoc.documentElement;
-
-	const parsed = parseSources(sources, (doc) => [gpxStartTime(doc), gpxEndTime(doc)]);
-	if (mode === 'single') assertNoOverlap(parsed);
-
-	// The GPX schema wants every <wpt> first, then every <rte>, then every
-	// <trk> - across the whole document, not per source. Strava's exports are
-	// pure <trk> in practice, but a source with waypoints must not end up
-	// after another source's tracks.
-	for (const { doc } of parsed) {
-		for (const wpt of Array.from(doc.getElementsByTagName('wpt'))) {
-			root.appendChild(outDoc.importNode(wpt, true));
-		}
-	}
-	for (const { doc } of parsed) {
-		for (const rte of Array.from(doc.getElementsByTagName('rte'))) {
-			root.appendChild(outDoc.importNode(rte, true));
-		}
-	}
-	if (mode === 'single') {
-		root.appendChild(joinTracks(outDoc, parsed));
-	} else {
-		for (const { src, doc } of parsed) {
-			for (const trk of Array.from(doc.getElementsByTagName('trk'))) {
-				const imported = outDoc.importNode(trk, true);
-				if (!imported.getElementsByTagName('name')[0] && src.name) {
-					const nameEl = outDoc.createElementNS(GPX_NS, 'name');
-					nameEl.textContent = src.name;
-					imported.insertBefore(nameEl, imported.firstChild);
-				}
-				root.appendChild(imported);
-			}
-		}
-	}
-
-	if (trimRadius > 0) markTrimmed(outDoc, trimRadius);
-	return serializeXml(outDoc);
-}
-
-/** A TCX document's (first) activity. */
-function tcxActivity(doc: Document): Element | undefined {
-	return doc.getElementsByTagNameNS(TCX_NS, 'Activity')[0];
-}
-
-/** When a TCX activity starts (its `<Id>`) and ends (its last trackpoint `<Time>`). */
-function tcxSpan(doc: Document): [number, number] {
-	const activity = tcxActivity(doc);
-	const id = activity && childrenNamed(activity, 'Id')[0];
-	const times = doc.getElementsByTagNameNS(TCX_NS, 'Time');
-	return [Date.parse(id?.textContent ?? ''), Date.parse(times[times.length - 1]?.textContent ?? '')];
-}
-
-/** The cumulative `<DistanceMeters>` of every trackpoint under `scope` (lap totals excluded). */
-function trackpointDistances(scope: Element): Element[] {
-	return Array.from(scope.getElementsByTagNameNS(TCX_NS, 'Trackpoint')).flatMap((tp) =>
-		childrenNamed(tp, 'DistanceMeters'),
-	);
-}
-
-/** The largest trackpoint distance under `scope` - how far that activity went. */
-function distanceCovered(scope: Element): number {
-	return trackpointDistances(scope).reduce((max, el) => Math.max(max, Number(el.textContent) || 0), 0);
-}
-
-/**
- * Merge TCX files into one activity whose laps are every source's laps, in
- * time order - the TCX counterpart of joining GPX tracks. (Several
- * `<Activity>` elements in one file would be schema-valid too, but Strava
- * treats a TCX upload as a single activity and Garmin Connect doesn't import
- * them reliably.)
- *
- * The earliest source is the base document, so its root namespaces, `<Id>`
- * and `<Creator>` carry over. Trackpoint distances are cumulative within an
- * activity, so each later source's are offset by the distance covered before
- * it; lap totals are per lap and stay as they are. Mixed sports become
- * "Other". Overlapping activities are refused, as for joined GPX.
- */
-function mergeTcxDocuments(sources: MergeSource[]): string {
-	const parsed = parseSources(sources, tcxSpan).filter(({ doc }) => {
-		const activity = tcxActivity(doc);
-		return activity !== undefined && childrenNamed(activity, 'Id').length > 0;
-	});
-	assertNoOverlap(parsed);
-	const [base, ...rest] = parsed;
-	if (!base) throw new Error('None of the TCX files could be read.');
-
-	const activity = tcxActivity(base.doc)!;
-	const sports = new Set(parsed.map(({ doc }) => tcxActivity(doc)!.getAttribute('Sport')));
-	if (sports.size > 1) activity.setAttribute('Sport', 'Other');
-
-	// New laps go after the base activity's last lap (or its <Id>), before
-	// any <Notes>/<Creator> - the schema's order inside <Activity>.
-	let last = childrenNamed(activity, 'Lap').at(-1) ?? childrenNamed(activity, 'Id')[0]!;
-	let covered = distanceCovered(activity);
-	for (const { doc } of rest) {
-		const source = tcxActivity(doc)!;
-		const offset = covered;
-		for (const lap of childrenNamed(source, 'Lap')) {
-			const imported = base.doc.importNode(lap, true);
-			for (const el of trackpointDistances(imported)) {
-				el.textContent = String(Math.round(((Number(el.textContent) || 0) + offset) * 100) / 100);
-			}
-			last.after(imported);
-			last = imported;
-		}
-		covered = offset + distanceCovered(source);
-	}
-
-	return serializeXml(base.doc);
+	await writeFile(dir, `strava_activities_${today()}.csv`, csv);
+	return { ok: files.size, failed, parts: 0 };
 }
 
 /**
  * Merge mode. Fetches every selected activity's export in `format`, parses
- * each one, and emits one combined file, in chronological order:
+ * each one, and emits one combined file, in chronological order (see
+ * merge.ts):
  *   - GPX, 'tracks' → one `<trk>` per activity (`strava_merged_<date>.gpx`):
  *     a multi-day trip as one track collection a mapping tool renders in one go.
  *   - GPX, 'single' → one `<trk>` with a segment per activity
  *     (`strava_joined_<date>.gpx`): to upload back to Strava as one activity.
+ *   - GPX, 'geojson' → a FeatureCollection with a line per activity
+ *     (`strava_merged_<date>.geojson`): for web maps and GIS tools.
  *   - TCX → one activity with a lap per activity (`strava_merged_<date>.tcx`).
  *
  * With `options.trimRadius` every source is trimmed before merging and the
@@ -838,21 +675,25 @@ export async function downloadMerged(
 		fetched[i] = { id: a.id, name: a.name, xml: trimRadius > 0 ? trimExport(xml, format, trimRadius) : xml };
 	});
 	const sources = fetched.filter((s): s is MergeSource => s !== undefined);
-
-	if (sources.length === 0) {
-		throw new Error(`All ${activities.length} downloads failed. First error: ${failed[0]?.reason ?? 'unknown'}`);
-	}
+	if (sources.length === 0) throw allFailed(activities.length, failed);
 
 	options.onProgress?.({ stage: 'merging' });
-	const merged = format === 'tcx' ? mergeTcxDocuments(sources) : mergeGpxDocuments(sources, mode, trimRadius);
+	const suffix = trimRadius > 0 ? '_trimmed' : '';
+	let merged: string;
+	let name: string;
+	let type = xmlType(format);
+	if (format === 'tcx') {
+		merged = mergeTcxDocuments(sources);
+		name = `strava_merged_${today()}${suffix}.tcx`;
+	} else if (mode === 'geojson') {
+		merged = mergeGeoJson(sources, trimRadius);
+		name = `strava_merged_${today()}${suffix}.geojson`;
+		type = 'application/geo+json';
+	} else {
+		merged = mergeGpxDocuments(sources, mode, trimRadius);
+		name = `strava_${mode === 'single' ? 'joined' : 'merged'}_${today()}${suffix}.gpx`;
+	}
 	options.signal?.throwIfAborted();
-	const kind = format === 'gpx' && mode === 'single' ? 'joined' : 'merged';
-	const name = `strava_${kind}_${today()}${trimRadius > 0 ? '_trimmed' : ''}.${format}`;
-	downloadBlob(name, new Blob([merged], { type: xmlType(format) }));
+	downloadBlob(name, new Blob([merged], { type }));
 	return { ok: sources.length, failed, parts: 1 };
-}
-
-/** Backwards-compatible alias - older callers merged GPX into separate tracks. */
-export function downloadMergedGpx(activities: ActivityRow[], options: BulkOptions = {}): Promise<BulkResult> {
-	return downloadMerged(activities, 'gpx', 'tracks', options);
 }

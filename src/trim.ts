@@ -34,7 +34,7 @@ function pointOf(el: Element): LatLon | null {
 }
 
 /** The note a trimmed file carries. */
-function trimNote(radiusM: number): string {
+export function trimNote(radiusM: number): string {
 	// Whole metres: a custom distance in feet is a fraction of a metre off.
 	return `Start and end hidden (${Math.round(radiusM)} m) by Strava Bulk GPX Export - not Strava's original export.`;
 }
@@ -79,7 +79,7 @@ export function markTrimmed(doc: Document, radiusM: number): void {
  */
 export function trimGpx(xml: string, radiusM: number): string {
 	const doc = new DOMParser().parseFromString(xml, 'application/xml');
-	if (doc.getElementsByTagName('parsererror').length > 0) throw new Error('Invalid GPX');
+	if (doc.getElementsByTagName('parsererror').length > 0) throw new Error(t('invalidFile', 'GPX'));
 	const trackPoints = Array.from(doc.getElementsByTagName('trkpt'));
 	const first = trackPoints[0] && pointOf(trackPoints[0]);
 	const last = trackPoints.at(-1) && pointOf(trackPoints.at(-1)!);
@@ -169,7 +169,7 @@ function markTcxTrimmed(doc: Document, radiusM: number): void {
  */
 export function trimTcx(xml: string, radiusM: number): string {
 	const doc = new DOMParser().parseFromString(xml, 'application/xml');
-	if (doc.getElementsByTagName('parsererror').length > 0) throw new Error('Invalid TCX');
+	if (doc.getElementsByTagName('parsererror').length > 0) throw new Error(t('invalidFile', 'TCX'));
 	const located = Array.from(doc.getElementsByTagNameNS(TCX_NS, 'Trackpoint'))
 		.map(tcxPointOf)
 		.filter((p): p is LatLon => p !== null);

@@ -13,325 +13,41 @@
 //     module-scope Map keyed by activity id, so a selection can span pages -
 //     and selection.ts saves it, so it survives a reload too.
 
-import { downloadSingle, downloadBulk, downloadMerged, downloadActivitiesCsv, type BulkOptions } from './downloader.ts';
+import {
+	downloadSingle,
+	downloadBulk,
+	downloadMerged,
+	downloadToFolder,
+	downloadActivitiesCsv,
+	type BulkOptions,
+} from './downloader.ts';
 import { activityIdsFromCsv } from './csv.ts';
-import { dateOrderOf, isoDate, type DateOrder } from './dates.ts';
+import { directoryPicker } from './folder.ts';
 import { clearHistory, exportedAt, exportedTotal, loadHistory, recordExports } from './history.ts';
+import { t, type MessageKey } from './i18n.ts';
+import { firstRowHref, pagerButton, pagerText, turnPage } from './paging.ts';
 import { forgetSavedSelection, loadSelection, saveSelection } from './selection.ts';
-import { defaultLengthUnit, lengthLabel, METRES_PER_FOOT, unitName, type LengthUnit } from './units.ts';
-import { KOFI_IMAGE } from './kofi-asset.ts';
-import { t } from './i18n.ts';
-import type {
-	ActivityColumn,
-	ActivityRow,
-	BulkResult,
-	ExportFormat,
-	MergeMode,
-	NamePattern,
-	ProgressEvent,
-	StatusKind,
-} from './types.ts';
-
-const KOFI_URL = 'https://ko-fi.com/D1D51ZGOQK';
-
-/**
- * Escape user-supplied text before embedding it in an innerHTML template.
- * Translated strings come from Chrome's i18n system, which we control, but
- * being defensive keeps a future "wrong message file" pasted by a contributor
- * from breaking out of the attribute it lives in.
- */
-function escapeHtml(s: string): string {
-	return s
-		.replace(/&/g, '&amp;')
-		.replace(/</g, '&lt;')
-		.replace(/>/g, '&gt;')
-		.replace(/"/g, '&quot;')
-		.replace(/'/g, '&#39;');
-}
-
-/** An activity that failed in the last run, with the reason shown to the user. */
-interface FailedActivity {
-	activity: ActivityRow;
-	reason: string;
-}
-
-interface State {
-	/**
-	 * Selected activities by id. Kept across Strava's pagination and searches,
-	 * so a selection can span pages; the row data is captured at selection
-	 * time because off-page rows aren't in the DOM to re-read.
-	 */
-	selected: Map<string, ActivityRow>;
-	toolbar: HTMLDivElement | null;
-	busy: boolean;
-	/** Currently selected export format - drives per-row button text + URLs. */
-	format: ExportFormat;
-	/** How downloaded files are named. */
-	names: NamePattern;
-	/** How a GPX merge combines activities (a TCX merge always makes one). */
-	mergeMode: MergeMode;
-	/**
-	 * Hide start/end radius in metres, 0 = off. Deliberately not saved: a
-	 * remembered trim would silently alter later archive backups, so it
-	 * resets on every page load and shows a toolbar chip while on.
-	 */
-	trim: number;
-	/** The radius as the user chose it, for the chip: "500 m", "650 ft". */
-	trimLabel: string;
-	/**
-	 * What the Hide start/end menu shows - the dropdown's value, and a custom
-	 * distance as typed with its unit - so a rebuilt toolbar shows it too.
-	 */
-	trimMenu: { choice: string; customValue: string; unit: LengthUnit };
-	/** Start a new zip after this many MB of files, 0 = never split. */
-	splitMb: number;
-	/**
-	 * Day/month order of the table's dates, once any row settles it (see
-	 * dates.ts). Not saved: it's re-learned from the rows on every load.
-	 */
-	dateOrder: DateOrder | null;
-	/** Aborts the in-flight bulk/merge run; null when idle. */
-	abort: AbortController | null;
-	/**
-	 * Failures from the last run, listed under the toolbar. `retryFormat` is
-	 * set for zip runs (retrying fetches only the failed ones); merge runs
-	 * leave it null - re-merging just the failures would drop the rest.
-	 */
-	lastRun: { failed: FailedActivity[]; retryFormat: ExportFormat | null } | null;
-	/** Row last toggled - the anchor for shift-click range selection. */
-	anchorId: string | null;
-	/**
-	 * A zip part waiting for its "Save part N" click (see waitForPartClick);
-	 * null when none is.
-	 */
-	pendingPart: { n: number; save: () => void } | null;
-	/** Select all pages is running: the selection is saved once, at the end. */
-	selectingPages: boolean;
-}
-
-const STATE: State = {
-	selected: new Map<string, ActivityRow>(),
-	toolbar: null,
-	busy: false,
-	format: 'gpx',
-	names: 'id',
-	mergeMode: 'tracks',
-	trim: 0,
-	trimLabel: '',
-	trimMenu: { choice: '0', customValue: '', unit: defaultLengthUnit(navigator.language) },
-	splitMb: 500,
-	dateOrder: null,
-	abort: null,
-	lastRun: null,
-	anchorId: null,
-	pendingPart: null,
-	selectingPages: false,
-};
-
-const FORMAT_STORAGE_KEY = 'exportFormat';
-const NAMES_STORAGE_KEY = 'namePattern';
-const MERGE_MODE_STORAGE_KEY = 'mergeMode';
-const SPLIT_STORAGE_KEY = 'zipSplitMb';
-
-/** Narrow an untrusted stored value to a known format, defaulting to gpx. */
-function parseFormat(value: unknown): ExportFormat {
-	return value === 'tcx' || value === 'original' ? value : 'gpx';
-}
-
-/** Narrow an untrusted stored value to a known name pattern, defaulting to id. */
-function parseNames(value: unknown): NamePattern {
-	return value === 'title' || value === 'sport' || value === 'date' ? value : 'id';
-}
-
-/** Narrow an untrusted stored value to a known merge mode, defaulting to tracks. */
-function parseMergeMode(value: unknown): MergeMode {
-	return value === 'single' ? value : 'tracks';
-}
-
-/** Zip split sizes offered in the "⋯" menu, in MB (0 = never). */
-const SPLIT_SIZES_MB = [250, 500, 1000, 0];
-
-/** Narrow an untrusted stored value to a split size in MB, defaulting to 500. */
-function parseSplit(value: unknown): number {
-	const mb = Number(value);
-	return value !== '' && value !== null && Number.isFinite(mb) && mb >= 0 ? mb : 500;
-}
-
-/** "250 MB", "1 GB". */
-function sizeLabel(mb: number): string {
-	return mb >= 1000 ? `${mb / 1000} GB` : `${mb} MB`;
-}
-
-/** Hide start/end radii offered in the "⋯" menu, in metres. */
-const TRIM_RADII = [200, 500, 1000];
-
-/** Narrow a trim select value to an offered radius, or 0 (off). */
-function parseTrim(value: string): number {
-	const radius = Number(value);
-	return TRIM_RADII.includes(radius) ? radius : 0;
-}
-
-/** "200 m", "1 km". */
-function radiusLabel(metres: number): string {
-	return metres >= 1000 ? `${metres / 1000} km` : `${metres} m`;
-}
-
-/** The trim radius that applies right now - Original files aren't trimmed. */
-function effectiveTrim(): number {
-	return STATE.format !== 'original' ? STATE.trim : 0;
-}
-
-/** Restore the last-used toolbar settings; storage failures keep the defaults. */
-async function loadPreferences(): Promise<void> {
-	try {
-		const stored = await chrome.storage.local.get([
-			FORMAT_STORAGE_KEY,
-			NAMES_STORAGE_KEY,
-			MERGE_MODE_STORAGE_KEY,
-			SPLIT_STORAGE_KEY,
-		]);
-		STATE.format = parseFormat(stored[FORMAT_STORAGE_KEY]);
-		STATE.names = parseNames(stored[NAMES_STORAGE_KEY]);
-		STATE.mergeMode = parseMergeMode(stored[MERGE_MODE_STORAGE_KEY]);
-		STATE.splitMb = parseSplit(stored[SPLIT_STORAGE_KEY] ?? 500);
-	} catch {
-		// Keep the defaults - a broken storage area shouldn't block exports.
-	}
-}
-
-/** Persist a toolbar preference for the next page load (best-effort). */
-function savePreference(key: string, value: string): void {
-	chrome.storage.local.set({ [key]: value }).catch((err: unknown) => {
-		console.warn(`Could not save ${key}`, err);
-	});
-}
-
-/** Human-readable label for a format, from the i18n bundle. */
-function formatLabel(format: ExportFormat): string {
-	if (format === 'gpx') return t('gpxButton');
-	if (format === 'tcx') return t('formatTcx');
-	return t('formatOriginal');
-}
-
-// ---------- DOM discovery ----------
-
-/** Find the activities table by looking for any table that links to /activities/N. */
-function findActivitiesTable(): HTMLTableElement | null {
-	for (const table of document.querySelectorAll<HTMLTableElement>('table')) {
-		if (table.querySelector('a[href*="/activities/"]')) return table;
-	}
-	return null;
-}
-
-/**
- * The row's visible cells, labelled by the table's header. Our injected
- * cells are skipped, and so are columns with an empty header (Strava's
- * Edit / Share actions). Without a header row, columns are numbered.
- */
-function rowColumns(row: HTMLTableRowElement): ActivityColumn[] {
-	const headerRow = row.closest('table')?.tHead?.rows[0];
-	const headers = headerRow ? Array.from(headerRow.cells).filter((th) => !th.classList.contains('sbgx-cell')) : null;
-	const cells = Array.from(row.cells).filter((td) => !td.classList.contains('sbgx-cell'));
-	const columns: ActivityColumn[] = [];
-	cells.forEach((td, i) => {
-		const label = headers ? (headers[i]?.textContent ?? '').trim() : String(i + 1);
-		if (!label) return;
-		columns.push({ label, value: (td.textContent ?? '').trim().replace(/\s+/g, ' ') });
-	});
-	return columns;
-}
-
-/** A date as Strava's Date column shows it: "17/11/2026", "2026/11/17", "17.11.2026", … */
-const DATE_TEXT = /\d{1,4}\s?[./\-年]\s?\d{1,2}\s?[./\-月]\s?\d{1,4}/;
-
-/** The locale Strava renders the page in, for weekday names in dates. */
-function pageLocale(): string {
-	return document.documentElement.lang || navigator.language;
-}
-
-/** Text of the row's Date cell: Strava's `col-date` cell, else the first cell that reads as a date. */
-function dateText(row: HTMLTableRowElement): string | null {
-	const cells = Array.from(row.cells).filter((td) => !td.classList.contains('sbgx-cell'));
-	const cell =
-		cells.find((td) => td.classList.contains('col-date')) ?? cells.find((td) => DATE_TEXT.test(td.textContent ?? ''));
-	return cell ? (cell.textContent ?? '').trim() : null;
-}
-
-/** Learn the table's day/month order from the first row whose date settles it. */
-function learnDateOrder(table: HTMLTableElement): void {
-	if (STATE.dateOrder) return;
-	for (const row of Array.from(table.tBodies[0]?.rows ?? [])) {
-		const text = dateText(row);
-		const order = text && dateOrderOf(text, pageLocale());
-		if (order) {
-			STATE.dateOrder = order;
-			return;
-		}
-	}
-}
-
-/** Pull { id, name, sport_type, date, hasGps, columns } from a rendered table row, or null. */
-function activityFromRow(row: HTMLTableRowElement): ActivityRow | null {
-	const link = row.querySelector<HTMLAnchorElement>('a[href*="/activities/"]');
-	if (!link) return null;
-	const href = link.getAttribute('href');
-	if (!href) return null;
-	const m = /\/activities\/(\d+)/.exec(href);
-	if (!m?.[1]) return null;
-	const id = m[1];
-	const name = (link.textContent ?? '').trim() || `Activity ${id}`;
-	// Sport is usually the first <td> in the row. Best-effort, fine if missing.
-	const sportCell = Array.from(row.cells).find((td) => !td.classList.contains('sbgx-cell'));
-	const sport_type = sportCell ? (sportCell.textContent ?? '').trim() : '';
-	const text = dateText(row);
-	const date = text ? isoDate(text, pageLocale(), STATE.dateOrder) : null;
-	return { id, name, sport_type, date, hasGps: rowHasGps(row), columns: rowColumns(row) };
-}
-
-/**
- * Heuristic: an activity has GPS if its distance cell shows a positive value.
- * Strava's My Activities table renders distance as "<number> km" / "<number> mi";
- * indoor or manually-entered workouts (Weight Training, Workout, etc.) show
- * "0 km" or omit the unit entirely. The regex matches both km and miles;
- * comma-thousands ("1,234 km") are stripped before parsing.
- */
-function rowHasGps(row: HTMLTableRowElement): boolean {
-	for (const td of row.querySelectorAll('td')) {
-		const text = (td.textContent ?? '').trim();
-		const m = /^([\d.,]+)\s*(km|mi)$/i.exec(text);
-		if (!m?.[1]) continue;
-		const value = parseFloat(m[1].replace(/,/g, ''));
-		return Number.isFinite(value) && value > 0;
-	}
-	return false;
-}
-
-/**
- * Whether a row can be exported in the current format. GPX and TCX need GPS
- * data; Strava answers them with a redirect for activities without it. An
- * indoor activity still has its Original file when one was uploaded - a
- * trainer ride's power, a strength session's heart rate.
- */
-function rowSelectable(row: HTMLTableRowElement): boolean {
-	return row.dataset.sbgxHasGps === '1' || (row.dataset.sbgxHasGps === '0' && STATE.format === 'original');
-}
-
-/**
- * Selectable rows currently on screen, in table order, one per activity id
- * (Strava sometimes renders a sticky-header mirror or a transient duplicate
- * `<tr>` for the same activity).
- */
-function visibleSelectableRows(): HTMLTableRowElement[] {
-	const seen = new Set<string>();
-	const rows: HTMLTableRowElement[] = [];
-	for (const row of document.querySelectorAll<HTMLTableRowElement>('tr[data-sbgx-id]')) {
-		const id = row.dataset.sbgxId;
-		if (!id || seen.has(id) || !rowSelectable(row)) continue;
-		seen.add(id);
-		rows.push(row);
-	}
-	return rows;
-}
+import {
+	effectiveTrim,
+	FORMAT_STORAGE_KEY,
+	formatLabel,
+	loadPreferences,
+	MERGE_MODE_STORAGE_KEY,
+	NAMES_STORAGE_KEY,
+	parseFormat,
+	parseMergeMode,
+	parseNames,
+	parseSplit,
+	parseTrim,
+	radiusLabel,
+	savePreference,
+	SPLIT_STORAGE_KEY,
+	STATE,
+} from './state.ts';
+import { activityFromRow, findActivitiesTable, learnDateOrder, rowSelectable, visibleSelectableRows } from './table.ts';
+import { toolbarHtml } from './toolbar-html.ts';
+import type { ActivityRow, BulkResult, ExportFormat, MergeMode, ProgressEvent, StatusKind } from './types.ts';
+import { lengthLabel, METRES_PER_FOOT, type LengthUnit } from './units.ts';
 
 // ---------- Selection ----------
 
@@ -464,13 +180,26 @@ function renderRowControls(row: HTMLTableRowElement): void {
 		// selector after rendering immediately affects what gets fetched.
 		const format = STATE.format;
 		const trim = effectiveTrim();
+		// Whether this click put a "Strava is limiting requests" wait on the
+		// status line, to take it off again afterwards.
+		let waited = false;
+		btn.title = t('rowButtonTitle', formatLabel(format));
 		try {
-			await downloadSingle(a, format, STATE.names, trim);
+			await downloadSingle(a, format, STATE.names, trim, (ev) => {
+				if (STATE.busy || ev.stage !== 'throttled') return;
+				waited = true;
+				showProgress(ev, '');
+			});
 			// A trimmed file isn't a backup of the activity.
 			if (trim === 0) rememberExports([a.id], format);
+			if (waited && !STATE.busy) setStatus('');
 		} catch (err) {
-			const message = err instanceof Error ? err.message : String(err);
-			alert(t('rowDownloadFailed', [a.id, message]));
+			// On the status line rather than in a blocking alert(); the
+			// button's tooltip keeps the reason while a bulk run owns the
+			// status line.
+			const message = t('rowDownloadFailed', [a.id, err instanceof Error ? err.message : String(err)]);
+			btn.title = message;
+			if (!STATE.busy) setStatus(message, 'err');
 		} finally {
 			btn.disabled = false;
 			btn.textContent = old;
@@ -516,96 +245,7 @@ function toolbarPart<T extends HTMLElement>(toolbar: HTMLElement, role: string):
 function buildToolbar(): HTMLDivElement {
 	const toolbar = document.createElement('div');
 	toolbar.className = 'sbgx-toolbar';
-	const koFiLabel = escapeHtml(t('koFiTitle'));
-	toolbar.innerHTML = `
-      <label class="sbgx-tool sbgx-select-all">
-        <input type="checkbox" class="sbgx-select-all-cb" />
-        <span>${escapeHtml(t('selectAllVisible'))}</span>
-      </label>
-      <button class="sbgx-btn sbgx-btn-link" data-role="select-new">${escapeHtml(t('selectNew'))}</button>
-      <button class="sbgx-btn sbgx-btn-link" data-role="select-pages" title="${escapeHtml(t('selectAllPagesTitle'))}">${escapeHtml(t('selectAllPages'))}</button>
-      <button class="sbgx-btn sbgx-btn-link" data-role="select-new-pages">${escapeHtml(t('selectNewAllPages'))}</button>
-      <label class="sbgx-tool sbgx-format-wrap">
-        <span>${escapeHtml(t('formatLabel'))}</span>
-        <select class="sbgx-format" data-role="format">
-          <option value="gpx">${escapeHtml(t('gpxButton'))}</option>
-          <option value="tcx">${escapeHtml(t('formatTcx'))}</option>
-          <option value="original">${escapeHtml(t('formatOriginal'))}</option>
-        </select>
-      </label>
-      <label class="sbgx-tool sbgx-format-wrap" title="${escapeHtml(t('namesTooltip'))}">
-        <span>${escapeHtml(t('namesLabel'))}</span>
-        <select class="sbgx-format" data-role="names">
-          <option value="id">${escapeHtml(t('namesId'))}</option>
-          <option value="title">${escapeHtml(t('namesTitle'))}</option>
-          <option value="sport">${escapeHtml(t('namesSport'))}</option>
-          <option value="date">${escapeHtml(t('namesDate'))}</option>
-        </select>
-      </label>
-      <button class="sbgx-btn sbgx-btn-primary" data-role="bulk" disabled>${escapeHtml(t('downloadSelected'))}</button>
-      <button class="sbgx-btn sbgx-btn-secondary" data-role="merge" disabled>${escapeHtml(t('mergeSelected'))}</button>
-      <button class="sbgx-btn" data-role="csv" disabled>${escapeHtml(t('exportCsv'))}</button>
-      <details class="sbgx-more" data-role="more">
-        <summary class="sbgx-btn" title="${escapeHtml(t('moreOptions'))}">⋯</summary>
-        <div class="sbgx-menu">
-          <label class="sbgx-menu-field">
-            <span class="sbgx-menu-heading">${escapeHtml(t('mergeModeLabel'))}</span>
-            <select class="sbgx-format" data-role="merge-mode">
-              <option value="tracks">${escapeHtml(t('mergeModeTracks'))}</option>
-              <option value="single">${escapeHtml(t('mergeModeSingle'))}</option>
-            </select>
-          </label>
-          <label class="sbgx-menu-field" title="${escapeHtml(t('trimTitle'))}">
-            <span class="sbgx-menu-heading">${escapeHtml(t('trimLabel'))}</span>
-            <select class="sbgx-format" data-role="trim">
-              <option value="0">${escapeHtml(t('trimOff'))}</option>
-              ${TRIM_RADII.map((r) => `<option value="${r}">${radiusLabel(r)}</option>`).join('')}
-              <option value="custom">${escapeHtml(t('trimCustom'))}</option>
-            </select>
-          </label>
-          <div class="sbgx-trim-custom" data-role="trim-custom" hidden>
-            <input type="number" class="sbgx-format" min="1" step="any" data-role="trim-value" aria-label="${escapeHtml(t('trimCustomValue'))}" placeholder="${escapeHtml(t('trimCustomValue'))}" />
-            <select class="sbgx-format" data-role="trim-unit" aria-label="${escapeHtml(t('trimCustomUnit'))}">
-              <option value="m">${escapeHtml(unitName('m', navigator.language))}</option>
-              <option value="ft">${escapeHtml(unitName('ft', navigator.language))}</option>
-            </select>
-          </div>
-          <label class="sbgx-menu-field" title="${escapeHtml(t('splitTitle'))}">
-            <span class="sbgx-menu-heading">${escapeHtml(t('splitLabel'))}</span>
-            <select class="sbgx-format" data-role="split">
-              ${SPLIT_SIZES_MB.map((mb) => `<option value="${mb}">${mb > 0 ? sizeLabel(mb) : escapeHtml(t('splitNever'))}</option>`).join('')}
-            </select>
-          </label>
-          <span class="sbgx-menu-heading">${escapeHtml(t('historyHeading'))}</span>
-          <button class="sbgx-btn" data-role="history-import"></button>
-          <input type="file" accept=".csv,text/csv" data-role="history-file" hidden />
-          <button class="sbgx-btn" data-role="history-forget">${escapeHtml(t('historyForget'))}</button>
-        </div>
-      </details>
-      <button class="sbgx-btn" data-role="cancel" hidden>${escapeHtml(t('cancel'))}</button>
-      <button class="sbgx-btn sbgx-btn-primary" data-role="save-part" hidden></button>
-      <span class="sbgx-tool sbgx-count" data-role="count">${escapeHtml(t('selectedCount', '0'))}</span>
-      <button class="sbgx-btn sbgx-btn-link" data-role="clear" hidden>${escapeHtml(t('clearSelection'))}</button>
-      <span class="sbgx-tool sbgx-trim-chip" data-role="trim-chip" hidden>
-        <span data-role="trim-chip-text"></span>
-        <button class="sbgx-trim-off" data-role="trim-off" title="${escapeHtml(t('trimTurnOff'))}">✕</button>
-      </span>
-      <span class="sbgx-tool sbgx-status" data-role="status">
-        <span class="sbgx-spinner" data-role="spinner" hidden></span>
-        <span class="sbgx-status-text" data-role="status-text"></span>
-      </span>
-      <span class="sbgx-spacer"></span>
-      <a class="sbgx-kofi" href="${KOFI_URL}" target="_blank" rel="noopener" title="${koFiLabel}">
-        <img src="${KOFI_IMAGE}" alt="${koFiLabel}" />
-      </a>
-      <div class="sbgx-failures" data-role="failures" hidden>
-        <button class="sbgx-btn" data-role="retry"></button>
-        <details>
-          <summary>${escapeHtml(t('showFailures'))}</summary>
-          <ul data-role="failures-list"></ul>
-        </details>
-      </div>
-    `;
+	toolbar.innerHTML = toolbarHtml();
 
 	const selectAll = toolbar.querySelector<HTMLInputElement>('.sbgx-select-all-cb')!;
 	selectAll.addEventListener('change', () => {
@@ -630,6 +270,7 @@ function buildToolbar(): HTMLDivElement {
 	toolbarPart(toolbar, 'bulk').addEventListener('click', handleBulkClick);
 	toolbarPart(toolbar, 'merge').addEventListener('click', handleMergeClick);
 	toolbarPart(toolbar, 'csv').addEventListener('click', handleCsvClick);
+	toolbarPart(toolbar, 'folder').addEventListener('click', () => void handleFolderClick());
 	toolbarPart(toolbar, 'cancel').addEventListener('click', () => STATE.abort?.abort());
 	toolbarPart(toolbar, 'save-part').addEventListener('click', () => STATE.pendingPart?.save());
 	toolbarPart(toolbar, 'retry').addEventListener('click', handleRetryClick);
@@ -863,6 +504,12 @@ function renderToolbarCounts(): void {
 	const selectNewPagesBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'select-new-pages');
 	selectNewPagesBtn.disabled = STATE.busy;
 	selectNewPagesBtn.title = t('selectNewAllPagesTitle', label);
+	// Saving to a folder needs Chromium's folder picker; without it the
+	// menu doesn't offer it.
+	const folderBtn = toolbarPart<HTMLButtonElement>(STATE.toolbar, 'folder');
+	folderBtn.hidden = directoryPicker() === null;
+	folderBtn.disabled = total === 0 || STATE.busy;
+	toolbarPart(STATE.toolbar, 'folder-heading').hidden = folderBtn.hidden;
 	toolbarPart(STATE.toolbar, 'history-import').textContent = t('historyImport', label);
 	toolbarPart<HTMLButtonElement>(STATE.toolbar, 'history-forget').disabled = exportedTotal() === 0;
 
@@ -892,16 +539,11 @@ function renderToolbarCounts(): void {
 	// in the e2e suite.
 	const mergeAvailable = STATE.format !== 'original';
 	mergeBtn.disabled = !mergeAvailable || total === 0 || STATE.busy;
-	const joining = STATE.format === 'gpx' && STATE.mergeMode === 'single';
-	const mergeLabel = STATE.format === 'tcx' ? t('mergeSelectedTcx') : joining ? t('joinSelected') : t('mergeSelected');
+	const kind = mergeKind(STATE.format, STATE.mergeMode);
+	const mergeLabel = t(MERGE_TEXT[kind].button);
 	if (mergeBtn.textContent !== mergeLabel) mergeBtn.textContent = mergeLabel;
-	const mergeTitle = !mergeAvailable
-		? t('mergeNotOriginal')
-		: STATE.format === 'tcx'
-			? t('mergeTcxTitle')
-			: joining
-				? t('joinTitle')
-				: null;
+	const titleKey = MERGE_TEXT[kind].title;
+	const mergeTitle = !mergeAvailable ? t('mergeNotOriginal') : titleKey ? t(titleKey) : null;
 	if (mergeTitle) {
 		mergeBtn.setAttribute('title', mergeTitle);
 	} else {
@@ -1035,8 +677,31 @@ function collectSelectedActivities(): ActivityRow[] {
 	return [...STATE.selected.values()];
 }
 
-/** Map a downloader progress event onto the status line. */
-function showProgress(ev: ProgressEvent, format: ExportFormat): void {
+/** What a merge produces: a TCX, or - from GPX - a track collection, one joined activity or GeoJSON. */
+type MergeKind = 'tcx' | 'tracks' | 'single' | 'geojson';
+
+function mergeKind(format: ExportFormat, mergeMode: MergeMode): MergeKind {
+	return format === 'tcx' ? 'tcx' : mergeMode;
+}
+
+/** The merge button's label and tooltip, and the status texts of a merge, by what it produces. */
+const MERGE_TEXT: Record<
+	MergeKind,
+	{ button: MessageKey; title: MessageKey | null; merging: MessageKey; saved: MessageKey }
+> = {
+	tcx: { button: 'mergeSelectedTcx', title: 'mergeTcxTitle', merging: 'mergingTcx', saved: 'savedMergedTcx' },
+	tracks: { button: 'mergeSelected', title: null, merging: 'mergingGpx', saved: 'savedMerged' },
+	single: { button: 'joinSelected', title: 'joinTitle', merging: 'mergingGpx', saved: 'savedJoined' },
+	geojson: {
+		button: 'mergeSelectedGeojson',
+		title: 'mergeGeojsonTitle',
+		merging: 'mergingGeojson',
+		saved: 'savedGeojson',
+	},
+};
+
+/** Map a downloader progress event onto the status line; `merging` is the text of a merge's last stage. */
+function showProgress(ev: ProgressEvent, merging: string): void {
 	if (ev.stage === 'downloading') {
 		setStatus(t('downloadingProgress', [String(ev.completed), String(ev.total)]), 'info', { spinner: true });
 	} else if (ev.stage === 'throttled') {
@@ -1044,7 +709,7 @@ function showProgress(ev: ProgressEvent, format: ExportFormat): void {
 	} else if (ev.stage === 'zipping') {
 		setStatus(t('buildingZip'), 'info', { spinner: true });
 	} else {
-		setStatus(format === 'tcx' ? t('mergingTcx') : t('mergingGpx'), 'info', { spinner: true });
+		setStatus(merging, 'info', { spinner: true });
 	}
 }
 
@@ -1078,12 +743,21 @@ function waitForPartClick(n: number, signal: AbortSignal): Promise<void> {
 	});
 }
 
+/** How a run saves what it fetches: as zips, as one merged file, or into a folder. */
+type RunMode = 'zip' | 'merge' | 'folder';
+
 /**
- * Shared lifecycle for zip and merge runs: single-flighting via STATE.busy,
- * the Cancel button, progress, and the terminal outcome - success, partial
- * success (with the failure list), cancelled, or failed.
+ * Shared lifecycle for zip, merge and folder runs: single-flighting via
+ * STATE.busy, the Cancel button, progress, and the terminal outcome -
+ * success, partial success (with the failure list), cancelled, or failed.
+ * `dir` is the folder a folder run writes to.
  */
-async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 'zip' | 'merge'): Promise<void> {
+async function runExport(
+	activities: ActivityRow[],
+	format: ExportFormat,
+	mode: RunMode,
+	dir: FileSystemDirectoryHandle | null = null,
+): Promise<void> {
 	if (STATE.busy || activities.length === 0) return;
 
 	const controller = new AbortController();
@@ -1093,45 +767,54 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 	renderToolbarCounts();
 	renderFailures();
 	setStatus(t('preparingDownloads', String(activities.length)), 'info', { spinner: true });
-	// Zip parts already saved when a run is cancelled stay saved.
+	// What's already saved when a run is cancelled stays saved: zip parts,
+	// or the files written to a folder.
 	let savedParts = 0;
+	let savedFiles = 0;
 	const trimRadius = format === 'original' ? 0 : STATE.trim;
+	const mergeMode = STATE.mergeMode;
+	const kind = mergeKind(format, mergeMode);
 	const options: BulkOptions = {
-		onProgress: (ev) => showProgress(ev, format),
+		onProgress: (ev) => showProgress(ev, t(MERGE_TEXT[kind].merging)),
 		signal: controller.signal,
 		names: STATE.names,
 		trimRadius,
 		splitBytes: STATE.splitMb * 1_000_000,
 		onSaved: (ids) => {
 			savedParts++;
+			savedFiles += ids.length;
 			// Trimmed files aren't backups of the activities, so they don't count.
 			if (trimRadius === 0) rememberExports(ids, format);
 		},
 		confirmPart: (n) => waitForPartClick(n, controller.signal),
 	};
-	const mergeMode = STATE.mergeMode;
 	try {
-		const result =
-			mode === 'merge'
-				? await downloadMerged(activities, format === 'tcx' ? 'tcx' : 'gpx', mergeMode, options)
-				: await downloadBulk(activities, format, options);
+		let result: BulkResult;
+		if (mode === 'merge') {
+			result = await downloadMerged(activities, format === 'tcx' ? 'tcx' : 'gpx', mergeMode, options);
+		} else if (mode === 'folder' && dir) {
+			result = await downloadToFolder(activities, format, dir, options);
+		} else {
+			result = await downloadBulk(activities, format, options);
+		}
 		const firstFailed = result.failed[0];
 		if (firstFailed) {
 			setStatus(t('savedWithSkips', [String(result.ok), String(result.failed.length), firstFailed.reason]), 'warn');
 			const byId = new Map(activities.map((a) => [a.id, a]));
 			STATE.lastRun = {
 				failed: result.failed.map((f) => ({ activity: byId.get(f.id)!, reason: f.reason })),
-				retryFormat: mode === 'zip' ? format : null,
+				retryFormat: mode === 'merge' ? null : format,
+				retryDir: mode === 'folder' ? dir : null,
 			};
 		} else {
-			setStatus(savedMessage(mode, format, mergeMode, result), 'ok');
+			setStatus(savedMessage(mode, kind, result), 'ok');
 			// Fully exported: a reload shouldn't bring this batch back into
 			// the next backup. It stays selected on screen.
-			if (mode === 'zip') forgetSavedSelection();
+			if (mode !== 'merge') forgetSavedSelection();
 		}
 	} catch (err) {
 		if (controller.signal.aborted) {
-			setStatus(savedParts > 0 ? t('cancelledAfterParts', String(savedParts)) : t('cancelled'), 'warn');
+			setStatus(cancelledMessage(mode, savedParts, savedFiles), 'warn');
 		} else {
 			const message = err instanceof Error ? err.message : String(err);
 			setStatus(t('downloadFailed', message), 'err');
@@ -1145,13 +828,17 @@ async function runExport(activities: ActivityRow[], format: ExportFormat, mode: 
 }
 
 /** The success message for a fully successful run. */
-function savedMessage(mode: 'zip' | 'merge', format: ExportFormat, mergeMode: MergeMode, result: BulkResult): string {
+function savedMessage(mode: RunMode, kind: MergeKind, result: BulkResult): string {
 	const count = String(result.ok);
-	if (mode === 'zip') {
-		return result.parts > 1 ? t('savedActivitiesParts', [count, String(result.parts)]) : t('savedActivities', count);
-	}
-	if (format === 'tcx') return t('savedMergedTcx', count);
-	return mergeMode === 'single' ? t('savedJoined', count) : t('savedMerged', count);
+	if (mode === 'folder') return t('savedToFolder', count);
+	if (mode === 'merge') return t(MERGE_TEXT[kind].saved, count);
+	return result.parts > 1 ? t('savedActivitiesParts', [count, String(result.parts)]) : t('savedActivities', count);
+}
+
+/** What a cancelled run reports: what it had already saved, if anything. */
+function cancelledMessage(mode: RunMode, savedParts: number, savedFiles: number): string {
+	if (mode === 'folder') return savedFiles > 0 ? t('cancelledFolder', String(savedFiles)) : t('cancelled');
+	return savedParts > 0 ? t('cancelledAfterParts', String(savedParts)) : t('cancelled');
 }
 
 function handleBulkClick(): Promise<void> {
@@ -1160,7 +847,7 @@ function handleBulkClick(): Promise<void> {
 
 /**
  * Merge-mode bulk handler. Same fetch pool as {@link handleBulkClick} but
- * emits a single combined GPX or TCX instead of a zip of per-activity files.
+ * emits a single combined file instead of a zip of per-activity files.
  * Not possible for Original; the button is disabled then, but we still gate
  * defensively in case the user clicked between format changes.
  */
@@ -1169,14 +856,37 @@ function handleMergeClick(): Promise<void> {
 	return runExport(collectSelectedActivities(), STATE.format, 'merge');
 }
 
-/** Re-run a zip run's failures only, in the format that run used. */
+/**
+ * "Save selected to a folder…": ask for a folder, then write every selected
+ * activity's file straight into it (see downloadToFolder). The picker has to
+ * open from the click itself, so nothing is awaited before it. Dismissing
+ * it is not an error.
+ */
+async function handleFolderClick(): Promise<void> {
+	const pick = directoryPicker();
+	const activities = collectSelectedActivities();
+	if (!pick || STATE.busy || activities.length === 0 || !STATE.toolbar) return;
+	toolbarPart<HTMLDetailsElement>(STATE.toolbar, 'more').open = false;
+	let dir: FileSystemDirectoryHandle;
+	try {
+		dir = await pick({ id: 'strava-export', mode: 'readwrite' });
+	} catch (err) {
+		if (err instanceof DOMException && err.name === 'AbortError') return;
+		setStatus(t('downloadFailed', err instanceof Error ? err.message : String(err)), 'err');
+		return;
+	}
+	await runExport(activities, STATE.format, 'folder', dir);
+}
+
+/** Re-run a zip or folder run's failures only, in the format that run used. */
 function handleRetryClick(): Promise<void> {
 	const run = STATE.lastRun;
 	if (!run?.retryFormat) return Promise.resolve();
 	return runExport(
 		run.failed.map((f) => f.activity),
 		run.retryFormat,
-		'zip',
+		run.retryDir ? 'folder' : 'zip',
+		run.retryDir,
 	);
 }
 
@@ -1193,46 +903,6 @@ function handleCsvClick(): void {
 }
 
 // ---------- Selecting across pages ----------
-
-/**
- * One of the arrows of Strava's pager under the table ("1-20 of 3433 ← →"),
- * or null when there's no page that way - on the first and last page Strava
- * swaps the button for a disabled <span>.
- */
-function pagerButton(direction: 'previous_page' | 'next_page'): HTMLButtonElement | null {
-	const el = document.querySelector(`.pagination .${direction}`);
-	return el instanceof HTMLButtonElement && !el.disabled && !el.classList.contains('disabled') ? el : null;
-}
-
-/** The pager's "21-40 of 3433", as Strava words it in the page's language. */
-function pagerText(): string {
-	return (document.querySelector('.pagination .pages')?.textContent ?? '').trim().replace(/\s+/g, ' ');
-}
-
-/** The first row's activity link - it changes when Strava shows another page. */
-function firstRowHref(): string | null {
-	return findActivitiesTable()?.querySelector('tbody a[href*="/activities/"]')?.getAttribute('href') ?? null;
-}
-
-/** Give up on a page that hasn't loaded after this long. */
-const PAGE_TIMEOUT_MS = 30_000;
-
-/**
- * Click a pager arrow and wait for Strava to render the other page. It
- * swaps the whole table out (briefly showing none) for the new one.
- */
-async function turnPage(button: HTMLButtonElement, signal: AbortSignal): Promise<void> {
-	const before = firstRowHref();
-	button.click();
-	const deadline = Date.now() + PAGE_TIMEOUT_MS;
-	for (let now = firstRowHref(); now === null || now === before; now = firstRowHref()) {
-		signal.throwIfAborted();
-		if (Date.now() > deadline) throw new Error(t('pagingTimeout'));
-		await new Promise((resolve) => setTimeout(resolve, 100));
-	}
-	// Augment the new rows now rather than on the observer's next frame.
-	tick();
-}
 
 /**
  * "Select all pages" / "Select new on all pages": page through Strava's list
@@ -1266,10 +936,13 @@ async function handleSelectPages(onlyNew: boolean): Promise<void> {
 		selectThisPage();
 		for (let back = pagerButton('previous_page'); back; back = pagerButton('previous_page')) {
 			await turnPage(back, controller.signal);
+			// Augment the new rows now rather than on the observer's next frame.
+			tick();
 			selectThisPage();
 		}
 		for (let next = pagerButton('next_page'); next; next = pagerButton('next_page')) {
 			await turnPage(next, controller.signal);
+			tick();
 			selectThisPage();
 		}
 		setStatus(t('selectedPages', [String(STATE.selected.size - before), String(pages.size)]), 'ok');
@@ -1319,10 +992,20 @@ async function start(): Promise<void> {
 	tick();
 	// Strava's React reflows the table on every search / sort / pagination.
 	// A single observer on the body handles all of it; the injection helpers
-	// are idempotent.
-	const obs = new MutationObserver(() => {
-		// De-bounce: bunch of mutations during a re-render - wait a frame.
-		requestAnimationFrame(tick);
+	// are idempotent. One re-render is a burst of mutations, so they're
+	// coalesced into a single tick on the next frame; and our own toolbar
+	// updates (the status line changes with every file of a download) are
+	// none of Strava's doing and don't need one at all.
+	let scheduled = false;
+	const obs = new MutationObserver((records) => {
+		if (scheduled) return;
+		const toolbar = STATE.toolbar;
+		if (toolbar && records.every((r) => toolbar.contains(r.target))) return;
+		scheduled = true;
+		requestAnimationFrame(() => {
+			scheduled = false;
+			tick();
+		});
 	});
 	obs.observe(document.body, { childList: true, subtree: true });
 }

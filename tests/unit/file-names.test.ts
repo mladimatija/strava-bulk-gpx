@@ -24,11 +24,12 @@ void test('RFC 5987 filenames, in UTF-8 or else ISO-8859-1', () => {
 	assert.equal(parseContentDispositionFilename(broken), 'plain.fit');
 });
 
-void test('the extension is sniffed from FIT, gzip, GPX and TCX bytes', async () => {
-	const fit = new Uint8Array([14, 16, 0, 0, 0, 0, 0, 0, ...new TextEncoder().encode('.FIT')]);
-	assert.equal(await sniffExtension(new Blob([fit])), '.fit');
-	assert.equal(await sniffExtension(new Blob([new Uint8Array([0x1f, 0x8b, 8, 0])])), '.gz');
-	assert.equal(await sniffExtension(new Blob(['<?xml version="1.0"?>\n<gpx version="1.1">'])), '.gpx');
-	assert.equal(await sniffExtension(new Blob(['<?xml version="1.0"?><TrainingCenterDatabase xmlns="x">'])), '.tcx');
-	assert.equal(await sniffExtension(new Blob(['something else'])), '');
+void test('the extension is sniffed from FIT, gzip, GPX and TCX bytes', () => {
+	const text = (value: string): Uint8Array => new TextEncoder().encode(value);
+	const fit = new Uint8Array([14, 16, 0, 0, 0, 0, 0, 0, ...text('.FIT')]);
+	assert.equal(sniffExtension(fit), '.fit');
+	assert.equal(sniffExtension(new Uint8Array([0x1f, 0x8b, 8, 0])), '.gz');
+	assert.equal(sniffExtension(text('<?xml version="1.0"?>\n<gpx version="1.1">')), '.gpx');
+	assert.equal(sniffExtension(text('<?xml version="1.0"?><TrainingCenterDatabase xmlns="x">')), '.tcx');
+	assert.equal(sniffExtension(text('something else')), '');
 });

@@ -845,7 +845,7 @@ function tcxBody(sport: string, start: string, distances: number[]): string {
 }
 
 /** Switch the "⋯" menu's GPX merge setting. */
-async function setMergeMode(page: Page, mode: 'tracks' | 'single'): Promise<void> {
+async function setMergeMode(page: Page, mode: 'tracks' | 'single' | 'geojson'): Promise<void> {
 	await page.locator('[data-role="more"] > summary').click();
 	await page.locator('select[data-role="merge-mode"]').selectOption(mode);
 	await page.locator('[data-role="more"] > summary').click();
@@ -1435,16 +1435,12 @@ test.describe('activities without GPS, row downloads', () => {
 		expect(name).toBe('9000000004.fit');
 		await expect(extensionPage.locator('tr[data-sbgx-id="9000000004"] .sbgx-done')).toBeVisible();
 
-		// The row button reports failures with alert(); answer it here.
-		const alerts: string[] = [];
-		extensionPage.once('dialog', (dialog) => {
-			alerts.push(dialog.message());
-			void dialog.dismiss();
-		});
+		// The row button reports failures on the status line and in its tooltip.
 		await indoor.nth(1).click();
-		await expect
-			.poll(() => alerts)
-			.toEqual(["Couldn't download 9000000005: Strava has no Original file for this activity"]);
+		const failure = "Couldn't download 9000000005: Strava has no Original file for this activity";
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText(failure);
+		await expect(extensionPage.locator('[data-role="status"]')).toHaveAttribute('data-kind', 'err');
+		await expect(indoor.nth(1)).toHaveAttribute('title', failure);
 		// The page stayed where it was, rather than navigating to Strava's answer.
 		await expect(extensionPage).toHaveURL('https://www.strava.com/athlete/training');
 	});
@@ -1705,13 +1701,17 @@ test.describe('single downloads', () => {
 		});
 		let downloads = 0;
 		extensionPage.on('download', () => downloads++);
-		const alerts: string[] = [];
-		extensionPage.once('dialog', (dialog) => {
-			alerts.push(dialog.message());
+		// No alert(): a dialog would block the page.
+		let dialogs = 0;
+		extensionPage.on('dialog', (dialog) => {
+			dialogs++;
 			void dialog.dismiss();
 		});
 		await extensionPage.locator('.sbgx-btn-row').first().click();
-		await expect.poll(() => alerts).toEqual(["Couldn't download 9000000001: Strava has no GPX file for this activity"]);
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText(
+			"Couldn't download 9000000001: Strava has no GPX file for this activity",
+		);
+		expect(dialogs).toBe(0);
 		expect(downloads).toBe(0);
 		await expect(extensionPage.locator('.sbgx-done').first()).toBeHidden();
 	});
@@ -1748,5 +1748,292 @@ test.describe('hide start/end, custom distance, rebuilt toolbar', () => {
 		await expect(extensionPage.locator('select[data-role="trim"]')).toHaveValue('custom');
 		await expect(extensionPage.locator('[data-role="trim-value"]')).toHaveValue('650');
 		await expect(extensionPage.locator('select[data-role="trim-unit"]')).toHaveValue('ft');
+	});
+});
+
+test.describe('distances in other units and languages', () => {
+	test('swims in metres or yards and translated units count as GPS activities', async ({ extensionPage }) => {
+		await showOtherPage(extensionPage, [
+			{ id: '9000000101', sport: 'Swim', title: 'Open water', distance: '1,500 m' },
+			{ id: '9000000102', sport: 'Swim', title: 'Lake', distance: '1 650 yd' },
+			{ id: '9000000103', sport: 'Бег', title: 'Утренний забег', distance: '10,07 км' },
+			{ id: '9000000104', sport: 'Workout', title: '10 K pace intervals', distance: '0 km' },
+			{ id: '9000000105', sport: 'Тренировка', title: 'Зал', distance: '0 км' },
+		]);
+		for (const id of ['9000000101', '9000000102', '9000000103']) {
+			await expect(extensionPage.locator(`tr[data-sbgx-id="${id}"]`)).toHaveAttribute('data-sbgx-has-gps', '1');
+			await expect(extensionPage.locator(`tr[data-sbgx-id="${id}"] .sbgx-btn-row`)).toHaveText('GPX');
+		}
+		// A title that reads like a distance doesn't make an indoor activity exportable.
+		for (const id of ['9000000104', '9000000105']) {
+			await expect(extensionPage.locator(`tr[data-sbgx-id="${id}"]`)).toHaveAttribute('data-sbgx-has-gps', '0');
+			await expect(extensionPage.locator(`tr[data-sbgx-id="${id}"] .sbgx-row-cb`)).toHaveCount(0);
+		}
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		await expect(extensionPage.locator('[data-role="count"]')).toHaveText('3 selected');
+	});
+
+	test("Strava's own distance column decides when the table marks one", async ({ extensionPage }) => {
+		// Elevation ahead of Distance: only the column's class tells them apart.
+		const cells = (id: string, distance: string): string =>
+			`<tr><td>Hike</td><td>Mon, 04/05/2026</td><td><a href="/activities/${id}">Hike ${id}</a></td>` +
+			`<td class="col-elev">320 m</td><td class="col-dist">${distance}</td></tr>`;
+		await extensionPage.evaluate(
+			(html) => {
+				document.querySelector('tbody')!.innerHTML = html;
+			},
+			cells('9000000111', '0 km') + cells('9000000112', '7.2 km'),
+		);
+		await expect(extensionPage.locator('tr[data-sbgx-id="9000000112"] .sbgx-row-cb')).toHaveCount(1);
+		await expect(extensionPage.locator('tr[data-sbgx-id="9000000111"]')).toHaveAttribute('data-sbgx-has-gps', '0');
+		await expect(extensionPage.locator('tr[data-sbgx-id="9000000111"] .sbgx-row-cb')).toHaveCount(0);
+	});
+});
+
+test.describe('single downloads, rate limits', () => {
+	test('a rate-limited row download waits for Retry-After, then saves the file', async ({ extensionPage }) => {
+		let hits = 0;
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			if (++hits === 1) {
+				await route.fulfill({ status: 429, headers: { 'Retry-After': '2' }, body: '' });
+				return;
+			}
+			await route.fulfill({
+				status: 200,
+				contentType: 'application/gpx+xml',
+				body: gpxBody(idFromUrl(route.request().url())),
+			});
+		});
+		const status = extensionPage.locator('[data-role="status-text"]');
+		const started = Date.now();
+		const { name } = await downloadFrom(extensionPage, async () => {
+			await extensionPage.locator('.sbgx-btn-row').first().click();
+			await expect(status).toContainText('Strava is limiting requests - retrying in');
+		});
+		expect(Date.now() - started).toBeGreaterThanOrEqual(1900);
+		expect(hits).toBe(2);
+		expect(name).toBe('strava_9000000001.gpx');
+		// The wait is taken off the status line again, and the export counts.
+		await expect(status).toHaveText('');
+		await expect(extensionPage.locator('.sbgx-done').first()).toBeVisible();
+	});
+});
+
+test.describe('GeoJSON merge', () => {
+	test('merges the selection into one GeoJSON, a feature per activity in time order', async ({ extensionPage }) => {
+		const starts: Record<string, string> = {
+			'9000000001': '2026-05-09T07:00:00.000Z',
+			'9000000002': '2026-05-08T07:00:00.000Z',
+			'9000000003': '2026-05-06T07:00:00.000Z',
+		};
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: timedGpx(id, starts[id]!, 60) });
+		});
+		await setMergeMode(extensionPage, 'geojson');
+		const mergeBtn = extensionPage.locator('[data-role="merge"]');
+		await expect(mergeBtn).toHaveText('Merge selected into GeoJSON');
+		await expect(mergeBtn).toHaveAttribute('title', /for web maps and GIS tools/);
+
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		const { name, bytes } = await downloadFrom(extensionPage, () => mergeBtn.click());
+		expect(name).toMatch(/^strava_merged_\d{4}-\d{2}-\d{2}\.geojson$/);
+		const collection = JSON.parse(bytes.toString('utf8')) as {
+			type: string;
+			features: { properties: Record<string, string>; geometry: { type: string; coordinates: number[][] } }[];
+		};
+		expect(collection.type).toBe('FeatureCollection');
+		expect(collection.features.map((f) => f.properties.id)).toEqual(['9000000003', '9000000002', '9000000001']);
+		expect(collection.features[0]!.properties).toEqual({
+			id: '9000000003',
+			name: 'activity-9000000003',
+			sport: 'running',
+			time: '2026-05-06T07:00:00.000Z',
+			url: 'https://www.strava.com/activities/9000000003',
+		});
+		expect(collection.features[0]!.geometry).toEqual({
+			type: 'LineString',
+			coordinates: [
+				[13, 45],
+				[13, 45],
+			],
+		});
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText('Saved GeoJSON with 3 activities.');
+
+		// The mode is remembered, and TCX mode keeps merging into a TCX.
+		await extensionPage.reload();
+		await expect(extensionPage.locator('[data-role="merge"]')).toHaveText('Merge selected into GeoJSON');
+		await extensionPage.locator('select[data-role="format"]').selectOption('tcx');
+		await expect(extensionPage.locator('[data-role="merge"]')).toHaveText('Merge selected into one TCX');
+	});
+});
+
+/**
+ * Make the content script's folder picker hand out the page's origin-private
+ * folder instead of opening Chrome's dialog, which a test can't answer. It's
+ * a real FileSystemDirectoryHandle, so everything after the picker runs as
+ * it does for a folder on disk.
+ */
+async function pickPrivateFolder(page: Page): Promise<void> {
+	await evaluateInContentScript(
+		page,
+		`(() => { window.showDirectoryPicker = () => navigator.storage.getDirectory(); return true; })()`,
+	);
+}
+
+/** Every file in the page's origin-private folder: path → text. */
+async function privateFolderFiles(page: Page): Promise<Record<string, string>> {
+	return page.evaluate(async () => {
+		const files: Record<string, string> = {};
+		interface Entries {
+			entries(): AsyncIterable<[string, FileSystemHandle]>;
+		}
+		const walk = async (dir: FileSystemDirectoryHandle, prefix: string): Promise<void> => {
+			for await (const [name, handle] of (dir as unknown as Entries).entries()) {
+				if (handle.kind === 'directory') await walk(handle as FileSystemDirectoryHandle, `${prefix}${name}/`);
+				else files[`${prefix}${name}`] = await (await (handle as FileSystemFileHandle).getFile()).text();
+			}
+		};
+		await walk(await navigator.storage.getDirectory(), '');
+		return files;
+	});
+}
+
+/** Click "Save selected to a folder…" in the ⋯ menu. */
+async function saveToFolder(page: Page): Promise<void> {
+	await page.locator('[data-role="more"] > summary').click();
+	await page.locator('[data-role="folder"]').click();
+}
+
+test.describe('saving to a folder', () => {
+	test('writes each file into the picked folder, in sport folders, with a CSV', async ({ extensionPage }) => {
+		await stubGpxExports(extensionPage);
+		// Chrome offers the folder picker to content scripts.
+		expect(await evaluateInContentScript(extensionPage, 'typeof window.showDirectoryPicker')).toBe('function');
+		await pickPrivateFolder(extensionPage);
+		// Nothing selected: nothing to save.
+		await extensionPage.locator('[data-role="more"] > summary').click();
+		await expect(extensionPage.locator('[data-role="folder"]')).toBeDisabled();
+		await extensionPage.locator('[data-role="more"] > summary').click();
+
+		await extensionPage.locator('select[data-role="names"]').selectOption('sport');
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		let downloads = 0;
+		extensionPage.on('download', () => downloads++);
+		await saveToFolder(extensionPage);
+		const status = extensionPage.locator('[data-role="status-text"]');
+		await expect(status).toHaveText('Saved 3 activities to the folder.');
+
+		const files = await privateFolderFiles(extensionPage);
+		const csvName = Object.keys(files).find((name) => name.endsWith('.csv'))!;
+		expect(csvName).toMatch(/^strava_activities_\d{4}-\d{2}-\d{2}\.csv$/);
+		expect(Object.keys(files).sort()).toEqual(
+			[
+				'Run/9000000003_Morning Run.gpx',
+				'Trail Run/9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx',
+				'Trail Run/9000000002_Lunch Trail Run.gpx',
+				csvName,
+			].sort(),
+		);
+		expect(files['Run/9000000003_Morning Run.gpx']).toBe(gpxBody('9000000003'));
+		const lines = csvLines(files[csvName]!);
+		expect(lines[0]).toMatch(/^Activity ID,URL,File,Date \(YYYY-MM-DD\),Sport,/);
+		expect(lines).toHaveLength(4);
+		expect(lines[1]).toContain('Trail Run/9000000001_Traversa v19 feat. Ex Acini Novi Šćapi.gpx');
+		// Nothing went through the browser's downloads, and the exports count.
+		expect(downloads).toBe(0);
+		await expect(extensionPage.locator('.sbgx-done:visible')).toHaveCount(3);
+	});
+
+	test('a second run replaces the same files; a different file under a taken name is kept apart', async ({
+		extensionPage,
+	}) => {
+		let suffix = '';
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) + suffix });
+		});
+		await pickPrivateFolder(extensionPage);
+		await extensionPage.locator('.sbgx-row-cb').first().check();
+		const status = extensionPage.locator('[data-role="status-text"]');
+		const gpxFiles = async (): Promise<string[]> =>
+			Object.keys(await privateFolderFiles(extensionPage))
+				.filter((name) => name.endsWith('.gpx'))
+				.sort();
+
+		await saveToFolder(extensionPage);
+		await expect(status).toHaveText('Saved 1 activities to the folder.');
+		expect(await gpxFiles()).toEqual(['strava_9000000001.gpx']);
+
+		// The same activity again: same name, same size - replaced.
+		// (Re-selecting clears the status line, so the next message is this run's.)
+		await extensionPage.locator('.sbgx-row-cb').first().uncheck();
+		await extensionPage.locator('.sbgx-row-cb').first().check();
+		await expect(status).toHaveText('');
+		await saveToFolder(extensionPage);
+		await expect(status).toHaveText('Saved 1 activities to the folder.');
+		expect(await gpxFiles()).toEqual(['strava_9000000001.gpx']);
+
+		// A file of another size under that name is not overwritten.
+		suffix = '<!-- edited on Strava since -->';
+		await extensionPage.locator('.sbgx-row-cb').first().uncheck();
+		await extensionPage.locator('.sbgx-row-cb').first().check();
+		await expect(status).toHaveText('');
+		await saveToFolder(extensionPage);
+		await expect(status).toHaveText('Saved 1 activities to the folder.');
+		expect(await gpxFiles()).toEqual(['strava_9000000001-2.gpx', 'strava_9000000001.gpx']);
+	});
+
+	test('failures are listed, and Retry writes them into the same folder', async ({ extensionPage }) => {
+		let failing = true;
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			if (failing && id === '9000000002') {
+				await route.fulfill({ status: 500, body: '' });
+				return;
+			}
+			await route.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) });
+		});
+		await pickPrivateFolder(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		await saveToFolder(extensionPage);
+		const status = extensionPage.locator('[data-role="status-text"]');
+		await expect(status).toHaveText('Saved 2, skipped 1 (HTTP 500)');
+		const gpxCount = async (): Promise<number> =>
+			Object.keys(await privateFolderFiles(extensionPage)).filter((name) => name.endsWith('.gpx')).length;
+		expect(await gpxCount()).toBe(2);
+
+		failing = false;
+		let downloads = 0;
+		extensionPage.on('download', () => downloads++);
+		await extensionPage.locator('[data-role="retry"]').click();
+		await expect(status).toHaveText('Saved 1 activities to the folder.');
+		expect(await gpxCount()).toBe(3);
+		expect(downloads).toBe(0);
+	});
+
+	test('Cancel keeps the files already written and says how many', async ({ extensionPage }) => {
+		let release: () => void = () => undefined;
+		const held = new Promise<void>((resolve) => (release = resolve));
+		await extensionPage.route('**/activities/*/export_gpx', async (route) => {
+			const id = idFromUrl(route.request().url());
+			if (id !== '9000000001') await held;
+			await route
+				.fulfill({ status: 200, contentType: 'application/gpx+xml', body: gpxBody(id) })
+				.catch(() => undefined);
+		});
+		await pickPrivateFolder(extensionPage);
+		await extensionPage.locator('.sbgx-select-all-cb').check();
+		await saveToFolder(extensionPage);
+		await expect
+			.poll(async () => Object.keys(await privateFolderFiles(extensionPage)))
+			.toEqual(['strava_9000000001.gpx']);
+		await extensionPage.locator('[data-role="cancel"]').click();
+		release();
+		await expect(extensionPage.locator('[data-role="status-text"]')).toHaveText(
+			'Cancelled - 1 files were already saved to the folder.',
+		);
+		// What's in the folder counts as exported; the rest doesn't.
+		await expect(extensionPage.locator('.sbgx-done:visible')).toHaveCount(1);
 	});
 });
