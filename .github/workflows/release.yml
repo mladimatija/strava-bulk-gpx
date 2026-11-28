@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # Lets the store step's `if:` see whether credentials are configured.
-      CWS_REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+      CWS_SERVICE_ACCOUNT_KEY: ${{ secrets.CWS_SERVICE_ACCOUNT_KEY }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -44,10 +44,8 @@ jobs:
         # as a draft; it is submitted for review only when the repository
         # variable CWS_AUTO_PUBLISH is "true". After the GitHub release, so a
         # store hiccup can't keep the release from being published.
-        if: env.CWS_REFRESH_TOKEN != ''
+        if: env.CWS_SERVICE_ACCOUNT_KEY != ''
         env:
-          CWS_CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
-          CWS_CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
           CWS_PUBLISHER_ID: ${{ vars.CWS_PUBLISHER_ID }}
           CWS_EXTENSION_ID: ${{ vars.CWS_EXTENSION_ID }}
           CWS_AUTO_PUBLISH: ${{ vars.CWS_AUTO_PUBLISH }}

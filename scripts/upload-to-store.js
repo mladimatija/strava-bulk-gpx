@@ -5,21 +5,27 @@
 //   node scripts/upload-to-store.js strava-bulk-gpx.zip
 //
 // Credentials come from the environment (see CONTRIBUTING.md, "Releases"):
-//   CWS_CLIENT_ID, CWS_CLIENT_SECRET, CWS_REFRESH_TOKEN - an OAuth client and
-//     a refresh token with the https://www.googleapis.com/auth/chromewebstore scope
+//   CWS_SERVICE_ACCOUNT_KEY - the JSON key of a Google Cloud service account
+//     that has been added to the publisher in the Developer Dashboard
 //   CWS_PUBLISHER_ID - Developer Dashboard → Publisher → Settings
 //   CWS_EXTENSION_ID - the item's 32-character id
 //   CWS_AUTO_PUBLISH - "true" to also submit the upload for review
+//
+// A service account rather than an OAuth refresh token: it needs no consent
+// screen, and nothing expires between releases.
 //
 // Uploading only replaces the draft package. The listing texts, screenshots
 // and privacy answers still live in the dashboard, so a release that changes
 // those is better published by hand - which is why submitting is opt-in.
 //
 // API reference: https://developer.chrome.com/docs/webstore/using-api
+// Service accounts: https://developer.chrome.com/docs/webstore/service-accounts
 
+import { createSign } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 
 const API = 'https://chromewebstore.googleapis.com';
+const SCOPE = 'https://www.googleapis.com/auth/chromewebstore';
 
 function env(name) {
 	const value = process.env[name];
@@ -34,14 +40,35 @@ async function json(res, what) {
 	return text ? JSON.parse(text) : {};
 }
 
+const base64url = (value) => Buffer.from(value).toString('base64url');
+
+/**
+ * An access token for the service account: a JWT naming the account and the
+ * scope, signed with the account's private key, exchanged at Google's token
+ * endpoint. The token lasts an hour; one run needs it for a minute.
+ */
 async function accessToken() {
-	const res = await fetch('https://oauth2.googleapis.com/token', {
+	let key;
+	try {
+		key = JSON.parse(env('CWS_SERVICE_ACCOUNT_KEY'));
+	} catch {
+		throw new Error('CWS_SERVICE_ACCOUNT_KEY is not the JSON key file of a service account');
+	}
+	if (!key.client_email || !key.private_key) {
+		throw new Error('CWS_SERVICE_ACCOUNT_KEY has no client_email or private_key');
+	}
+	const tokenUri = key.token_uri ?? 'https://oauth2.googleapis.com/token';
+	const now = Math.floor(Date.now() / 1000);
+	const unsigned = [
+		base64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' })),
+		base64url(JSON.stringify({ iss: key.client_email, scope: SCOPE, aud: tokenUri, iat: now, exp: now + 600 })),
+	].join('.');
+	const signature = createSign('RSA-SHA256').update(unsigned).sign(key.private_key, 'base64url');
+	const res = await fetch(tokenUri, {
 		method: 'POST',
 		body: new URLSearchParams({
-			client_id: env('CWS_CLIENT_ID'),
-			client_secret: env('CWS_CLIENT_SECRET'),
-			refresh_token: env('CWS_REFRESH_TOKEN'),
-			grant_type: 'refresh_token',
+			grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+			assertion: `${unsigned}.${signature}`,
 		}),
 	});
 	return (await json(res, 'Token exchange')).access_token;
